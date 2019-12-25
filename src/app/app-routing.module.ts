@@ -2,8 +2,23 @@ import { NgModule } from '@angular/core';
 import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
 
 const routes: Routes = [
-  { path: '', redirectTo: 'home', pathMatch: 'full' },
-  { path: 'home', loadChildren: () => import('./home/home.module').then( m => m.HomePageModule)},
+  { path: '', redirectTo: 'authors', pathMatch: 'full' },
+  {
+    path: 'authors',
+    loadChildren: () => import('./pages/authors/authors.module').then( m => m.AuthorsPageModule)
+  },
+  {
+    path: 'authors/:id',
+    loadChildren: () => import('./pages/author/author.module').then( m => m.AuthorPageModule)
+  },
+  {
+    path: 'book/:id',
+    loadChildren: () => import('./pages/book/book.module').then( m => m.BookPageModule)
+  },
+  {
+    path: 'tts/:id',
+    loadChildren: () => import('./pages/tts/tts.module').then( m => m.TtsPageModule)
+  },
 ];
 
 @NgModule({

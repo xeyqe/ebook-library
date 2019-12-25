@@ -1,0 +1,105 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-row>
+      <ion-title>book</ion-title>
+      <div *ngIf="dontworryiwillnameyoulater && dontworryiwillnameyoulater2 && book">
+        <ion-button [routerLink]="['/', 'tts', dontworryiwillnameyoulater]">
+          <ion-icon slot="icon-only" name="megaphone"></ion-icon>
+        </ion-button>
+        <ion-button [routerLink]="['/', 'tts', dontworryiwillnameyoulater2]">
+          <ion-icon slot="icon-only" name="book"></ion-icon>
+        </ion-button>
+        <ion-button *ngIf="bookChanged === true" (click)="updateBook()">
+          <ion-icon slot="icon-only" name="save"></ion-icon>
+        </ion-button>
+      </div>
+    </ion-row>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div *ngIf="book !== null">
+    <ion-grid>
+      <ion-item>
+        <ion-label position="floating">Title</ion-label>
+        <ion-input (change)="bookChanged = true" [(ngModel)]="book.title"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-label position="floating">Original title</ion-label>
+        <ion-input (change)="bookChanged = true" [(ngModel)]="book.originalTitle"></ion-input>
+      </ion-item>
+
+      <ion-row>
+        <ion-col>
+          <ion-item>
+            <ion-label position="floating">Genre</ion-label>
+            <ion-input (change)="bookChanged = true" [(ngModel)]="book.genre"></ion-input>
+          </ion-item>
+        </ion-col>
+        <ion-col>
+          <ion-item>
+            <ion-label position="floating">ISBN</ion-label>
+            <ion-input (change)="bookChanged = true" [(ngModel)]="book.ISBN"></ion-input>
+          </ion-item>
+        </ion-col>
+      </ion-row>
+
+      <ion-row>
+        <ion-col>
+          <ion-item>
+            <ion-label position="floating">Publisher</ion-label>
+            <ion-input (change)="bookChanged = true" [(ngModel)]="book.publisher"></ion-input>
+          </ion-item>
+        </ion-col>
+        <ion-col>
+          <ion-item>
+            <ion-label position="floating">Published</ion-label>
+            <ion-input type="number" [(ngModel)]="book.published"></ion-input>
+          </ion-item>
+        </ion-col>
+      </ion-row>
+
+      <ion-row>
+        <ion-col>
+          <ion-item>
+            <ion-label position="floating">Language</ion-label>
+            <ion-input (change)="bookChanged = true" [(ngModel)]="book.language"></ion-input>
+          </ion-item>
+        </ion-col>
+        <ion-col>
+          <ion-item>
+            <ion-label position="floating">Tranlator</ion-label>
+            <ion-input (change)="bookChanged = true" [(ngModel)]="book.translator"></ion-input>
+          </ion-item>
+        </ion-col>
+      </ion-row>
+
+      <ion-row>
+        <ion-col>
+          <ion-item>
+            <ion-label position="floating">Pages</ion-label>
+            <ion-input (change)="bookChanged = true" type="number" [(ngModel)]="book.lenght"></ion-input>
+          </ion-item>
+        </ion-col>
+        <ion-col>
+          <ion-item>
+            <ion-label position="floating">Progress</ion-label>
+            <ion-input (change)="bookChanged = true" type="number" [(ngModel)]="book.progress"></ion-input>
+          </ion-item>
+        </ion-col>
+        <ion-col>
+          <ion-item>
+            <ion-label position="floating">Rating</ion-label>
+            <ion-input (change)="bookChanged = true" type="number" [(ngModel)]="book.rating"></ion-input>
+          </ion-item>
+        </ion-col>
+      </ion-row>
+
+    </ion-grid>
+    <ion-item>
+      <ion-label position="stacked">Annotation</ion-label>
+      <ion-textarea autoGrow="true" [(ngModel)]="book.annotation"></ion-textarea>
+    </ion-item>
+  </div>
+
+</ion-content>
