@@ -7,7 +7,7 @@ import { IonicModule } from '@ionic/angular';
 import { AuthorsPageRoutingModule } from './authors-routing.module';
 
 import { AuthorsPage } from './authors.page';
-import { FilterPipe } from '../../filter.pipe';
+import { FilterPipe } from './../../filter.pipe';
 
 @NgModule({
   imports: [

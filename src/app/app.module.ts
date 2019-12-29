@@ -15,12 +15,14 @@ import { SQLite } from '@ionic-native/sqlite/ngx';
 import { HttpClientModule } from '@angular/common/http';
 import { File } from '@ionic-native/file/ngx';
 import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
+import { BackgroundMode } from '@ionic-native/background-mode/ngx';
+import { IonicStorageModule } from '@ionic/storage';
 
 @NgModule({
   declarations: [AppComponent],
   entryComponents: [],
   imports: [BrowserModule, IonicModule.forRoot(), AppRoutingModule,
-    HttpClientModule],
+    HttpClientModule, IonicStorageModule.forRoot()],
   providers: [
     StatusBar,
     SplashScreen,
@@ -28,8 +30,9 @@ import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
     SQLite,
     SQLitePorter,
     File,
-    TextToSpeech
-  ],
+    TextToSpeech,
+    BackgroundMode
+    ],
   bootstrap: [AppComponent]
 })
 export class AppModule {}

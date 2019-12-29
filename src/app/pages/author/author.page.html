@@ -5,6 +5,10 @@
       <ion-button *ngIf="authorChanged" (click)="updateAuthor()">
         <ion-icon slot="icon-only" name="save"></ion-icon>
       </ion-button>
+      <ion-button (click)="editable()">
+        <ion-icon *ngIf="!ready2editing" slot="icon-only" name="create"></ion-icon>
+        <ion-icon *ngIf="ready2editing" slot="icon-only" name="close"></ion-icon>
+      </ion-button>
     </ion-row>
   </ion-toolbar>
 </ion-header>
@@ -14,48 +18,62 @@
   <div *ngIf="author !== null">
     <ion-grid>
       <ion-row>
-        <ion-col>
-          <ion-item>
-            <ion-label position="floating">Name</ion-label>
-            <ion-input (change)="authorChanged = true" [(ngModel)]="author.name"></ion-input>
+        <ion-col  *ngIf="author.name || ready2editing">
+          <ion-item >
+            <ion-label class="red" position="floating">Name</ion-label>
+            <ion-input class="intp" disabled={{!ready2editing}} (change)="authorChanged = true" [(ngModel)]="author.name"></ion-input>
           </ion-item>
         </ion-col>
 
-        <ion-col>
+        <ion-col *ngIf="author.surname || ready2editing">
           <ion-item>
-            <ion-label position="floating">Surname</ion-label>
-            <ion-input (change)="authorChanged = true" [(ngModel)]="author.surname"></ion-input>
+            <ion-label class="red" position="floating">Surname</ion-label>
+            <ion-input disabled={{!ready2editing}} (change)="authorChanged = true" [(ngModel)]="author.surname"></ion-input>
           </ion-item>
         </ion-col>
       </ion-row>
     
 
       <ion-row>
-        <ion-col>
+        <ion-col *ngIf="author.nationality || ready2editing">
           <ion-item>
-            <ion-label position="floating">Nationality</ion-label>
-            <ion-input (change)="authorChanged = true" [(ngModel)]="author.nationality"></ion-input>
+            <ion-label class="red" position="floating">Nationality</ion-label>
+            <ion-input disabled={{!ready2editing}} (change)="authorChanged = true" [(ngModel)]="author.nationality"></ion-input>
           </ion-item>
         </ion-col>
-        <ion-col>
+        <ion-col *ngIf="author.birth || ready2editing">
           <ion-item>
-            <ion-label position="floating">Birth</ion-label>
-            <ion-input type="number" (change)="authorChanged = true" [(ngModel)]="author.birth"></ion-input>
+            <ion-label class="red" position="floating">Birth</ion-label>
+            <ion-input disabled={{!ready2editing}} type="number" (change)="authorChanged = true" [(ngModel)]="author.birth"></ion-input>
           </ion-item>
         </ion-col>
-        <ion-col>
+        <ion-col *ngIf="author.death || ready2editing">
           <ion-item>
-            <ion-label position="floating">Death</ion-label>
-            <ion-input type="number" (change)="authorChanged = true" [(ngModel)]="author.death"></ion-input>
+            <ion-label class="red" position="floating">Death</ion-label>
+            <ion-input disabled={{!ready2editing}} type="number" (change)="authorChanged = true" [(ngModel)]="author.death"></ion-input>
           </ion-item>
         </ion-col>
       </ion-row>
 
-      <ion-item>
-        <ion-label position="floating">Biography</ion-label>
-        <ion-textarea autoGrow="true" (change)="authorChanged = true" [(ngModel)]="author.biography"></ion-textarea>
+      <ion-item *ngIf="author.biography || ready2editing">
+        <ion-label class="red" position="floating">Biography</ion-label>
+        <ion-textarea disabled={{!ready2editing}} autoGrow="true" (change)="authorChanged = true" [(ngModel)]="author.biography"></ion-textarea>
       </ion-item>
     </ion-grid>
+    <ion-list>
+        <ion-item button *ngFor="let book of books" [routerLink]="['/', 'book', book.id]">
+          <ion-label>
+            <ion-row>
+              <ion-col size="10">
+                <h2>{{ book.title }}</h2>
+              </ion-col>
+              <ion-col>
+                {{ book.progress | percent2:book.progress }}
+              </ion-col>
+            </ion-row>
+          </ion-label>
+        </ion-item>
+      </ion-list>
     
 
     
@@ -63,14 +81,3 @@
   </div>
 </ion-content>
 
-<ion-footer style="max-height: 20vh; overflow: scroll">
-  <ion-toolbar>
-      <ion-list>
-          <ion-item button *ngFor="let book of books" [routerLink]="['/', 'book', book.id]">
-            <ion-label>
-              <h2>{{ book.title }}</h2>
-            </ion-label>
-          </ion-item>
-        </ion-list>
-  </ion-toolbar>
-</ion-footer>

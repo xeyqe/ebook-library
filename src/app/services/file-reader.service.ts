@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { File } from '@ionic-native/file/ngx';
-import { DatabaseService } from './database.service';
+import { DatabaseService, Book } from './database.service';
 
 @Injectable({
   providedIn: 'root'
@@ -22,6 +22,7 @@ export class FileReaderService {
           'Obraz Doriana Graye.txt').then(() => {
             this.listOfAuthors();
           }).catch(e => {
+            console.log('copyFile failed: ');
             console.log(e);
           });
       }).catch(e => {
@@ -30,6 +31,7 @@ export class FileReaderService {
           this.file.createDir(path + ebl, ow, false).then(() => {
               this.createApplicationFolder();
           }).catch(er => {
+            console.log('createDir failed: ');
             console.log(er);
           });
         }
@@ -51,6 +53,7 @@ export class FileReaderService {
 
   dirExists(path: string, name: string) {
     return this.file.checkDir(path, name).catch(e => {
+      console.log('checkDir in dirExists failed: ');
       console.log(e);
     });
   }
@@ -59,6 +62,7 @@ export class FileReaderService {
     return this.file.createDir(path, name, false).then(_ => {
       return true;
     }).catch(e => {
+      console.log('createDir failed: ');
       console.log(e);
       return false;
     });
@@ -71,6 +75,7 @@ export class FileReaderService {
       'Obraz Doriana Graye.txt').then(_ => {
         return true;
       }).catch(e => {
+        console.log('copyDorian failed: ');
         console.log(e);
         return false;
       });
@@ -78,72 +83,89 @@ export class FileReaderService {
 
 
   listOfAuthors() {
+    this.db.loadAuthors(); //todo
     const path = this.file.externalRootDirectory;
+    this.db.allAuthorsPaths().then(data => {
 
-    this.file.checkDir(path, 'ebook-library').then(_ => {
-      this.file.listDir(path, 'ebook-library').then(output => {
-        for (const authorFolder of output) {
-          if (authorFolder.isDirectory) {
-            const name = authorFolder.name.split(',');
-            const surname = name[0].trim();
-            let firstName = '';
-            if (name[1]) {
-              firstName = name[1].trim();
-            }
-
-            this.db.checkIfAuthorExists(firstName, surname).then(
-              exists => {
-                if (!exists) {
-                  this.db.addAuthor({id: null, name: firstName, surname, nationality: null,
-                                     birth: null, death: null, biography: null, img: null, rating: null}).then(id => {
-                    this.addBooksOfAuthor(authorFolder.name, id);
-                  }).catch(e => {
-                    console.log('addAuthor failed: ');
-                    console.log(e);
-                  });
+      this.file.checkDir(path, 'ebook-library').then(_ => {
+        this.file.listDir(path, 'ebook-library').then(output => {
+          for (const authorFolder of output) {
+            if (authorFolder.isDirectory) {
+              if (!data.includes(authorFolder.fullPath)) {
+                const name = authorFolder.name.split(',');
+                const surname = name[0].trim();
+                let firstName = '';
+                if (name[1]) {
+                  firstName = name[1].trim();
                 }
-              }).catch(e => {
-                console.log('checkIfAuthorExists failed: ');
-                console.log(e);
-              });
+
+                const pth = authorFolder.fullPath;
+                this.db.addAuthor({id: null, name: firstName, surname, nationality: null, birth: null,
+                  death: null, biography: null, img: null, rating: null, path: pth}).then(() => {
+                    console.log('author added');
+                    console.log({firstName, surname, pth});
+                  });
+              }
+            }
           }
-        }
-        this.db.loadAuthors();
+        }).catch(e => {
+          console.log('listDir in listOfAuthors failed');
+          console.log(e);
+        });
       }).catch(e => {
-        console.log('listOfAuthors\'s listDir failed: ');
+        console.log('checkDir in listOfAuthors failed: ');
         console.log(e);
       });
-    }).catch(e => {
-      console.log('listofauthors failed:');
-      console.log(e);
+    }).catch(data => {
+      console.log('data');
+      console.log(data);
+    });
+  }
+
+  addBooksOfAuthor(authorId: number, path: string) {
+    this.db.authorsBooksPaths(authorId).then(paths => {
+      this._booksOfAuthor(path, authorId, paths);
     });
    }
 
-   addBooksOfAuthor(authorName: string, id: number, subDirPath: string = 'ebook-library/') {
-    console.log('addBooksOfAuthor');
-    console.log(subDirPath);
-    const path = this.file.externalRootDirectory + subDirPath;
+   _booksOfAuthor(folderPath: string, authorId: number, paths: string[]) {
+    let folder = folderPath.substring(1, folderPath.length - 1);
+    const path = this.file.externalRootDirectory + folder.substring(0, folder.lastIndexOf('/') + 1);
 
-    this.file.listDir(path, authorName).then(output => {
-      for (const book of output) {
-        if (book.isFile) {
-          let path2book = book.fullPath; // it's only relative path
-          path2book = path2book.substring(1, path2book.lastIndexOf('/') + 1);
-          const bookName = book.name.substring(0, book.name.lastIndexOf('.'));
+    folder = folder.substring(folder.lastIndexOf('/') + 1);
 
-          this.db.addBookIfNotExists(bookName, id, path2book);
-        } else if (book.isDirectory) {
-          console.log('isDirectory');
-          console.log('book.name: ' + book.name);
-          console.log(book.fullPath.substring(0, book.fullPath.lastIndexOf('/') + 1));
-          let sbp = book.fullPath;
-          sbp = sbp.substring(0, sbp.length - 1);
-          sbp = sbp.substring(0, sbp.lastIndexOf('/') + 1);
-          this.addBooksOfAuthor(book.name, id, sbp);
+    this.file.listDir(path, folder).then(output => {
+      for (const item of output) {
+        if (item.isFile) {
+          const bookPath = item.fullPath.substring(0, item.fullPath.lastIndexOf('/'));
+          if (!paths.includes(bookPath)) {
+            let book: Book;
+            const id = authorId;
+            const name = item.name.substring(0, item.name.lastIndexOf('.'));
+            book = {id: null,
+                    title: name,
+                    creatorId: id,
+                    originalTitle: null,
+                    annotation: null,
+                    publisher: null,
+                    published: null,
+                    genre: null,
+                    length: null,
+                    language: null,
+                    translator: null,
+                    ISBN: null,
+                    path: bookPath,
+                    progress: null,
+                    rating: null
+            };
+            this.db.addBook(book);
+          }
+        } else if (item.isDirectory) {
+          this._booksOfAuthor(item.fullPath, authorId, paths);
         }
       }
     }).catch(e => {
-      console.log('addBooksOfAuthor\'s listDir failed: ');
+      console.log('asdsa listDir failed: ');
       console.log(e);
     });
    }

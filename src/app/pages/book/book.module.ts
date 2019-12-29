@@ -7,13 +7,15 @@ import { IonicModule } from '@ionic/angular';
 import { BookPageRoutingModule } from './book-routing.module';
 
 import { BookPage } from './book.page';
+import { ApplicationPipesModuleModule } from './../../application-pipes-module/application-pipes-module.module';
 
 @NgModule({
   imports: [
     CommonModule,
     FormsModule,
     IonicModule,
-    BookPageRoutingModule
+    BookPageRoutingModule,
+    ApplicationPipesModuleModule
   ],
   declarations: [BookPage]
 })

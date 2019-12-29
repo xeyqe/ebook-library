@@ -2,7 +2,7 @@ import { DatabaseService, Author } from './../../services/database.service';
 import { FileReaderService } from './../../services/file-reader.service';
 import { Component, OnInit } from '@angular/core';
 import { Platform } from '@ionic/angular';
-0
+
 
 @Component({
   selector: 'app-authors',
@@ -13,6 +13,7 @@ export class AuthorsPage implements OnInit {
 
   authors: Author[] = [];
   author = {};
+  lastListenedBookId: string;
 
   selectedView = 'TODO';
   filterStatus = '';
@@ -33,6 +34,8 @@ export class AuthorsPage implements OnInit {
           this.authors = authors;
         });
 
+        
+
         this.plt.ready().then(() => {
           this.fr.createApplicationFolder();
           this.fr.listOfAuthors();
@@ -41,6 +44,12 @@ export class AuthorsPage implements OnInit {
           console.log(e);
         });
       }
+    });
+  }
+
+  ionViewWillEnter() {
+    this.db.getValue('as').then(data => {
+      this.lastListenedBookId = data;
     });
   }
 

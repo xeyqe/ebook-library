@@ -1,39 +1,36 @@
 <ion-header>
   <ion-toolbar>
-    <ion-title>authors</ion-title>
+    <ion-row>
+      <ion-col size="9">
+        <ion-searchbar [(ngModel)]="filterStatus"></ion-searchbar> 
+      </ion-col>
+      <ion-col size="1">
+        <ion-button *ngIf="lastListenedBookId !== null" [routerLink]="['/', 'tts', lastListenedBookId]">
+          <ion-icon slot="icon-only" name="play"></ion-icon>
+        </ion-button>
+      </ion-col>
+    </ion-row>
   </ion-toolbar>
 </ion-header>
 
 <ion-content>
-  <ion-item>
-    <ion-label position="floating">search</ion-label>
-    <ion-input type="text" [(ngModel)]="filterStatus"></ion-input>
-  </ion-item>
-  <!-- <ion-grid fixed>
-    <div style="width: fit-content;" scrollable>
-      <ion-row nowrap style="overflow: scroll !important; width: fit-content;">
 
-        <ion-col col-6 *ngFor="let character of alphabet" >
-          <button (click)="changeSelectedChar(character)">{{ character }}</button>
-        </ion-col>
-      </ion-row>
-    </div>
-  </ion-grid> -->
-
-  <ion-grid fixed>
+  <ion-grid>
     <ion-row>
       <ion-col>
         <ion-segment scrollable>
-          <ion-segment-button style="color: white" *ngFor="let character of alphabet" value="{{ character }}" (click)="changeSelectedChar(character)">
-            {{ character }}
+          <ion-segment-button *ngFor="let character of alphabet" value="{{ character }}"
+            (click)="changeSelectedChar(character)">
+            <ion-label>{{ character }}</ion-label>
           </ion-segment-button>
         </ion-segment>
       </ion-col>
     </ion-row>
   </ion-grid>
-  
-  <ion-list>
-    <ion-item button *ngFor="let author of authors | filter:filterStatus:selectedCharacter" [routerLink]="['/', 'authors', author.id]">
+
+  <ion-list class="ion-padding">
+    <ion-item *ngFor="let author of authors | filter:filterStatus:selectedCharacter"
+      [routerLink]="['/', 'authors', author.id]">
 
       <ion-label>
         <h2>{{ author.surname }}</h2>
@@ -41,4 +38,5 @@
       </ion-label>
     </ion-item>
   </ion-list>
+  
 </ion-content>

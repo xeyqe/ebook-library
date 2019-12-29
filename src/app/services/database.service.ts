@@ -4,6 +4,7 @@ import { SQLitePorter } from '@ionic-native/sqlite-porter/ngx';
 import { HttpClient } from '@angular/common/http';
 import { SQLite, SQLiteObject } from '@ionic-native/sqlite/ngx';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { Storage } from '@ionic/storage'
 
 export interface Author {
   id: number;
@@ -15,6 +16,7 @@ export interface Author {
   biography: string;
   img: string;
   rating: number;
+  path: string;
 }
 
 export interface Book {
@@ -31,7 +33,7 @@ export interface Book {
   translator: string;
   ISBN: string;
   path: string;
-  progress: number;
+  progress: string;
   rating: number;
 }
 
@@ -49,7 +51,8 @@ export class DatabaseService {
   constructor(private plt: Platform,
               private sqlitePorter: SQLitePorter,
               private sqlite: SQLite,
-              private http: HttpClient) {
+              private http: HttpClient,
+              private storage: Storage) {
 
     this.plt.ready().then(() => {
       this.sqlite.create({
@@ -107,7 +110,8 @@ export class DatabaseService {
             death: data.rows.item(i).death,
             biography: data.rows.item(i).biography,
             img: data.rows.item(i).img,
-            rating: data.rows.item(i).rating
+            rating: data.rows.item(i).rating,
+            path: data.rows.item(i).path
            });
         }
       }
@@ -119,11 +123,16 @@ export class DatabaseService {
   }
 
   addAuthor(author: Author): Promise<number> {
-    const data = [author.name, author.surname, author.nationality, author.birth, author.death, author.biography, author.img, author.rating];
+    const data = [author.name, author.surname, author.nationality, author.birth, author.death,
+                  author.biography, author.img, author.rating, author.path];
     return this.database.executeSql(`INSERT INTO authors
-     (name, surname, nationality, birth, death, biography, img, rating) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, data).then(
+     (name, surname, nationality, birth, death, biography, img, rating, path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, data).then(
       output => {
         // this.loadAuthors();
+        author.id = output.insertId;
+        const athrs = this.authors.getValue();
+        athrs.push(author);
+        this.authors.next(athrs);
         return output.insertId;
       }
     );
@@ -141,12 +150,13 @@ export class DatabaseService {
         death: data.rows.item(0).death,
         biography: data.rows.item(0).biography ? data.rows.item(0).biography.replace(/<br>/g, '\n') : data.rows.item(0).biography,
         img: data.rows.item(0).img,
-        rating: data.rows.item(0).rating
+        rating: data.rows.item(0).rating,
+        path: data.rows.item(0).path
       };
     });
   }
 
-  getBooksOfAuthor(id: number): Promise<Book[]> {
+  getBooksOfAuthor(id: number): Promise<void> {
     return this.database.executeSql('SELECT * FROM books WHERE creatorId = ? ORDER BY title ASC', [id]).then(data => {
       const books: Book[] = [];
 
@@ -171,7 +181,8 @@ export class DatabaseService {
           });
         }
       }
-      return books;
+      this.books.next(books);
+      // return books;
     });
   }
 
@@ -207,9 +218,10 @@ export class DatabaseService {
   updateAuthor(author: Author) {
     const biography = author.biography ? author.biography.replace(/\n/g, '<br>') : null;
     const data = [author.name, author.surname, author.nationality, author.birth,
-                  author.death, biography, author.img, author.rating];
+                  author.death, biography, author.img, author.rating, author.path];
     return this.database.executeSql(`UPDATE authors SET name = ?,
-     surname = ?, nationality = ?, birth = ?, death = ?, biography = ?, img = ?, rating = ? WHERE id = ${author.id}`, data).then(_ => {
+     surname = ?, nationality = ?, birth = ?, death = ?,
+     biography = ?, img = ?, rating = ?, path = ? WHERE id = ${author.id}`, data).then(_ => {
       this.loadAuthors();
     });
   }
@@ -248,12 +260,15 @@ export class DatabaseService {
       `INSERT INTO books (title, creatorId, originalTitle, annotation, publisher, published, genre,
         lenght, language, translator, ISBN, path, progress, rating)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, data).then(
-      _ => {
-        // this.loadBooks(book.creatorId);
+      output => {
+        const books = this.books.getValue();
+        book.id = output.insertId;
+        books.push(book);
+        this.books.next(books);
       }).catch(e => {
         console.log('cannot add a book');
         console.log(e);
-      })
+      });
   }
 
   checkIfAuthorExists(name: string, surname: string): Promise<boolean> {
@@ -285,14 +300,14 @@ export class DatabaseService {
                         translator: null,
                         ISBN: null,
                         path: pth,
-                        progress: 0,
+                        progress: null,
                         rating: null
           });
         }
       });
   }
 
-  updateBookProgress(id: number, progress: number) {
+  updateBookProgress(id: number, progress: string) {
     this.database.executeSql('UPDATE books SET progress = ? WHERE id = ?', [progress, id]);
   }
 
@@ -314,8 +329,40 @@ export class DatabaseService {
                                     progress = ?,
                                     rating = ?
                                     WHERE id = ${book.id}`, data).then(_ => {
-      this.loadAuthors();
+      // this.loadAuthors();
     });
   }
 
+
+  allAuthorsPaths() {
+    return this.database.executeSql('SELECT path FROM authors', []).then(data => {
+      const paths = [];
+      if (data.rows.length > 0) {
+        for (let i = 0; i < data.rows.length; i++) {
+          paths.push(data.rows.item(i).path);
+        }
+      }
+      return paths;
+    });
+  }
+
+  authorsBooksPaths(authorId: number) {
+    return this.database.executeSql('SELECT path FROM books WHERE creatorId = ?', [authorId]).then(data => {
+      const paths = [];
+      if (data.rows.length > 0) {
+        for (let i = 0; i < data.rows.length; i++) {
+          paths.push(data.rows.item(i).path);
+        }
+      }
+      return paths;
+    });
+  }
+
+  saveValue(name: string, value: any) {
+    this.storage.set(name, value);
+  }
+
+  getValue(name: string) {
+    return this.storage.get(name);
+  }
 }

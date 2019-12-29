@@ -11,8 +11,11 @@ import { ActivatedRoute } from '@angular/router';
 })
 export class BookPage implements OnInit {
   book: Book = null;
+  oldBook: Book = null;
+
   bookChanged = false;
   fileName: string;
+  ready2editing = false;
 
   dontworryiwillnameyoulater: string;
   dontworryiwillnameyoulater2: string;
@@ -34,6 +37,7 @@ export class BookPage implements OnInit {
               this.fileName = data.title;
 
               this.book = data;
+              this.oldBook = data;
               this.dontworryiwillnameyoulater = this.book.id + '0';
               this.dontworryiwillnameyoulater2 = this.book.id + '1';
             }).catch(e => {
@@ -47,7 +51,9 @@ export class BookPage implements OnInit {
 
     updateBook() {
       this.db.updateBook(this.book).then(() => {
+        this.oldBook = { ...this.book};
         this.bookChanged = false;
+        this.ready2editing = !this.ready2editing;
         this.fs.renameFile(this.book.path, this.fileName + '.txt', this.book.title + '.txt').then(() => {
           this.fileName = this.book.title;
         }).catch(e => {
@@ -57,6 +63,14 @@ export class BookPage implements OnInit {
         console.log('updateBook failed: ');
         console.log(e);
       });
+    }
+
+    editable() {
+      if (this.ready2editing) {
+        this.book = { ...this.oldBook};
+      }
+      this.ready2editing = !this.ready2editing;
+      this.bookChanged = false;
     }
 
 }

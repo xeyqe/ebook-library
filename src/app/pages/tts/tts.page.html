@@ -2,13 +2,15 @@
   <ion-toolbar>
     <ion-row>
       <ion-col>
-          <ion-title>tts</ion-title>
+        <ion-label>{{ title }}</ion-label>
       </ion-col>
       <ion-col>
         <ion-button (click)="changeSpeed('-')">
           <ion-icon slot="icon-only" name="remove"></ion-icon>
         </ion-button>
-        {{ speed }}
+        <ion-label>
+          {{ speed }}
+        </ion-label>
         <ion-button (click)="changeSpeed('+')">
           <ion-icon slot="icon-only" name="add"></ion-icon>
         </ion-button>
@@ -21,7 +23,6 @@
 <ion-content (pinchout)="increaseFontSize()"
 (pinchin)="decreaseFontSize()">
   <div *ngIf="spritzBoolean" [style.fontSize]="fontSize">
-
     <ion-row>
       <ion-col size="2"></ion-col>
       <ion-col size="6">
@@ -46,9 +47,9 @@
         <ion-label class="red" style="float: left;">|</ion-label>
       </ion-col>
     </ion-row>
-
   </div>
-
+  <ion-textarea readonly="true">{{ sentense }}</ion-textarea>
+  
 </ion-content>
 
 <ion-footer>
