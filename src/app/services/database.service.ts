@@ -96,7 +96,7 @@ export class DatabaseService {
   }
 
   loadAuthors() {
-    return this.database.executeSql('SELECT * FROM authors ORDER BY surname ASC', []).then(data => {
+    return this.database.executeSql('SELECT * FROM authors ORDER BY surname COLLATE NOCASE ASC', []).then(data => {
       const authors: Author[] = [];
 
       if (data.rows.length > 0) {
@@ -128,7 +128,6 @@ export class DatabaseService {
     return this.database.executeSql(`INSERT INTO authors
      (name, surname, nationality, birth, death, biography, img, rating, path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, data).then(
       output => {
-        // this.loadAuthors();
         author.id = output.insertId;
         const athrs = this.authors.getValue();
         athrs.push(author);
@@ -182,7 +181,6 @@ export class DatabaseService {
         }
       }
       this.books.next(books);
-      // return books;
     });
   }
 

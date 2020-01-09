@@ -3,9 +3,8 @@ import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
 import { ActivatedRoute } from '@angular/router';
 import { FileReaderService } from './../../services/file-reader.service';
 import { DatabaseService } from './../../services/database.service';
-import { BackgroundMode } from '@ionic-native/background-mode/ngx';
 import { Storage } from '@ionic/storage';
-
+import { LocalNotifications } from '@ionic-native/local-notifications/ngx';
 
 @Component({
   selector: 'app-tts',
@@ -20,6 +19,9 @@ export class TtsPage implements OnInit, OnDestroy {
   dot = '';
   speed = 3.00;
   fontSize = '20px';
+  authorName = '';
+  language = 'cs-CZ';
+
 
   texts: string[];
   progress: number;
@@ -31,12 +33,13 @@ export class TtsPage implements OnInit, OnDestroy {
   sentense = '';
 
 
+
   constructor(private tts: TextToSpeech,
               private route: ActivatedRoute,
               private fs: FileReaderService,
               private db: DatabaseService,
-              private bg: BackgroundMode,
-              private strg: Storage) { }
+              private strg: Storage,
+              private notif: LocalNotifications) { }
 
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
@@ -44,11 +47,17 @@ export class TtsPage implements OnInit, OnDestroy {
       this.db.saveValue('as', bookId);
       if (bookId[bookId.length - 1] === '0') {
         this.spritzBoolean = false;
+
+        this.notif.on('pause').subscribe(_ => {
+          console.log('pause');
+          this.onOff();
+        });
+
         this.strg.get('speed').then(val => {
           if (val) {
             this.speed = val;
           } else {
-            this.speed = 3.00;
+            this.speed = 30;
           }
         }).catch(e => {
           console.log('storage failed: ');
@@ -92,26 +101,23 @@ export class TtsPage implements OnInit, OnDestroy {
             this.progress = parseInt(book.progress.split('/')[0], 10);
           }
           this.getText();
+
+          this.db.getAuthor(book.creatorId).then(author => {
+            this.authorName = author.name;
+          });
         }).catch(e => {
           console.log('getBook failed: ');
           console.log(e);
         });
       }
     });
-    // this.bg.enable();
   }
 
 
   getText() {
-    this.fs.readTextFile(this.path, this.title).then(str => {
-      // text.replace('\\r\\n', '\n');
-      // if (str.includes('\r\n')) {
-      //   this.texts = str.split('\r\n');
-      //   this.dot = '';
-      // } else {
+    this.fs.readTextFile(this.path).then(str => {
       this.texts = str.split(/\.\s/g);
       this.dot = '.';
-      // }
       const countOfWords = str.match(/\S+/g).length;
       const countOfWhiteSpaces = str.match(/\s/g).length;
 
@@ -141,29 +147,61 @@ export class TtsPage implements OnInit, OnDestroy {
       }
     } else {
       if (this.isSpeaking) {
+        this.notif.update({
+          id: 1,
+          sticky: false
+        });
         this.tts.speak('');
         this.db.updateBookProgress(this.id, this.progress + '/' + this.texts.length);
       } else {
+        this.launchNotification();
         this.speak();
       }
       this.isSpeaking = !this.isSpeaking;
     }
   }
 
+  launchNotification() {
+    this.notif.schedule({
+      id: 1,
+      title: this.authorName,
+      text: this.title,
+      sticky: true,
+      sound: null,
+      wakeup: false,
+      color: 'black',
+      progressBar: { value: this.percents()},
+      actions: [
+          { id: 'pause', title: '||' }
+      ]
+    });
+
+  }
+
+  percents() {
+    return (this.progress / this.texts.length) * 100;
+  }
+
   speak() {
-    if (this.texts !== null) {
+    if (this.texts) {
+      let text2Speak = '';
+      for (let i = this.progress; i < this.progress + 5; i++) {
+        if (this.texts[i]) {
+          text2Speak = text2Speak + this.texts[i] + '.';
+        }
+      }
       this.tts.speak({
-        text: this.texts[this.progress], // + this.dot,
-        locale: 'cs-CZ',
-        rate: this.speed}).then(_ => {
+        text: text2Speak,
+        locale: this.language,
+        rate: this.speed / 10}).then(_ => {
           if (this.progress < this.texts.length) {
-            this.progress++;
-            if (this.progress % 5 === 0) {
-              this.db.updateBookProgress(this.id, this.progress + '/' + this.texts.length);
-            }
+            this.progress += 5;
+            this.notif.update({id: 1, progressBar: {value: this.percents()}});
+            this.db.updateBookProgress(this.id, this.progress + '/' + this.texts.length);
             this.speak();
           }
         }).catch(reason => {
+          console.log('tts speak failed: ');
           console.log(reason);
         });
     }
@@ -185,20 +223,18 @@ export class TtsPage implements OnInit, OnDestroy {
 
   changeProgress(event) {
     this.progress = event.detail.value;
+    this.notif.update({id: 1, progressBar: {value: this.percents()}});
   }
 
   stopStartSpeaking() {
     if (!this.spritzBoolean) {
       if (this.isSpeaking) {
-        this.bg.moveToForeground();
         this.tts.speak('').then(() => {
           this.speak();
         }).catch(e => {
           console.log('stopStartSpeaking failed: ');
           console.log(e);
         });
-      } else {
-        this.bg.moveToBackground();
       }
     }
   }
@@ -281,25 +317,29 @@ export class TtsPage implements OnInit, OnDestroy {
   }
 
   changeSpeed(str: string) {
-    if (str === '-') {
-      this.spritzBoolean ? this.speed -= 10 : this.speed -= 0.1;
-    } else {
-      this.spritzBoolean ? this.speed += 10 : this.speed += 0.1;
+    if (this.speed > 0) {
+      if (str === '-') {
+        this.spritzBoolean ? this.speed -= 10 : this.speed -= 1;
+      } else {
+        this.spritzBoolean ? this.speed += 10 : this.speed += 1;
+      }
+
+      this.spritzBoolean ? this.strg.set('spritzSpeed', this.speed) : this.strg.set('speed', this.speed);
     }
-    this.speed = Math.floor(this.speed * 10) / 10;
-    this.spritzBoolean ? this.strg.set('spritzSpeed', this.speed) : this.strg.set('speed', this.speed);
   }
 
-  move2Background() {
-    this.bg.moveToBackground();
-    setTimeout(() => {
-      this.bg.moveToForeground();
-    }, 2000);
+  changeLanguage() {
+    if (this.language === 'cs-CZ') {
+      this.language = 'en-US';
+    } else {
+      this.language = 'cs-CZ';
+    }
   }
-
 
   ngOnDestroy() {
-    this.db.updateBookProgress(this.id, this.progress + '/' + this.texts.length);
+    if (this.texts) {
+      this.db.updateBookProgress(this.id, this.progress + '/' + this.texts.length);
+    }
   }
 
 }

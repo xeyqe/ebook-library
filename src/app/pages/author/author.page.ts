@@ -20,7 +20,8 @@ export class AuthorPage implements OnInit {
 
   constructor(private route: ActivatedRoute,
               private db: DatabaseService,
-              private fs: FileReaderService) { }
+              private fs: FileReaderService) {
+               }
 
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
@@ -48,8 +49,6 @@ export class AuthorPage implements OnInit {
             console.log('getAuthor failed: ');
             console.log(e);
           });
-
-          
         }
       });
     });

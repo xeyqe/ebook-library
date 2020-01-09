@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { DatabaseService, Book } from './../../services/database.service';
-import { FileReaderService } from './../../services/file-reader.service';
 import { ActivatedRoute } from '@angular/router';
 
 
@@ -23,13 +22,12 @@ export class BookPage implements OnInit {
 
 
   constructor(private route: ActivatedRoute,
-              private db: DatabaseService,
-              private fs: FileReaderService) { }
+              private db: DatabaseService) { }
 
     ngOnInit() {
       this.route.paramMap.subscribe(params => {
-        const autId = params.get('id');
-        const id = parseInt(autId, 10);
+        const bookId = params.get('id');
+        const id = parseInt(bookId, 10);
         this.db.getDatabaseState().subscribe(ready => {
           if (ready) {
 
@@ -40,6 +38,7 @@ export class BookPage implements OnInit {
               this.oldBook = data;
               this.dontworryiwillnameyoulater = this.book.id + '0';
               this.dontworryiwillnameyoulater2 = this.book.id + '1';
+
             }).catch(e => {
               console.log('getBook failed: ');
               console.log(e);
@@ -54,11 +53,6 @@ export class BookPage implements OnInit {
         this.oldBook = { ...this.book};
         this.bookChanged = false;
         this.ready2editing = !this.ready2editing;
-        this.fs.renameFile(this.book.path, this.fileName + '.txt', this.book.title + '.txt').then(() => {
-          this.fileName = this.book.title;
-        }).catch(e => {
-          console.log(e);
-        });
       }).catch(e => {
         console.log('updateBook failed: ');
         console.log(e);

@@ -83,7 +83,7 @@ export class FileReaderService {
 
 
   listOfAuthors() {
-    this.db.loadAuthors(); //todo
+    this.db.loadAuthors();
     const path = this.file.externalRootDirectory;
     this.db.allAuthorsPaths().then(data => {
 
@@ -124,6 +124,7 @@ export class FileReaderService {
 
   addBooksOfAuthor(authorId: number, path: string) {
     this.db.authorsBooksPaths(authorId).then(paths => {
+      console.log(paths);
       this._booksOfAuthor(path, authorId, paths);
     });
    }
@@ -135,10 +136,13 @@ export class FileReaderService {
     folder = folder.substring(folder.lastIndexOf('/') + 1);
 
     this.file.listDir(path, folder).then(output => {
+      console.log(output);
       for (const item of output) {
         if (item.isFile) {
-          const bookPath = item.fullPath.substring(0, item.fullPath.lastIndexOf('/'));
+          const bookPath = item.fullPath;
+          console.log(bookPath);
           if (!paths.includes(bookPath)) {
+            console.log('juchu');
             let book: Book;
             const id = authorId;
             const name = item.name.substring(0, item.name.lastIndexOf('.'));
@@ -170,12 +174,18 @@ export class FileReaderService {
     });
    }
 
-   readTextFile(path: string, title: string): Promise<string> {
-    return this.file.readAsText(this.file.externalRootDirectory + path, title + '.txt');
+   _getPathAndFilename(fullPath: string) {
+    const path = fullPath.substring(0, fullPath.lastIndexOf('/') + 1);
+    const fileName = fullPath.substring(fullPath.lastIndexOf('/') + 1);
+    console.log([path, fileName]);
+    return [path, fileName];
    }
 
-   renameFile(path: string, fileName: string, newFileName: string): Promise<any> {
-     const fullPath = this.file.externalRootDirectory + path;
-     return this.file.moveFile(fullPath, fileName, fullPath, newFileName);
+   readTextFile(fullPath: string): Promise<string> {
+     const array = this._getPathAndFilename(fullPath);
+     const path = array[0];
+     const fileName = array[1];
+     return this.file.readAsText(this.file.externalRootDirectory + path, fileName);
    }
+
 }

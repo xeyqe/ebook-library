@@ -61,16 +61,12 @@
       </ion-item>
     </ion-grid>
     <ion-list>
-        <ion-item button *ngFor="let book of books" [routerLink]="['/', 'book', book.id]">
+        <ion-item button *ngFor="let book of books" [routerLink]="['/book', book.id]">
           <ion-label>
-            <ion-row>
-              <ion-col size="10">
-                <h2>{{ book.title }}</h2>
-              </ion-col>
-              <ion-col>
-                {{ book.progress | percent2:book.progress }}
-              </ion-col>
-            </ion-row>
+            <div class="ion-text-wrap">
+              <h2>{{ book.title }}</h2>
+            </div>
+            <ion-progress-bar [value]="(book.progress | percent2:book.progress) / 100"></ion-progress-bar>
           </ion-label>
         </ion-item>
       </ion-list>

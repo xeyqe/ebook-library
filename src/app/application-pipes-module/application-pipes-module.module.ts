@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { PercentPipe } from './../percent2.pipe';
+import { PercentPipe } from '../pipes/percent2.pipe';
 
 
 @NgModule({

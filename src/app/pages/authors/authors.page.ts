@@ -14,29 +14,29 @@ export class AuthorsPage implements OnInit {
   authors: Author[] = [];
   author = {};
   lastListenedBookId: string;
+  subscribtion;
 
   selectedView = 'TODO';
   filterStatus = '';
-  alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
-              'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R',
-              'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+  alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
+              'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q',
+              'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#'];
   selectedCharacter = 'A';
 
   constructor(private db: DatabaseService,
               private fr: FileReaderService,
-              private plt: Platform
-    ) { }
+              private platform: Platform) {
+     }
 
   ngOnInit() {
+    console.log('authors ngOnIni');
     this.db.getDatabaseState().subscribe(ready => {
       if (ready) {
         this.db.getAuthors().subscribe(authors => {
           this.authors = authors;
         });
 
-        
-
-        this.plt.ready().then(() => {
+        this.platform.ready().then(() => {
           this.fr.createApplicationFolder();
           this.fr.listOfAuthors();
         }).catch(e => {

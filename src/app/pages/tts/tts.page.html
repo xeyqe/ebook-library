@@ -9,13 +9,14 @@
           <ion-icon slot="icon-only" name="remove"></ion-icon>
         </ion-button>
         <ion-label>
-          {{ speed }}
+          {{ speed / 10 }}
         </ion-label>
         <ion-button (click)="changeSpeed('+')">
           <ion-icon slot="icon-only" name="add"></ion-icon>
         </ion-button>
       </ion-col>
     </ion-row>
+    <ion-button (click)="changeLanguage()"> {{ language }} </ion-button>
   
   </ion-toolbar>
 </ion-header>

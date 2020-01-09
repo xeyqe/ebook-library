@@ -12,7 +12,7 @@ export class PercentPipe implements PipeTransform {
     const divided = progress.split('/');
     const lowerValue = parseInt(divided[0], 10);
     const higherValue = parseInt(divided[1], 10);
-    const output: string = Math.floor(lowerValue / higherValue * 100) + '%';
+    const output = Math.floor(lowerValue / higherValue * 100);
 
     return output;
   }

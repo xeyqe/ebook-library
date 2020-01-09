@@ -5,7 +5,7 @@
         <ion-searchbar [(ngModel)]="filterStatus"></ion-searchbar> 
       </ion-col>
       <ion-col size="1">
-        <ion-button *ngIf="lastListenedBookId !== null" [routerLink]="['/', 'tts', lastListenedBookId]">
+        <ion-button *ngIf="lastListenedBookId !== null" [routerLink]="['/tts', lastListenedBookId]">
           <ion-icon slot="icon-only" name="play"></ion-icon>
         </ion-button>
       </ion-col>
@@ -30,8 +30,7 @@
 
   <ion-list class="ion-padding">
     <ion-item *ngFor="let author of authors | filter:filterStatus:selectedCharacter"
-      [routerLink]="['/', 'authors', author.id]">
-
+       [routerLink]="['/author', author.id]">
       <ion-label>
         <h2>{{ author.surname }}</h2>
         <p>{{ author.name }}</p>

@@ -8,7 +8,7 @@ const routes: Routes = [
     loadChildren: () => import('./pages/authors/authors.module').then( m => m.AuthorsPageModule)
   },
   {
-    path: 'authors/:id',
+    path: 'author/:id',
     loadChildren: () => import('./pages/author/author.module').then( m => m.AuthorPageModule)
   },
   {

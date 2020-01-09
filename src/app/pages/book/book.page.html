@@ -88,7 +88,7 @@
         <ion-col *ngIf="book.progress || ready2editing">
           <ion-item>
             <ion-label position="stacked">Progress</ion-label>
-            <ion-input disabled=true>{{ book.progress | percent2:book.progress }}</ion-input>
+            <ion-input disabled=true>{{ book.progress | percent2:book.progress }} %</ion-input>
           </ion-item>
         </ion-col>
         <ion-col *ngIf="book.rating || ready2editing">
