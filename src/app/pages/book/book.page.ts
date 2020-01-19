@@ -67,4 +67,9 @@ export class BookPage implements OnInit {
       this.bookChanged = false;
     }
 
+    changeLanguage(lang: any) {
+      this.book.language = lang;
+      this.bookChanged = true;
+    }
+
 }

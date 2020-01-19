@@ -67,7 +67,12 @@
         <ion-col *ngIf="book.language || ready2editing">
           <ion-item>
             <ion-label position="floating">Language</ion-label>
-            <ion-input disabled={{!ready2editing}} (change)="bookChanged = true" [(ngModel)]="book.language"></ion-input>
+            <ion-select interface="popover" disabled={{!ready2editing}} value={{book.language}} (ionChange)="changeLanguage($event.detail.value)">
+              <ion-select-option value="cs-CZ">Česky</ion-select-option>
+              <ion-select-option value="en-US">English</ion-select-option>
+              <ion-select-option value="de-DE">Deutsch</ion-select-option>
+              <ion-select-option value="ru-RU">русский</ion-select-option>
+            </ion-select>
           </ion-item>
         </ion-col>
         <ion-col *ngIf="book.translator || ready2editing">

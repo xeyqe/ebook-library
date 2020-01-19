@@ -8,15 +8,21 @@
         <ion-button (click)="changeSpeed('-')">
           <ion-icon slot="icon-only" name="remove"></ion-icon>
         </ion-button>
-        <ion-label>
+        <ion-label *ngIf="!spritzBoolean">
           {{ speed / 10 }}
         </ion-label>
-        <ion-button (click)="changeSpeed('+')">
-          <ion-icon slot="icon-only" name="add"></ion-icon>
-        </ion-button>
+        <ion-label *ngIf="spritzBoolean">
+          {{ speed }}
+        </ion-label>
+     
+        <ion-col>
+          <ion-button (click)="changeSpeed('+')">
+            <ion-icon slot="icon-only" name="add"></ion-icon>
+          </ion-button>
+        </ion-col>
+        
       </ion-col>
     </ion-row>
-    <ion-button (click)="changeLanguage()"> {{ language }} </ion-button>
   
   </ion-toolbar>
 </ion-header>
@@ -58,13 +64,16 @@
     <ion-label class="white" *ngIf="progress">
       {{ progress }}
     </ion-label>
+    <ion-label class="white" *ngIf="!progress">
+      0
+    </ion-label>
 
     <ion-item>
       <ion-button (click)="backward()">
         <ion-icon slot="icon-only" name="rewind"></ion-icon>
       </ion-button>
 
-      <ion-button (click)="onOff()">
+      <ion-button [disabled]="!initialized" (click)="onOff()">
         <ion-icon slot="icon-only" name="play" *ngIf="!isSpeaking"></ion-icon>
         <ion-icon slot="icon-only" name="pause" *ngIf="isSpeaking"></ion-icon>
       </ion-button>
@@ -75,12 +84,12 @@
 
     </ion-item>
 
-    <ion-label class="white" *ngIf="texts">
-      {{ texts.length }}
+    <ion-label class="white" *ngIf="textsLength">
+      {{ textsLength }}
     </ion-label>
   </ion-row>
   <ion-item>
-    <ion-range *ngIf="texts" [value]="progress" min="0" [max]="texts.length" step="1" color="primary"
+    <ion-range *ngIf="textsLength" [value]="progress" min="0" [max]="textsLength" step="1" color="primary"
       (ionChange)="changeProgress($event)" (ionBlur)="stopStartSpeaking()">
     </ion-range>
   </ion-item>

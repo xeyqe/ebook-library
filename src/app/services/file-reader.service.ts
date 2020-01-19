@@ -124,7 +124,6 @@ export class FileReaderService {
 
   addBooksOfAuthor(authorId: number, path: string) {
     this.db.authorsBooksPaths(authorId).then(paths => {
-      console.log(paths);
       this._booksOfAuthor(path, authorId, paths);
     });
    }
@@ -136,13 +135,10 @@ export class FileReaderService {
     folder = folder.substring(folder.lastIndexOf('/') + 1);
 
     this.file.listDir(path, folder).then(output => {
-      console.log(output);
       for (const item of output) {
         if (item.isFile) {
           const bookPath = item.fullPath;
-          console.log(bookPath);
           if (!paths.includes(bookPath)) {
-            console.log('juchu');
             let book: Book;
             const id = authorId;
             const name = item.name.substring(0, item.name.lastIndexOf('.'));
@@ -155,7 +151,7 @@ export class FileReaderService {
                     published: null,
                     genre: null,
                     length: null,
-                    language: null,
+                    language: 'cs-CZ',
                     translator: null,
                     ISBN: null,
                     path: bookPath,
@@ -169,7 +165,7 @@ export class FileReaderService {
         }
       }
     }).catch(e => {
-      console.log('asdsa listDir failed: ');
+      console.log('listDir failed: ');
       console.log(e);
     });
    }

@@ -29,7 +29,6 @@ export class AuthorsPage implements OnInit {
      }
 
   ngOnInit() {
-    console.log('authors ngOnIni');
     this.db.getDatabaseState().subscribe(ready => {
       if (ready) {
         this.db.getAuthors().subscribe(authors => {

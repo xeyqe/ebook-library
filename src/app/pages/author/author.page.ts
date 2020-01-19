@@ -30,14 +30,12 @@ export class AuthorPage implements OnInit {
 
       this.db.getDatabaseState().subscribe(ready => {
         if (ready) {
-          console.log('database ready');
           this.db.getAuthor(id).then(data => {
             this.author = data;
             this.oldAuthor = data;
 
             this.db.getBooksOfAuthor(id).then(_ => {
               this.db.getBooks().subscribe(books => {
-                console.log(books);
                 this.books = books;
                 this.fs.addBooksOfAuthor(id, data.path);
               });

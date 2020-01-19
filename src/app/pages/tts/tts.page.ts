@@ -1,10 +1,9 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
 import { ActivatedRoute } from '@angular/router';
 import { FileReaderService } from './../../services/file-reader.service';
 import { DatabaseService } from './../../services/database.service';
 import { Storage } from '@ionic/storage';
-import { LocalNotifications } from '@ionic-native/local-notifications/ngx';
+import { TtsService } from './../../services/tts.service';
 
 @Component({
   selector: 'app-tts',
@@ -16,11 +15,11 @@ export class TtsPage implements OnInit, OnDestroy {
   path: string;
   title: string;
   isSpeaking = false;
-  dot = '';
-  speed = 3.00;
+  speed = 30;
+
   fontSize = '20px';
   authorName = '';
-  language = 'cs-CZ';
+  textsLength = 0;
 
 
   texts: string[];
@@ -32,14 +31,16 @@ export class TtsPage implements OnInit, OnDestroy {
   spritzPostText: string;
   sentense = '';
 
+  initialized = false;
 
 
-  constructor(private tts: TextToSpeech,
+
+  constructor(
               private route: ActivatedRoute,
               private fs: FileReaderService,
               private db: DatabaseService,
               private strg: Storage,
-              private notif: LocalNotifications) { }
+              private sp: TtsService) { }
 
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
@@ -47,22 +48,6 @@ export class TtsPage implements OnInit, OnDestroy {
       this.db.saveValue('as', bookId);
       if (bookId[bookId.length - 1] === '0') {
         this.spritzBoolean = false;
-
-        this.notif.on('pause').subscribe(_ => {
-          console.log('pause');
-          this.onOff();
-        });
-
-        this.strg.get('speed').then(val => {
-          if (val) {
-            this.speed = val;
-          } else {
-            this.speed = 30;
-          }
-        }).catch(e => {
-          console.log('storage failed: ');
-          console.log(e);
-        });
       } else {
         this.spritzBoolean = true;
         this.strg.get('spritzSpeed').then(val => {
@@ -71,7 +56,6 @@ export class TtsPage implements OnInit, OnDestroy {
           } else {
             this.speed = 300;
           }
-          console.log(val);
         }).catch(e => {
           console.log('storage failed: ');
           console.log(e);
@@ -87,9 +71,7 @@ export class TtsPage implements OnInit, OnDestroy {
       bookId = bookId.substring(0, bookId.length - 1);
       this.id = parseInt(bookId, 10);
 
-      if (this.spritzBoolean) {
-        this.tts.speak('');
-      }
+      this.sp.stopSpeaking();
     });
 
     this.db.getDatabaseState().subscribe(ready => {
@@ -97,14 +79,30 @@ export class TtsPage implements OnInit, OnDestroy {
         this.db.getBook(this.id).then(book => {
           this.path = book.path;
           this.title = book.title;
+
           if (book.progress) {
-            this.progress = parseInt(book.progress.split('/')[0], 10);
+            const progressArray = book.progress.split('/');
+            this.progress = parseInt(progressArray[0], 10);
           }
-          this.getText();
+          if (this.spritzBoolean) {
+            this.getText();
+          } else {
+              this.sp.startSpeaking(book.id).then(_ => {
+                this.sp.getProgress().subscribe(progress => {
+                  this.progress = progress;
+                });
+                this.sp.getSpeed().subscribe(speed => {
+                  this.speed = speed;
+                });
+                this.textsLength = this.sp.getTextsLenght();
+                this.initialized = true;
+              });
+          }
 
           this.db.getAuthor(book.creatorId).then(author => {
-            this.authorName = author.name;
+            this.authorName = author.name + ' ' + author.surname;
           });
+          this.initialized = true;
         }).catch(e => {
           console.log('getBook failed: ');
           console.log(e);
@@ -116,8 +114,8 @@ export class TtsPage implements OnInit, OnDestroy {
 
   getText() {
     this.fs.readTextFile(this.path).then(str => {
-      this.texts = str.split(/\.\s/g);
-      this.dot = '.';
+      this.texts = this.sp.getTexts(str);
+      this.textsLength = this.texts.length;
       const countOfWords = str.match(/\S+/g).length;
       const countOfWhiteSpaces = str.match(/\s/g).length;
 
@@ -147,95 +145,60 @@ export class TtsPage implements OnInit, OnDestroy {
       }
     } else {
       if (this.isSpeaking) {
-        this.notif.update({
-          id: 1,
-          sticky: false
-        });
-        this.tts.speak('');
-        this.db.updateBookProgress(this.id, this.progress + '/' + this.texts.length);
+        this.sp.stopSpeaking();
       } else {
-        this.launchNotification();
-        this.speak();
+        this.sp.speak();
       }
       this.isSpeaking = !this.isSpeaking;
     }
   }
 
-  launchNotification() {
-    this.notif.schedule({
-      id: 1,
-      title: this.authorName,
-      text: this.title,
-      sticky: true,
-      sound: null,
-      wakeup: false,
-      color: 'black',
-      progressBar: { value: this.percents()},
-      actions: [
-          { id: 'pause', title: '||' }
-      ]
-    });
-
-  }
-
-  percents() {
-    return (this.progress / this.texts.length) * 100;
-  }
-
-  speak() {
-    if (this.texts) {
-      let text2Speak = '';
-      for (let i = this.progress; i < this.progress + 5; i++) {
-        if (this.texts[i]) {
-          text2Speak = text2Speak + this.texts[i] + '.';
-        }
-      }
-      this.tts.speak({
-        text: text2Speak,
-        locale: this.language,
-        rate: this.speed / 10}).then(_ => {
-          if (this.progress < this.texts.length) {
-            this.progress += 5;
-            this.notif.update({id: 1, progressBar: {value: this.percents()}});
-            this.db.updateBookProgress(this.id, this.progress + '/' + this.texts.length);
-            this.speak();
-          }
-        }).catch(reason => {
-          console.log('tts speak failed: ');
-          console.log(reason);
-        });
-    }
-  }
-
   backward() {
-    if (this.progress - 1 > 0) {
-      this.progress -= 1;
-      this.stopStartSpeaking();
+    if (!this.progress) {
+      this.progress = 0;
     }
+    if (this.spritzBoolean) {
+      this.progress -= 1;
+    } else {
+      this.sp.changeProgress(this.progress - 1);
+    }
+    this.stopStartSpeaking();
   }
 
   forward() {
-    if (this.progress < this.texts.length) {
-      this.progress += 1;
-      this.stopStartSpeaking();
+    if (!this.progress) {
+      this.progress = 0;
     }
+    if (this.spritzBoolean) {
+      this.progress += 1;
+    } else {
+      this.sp.changeProgress(this.progress + 1);
+    }
+    this.stopStartSpeaking();
   }
 
   changeProgress(event) {
-    this.progress = event.detail.value;
-    this.notif.update({id: 1, progressBar: {value: this.percents()}});
+    const progress = event.detail.value;
+    if (this.spritzBoolean) {
+      this.progress = progress;
+    } else {
+      this.sp.changeProgress(progress);
+    }
   }
 
   stopStartSpeaking() {
     if (!this.spritzBoolean) {
       if (this.isSpeaking) {
-        this.tts.speak('').then(() => {
-          this.speak();
-        }).catch(e => {
-          console.log('stopStartSpeaking failed: ');
-          console.log(e);
+        this.sp.stopSpeaking().then(_ => {
+          this.sp.speak();
         });
       }
+    } else {
+      if (this.isSpeaking) {
+        this.isSpeaking = false;
+      }
+      this.sentense = this.texts[this.progress] + '.';
+      this.printWord(this.sentense.split(/\ /)[0]);
     }
   }
 
@@ -252,7 +215,6 @@ export class TtsPage implements OnInit, OnDestroy {
 
       const paragraph = this.texts[i];
       slova = paragraph.split(/[\s]+/);
-      console.log(slova);
       for (const word of slova) {
         if (!this.isSpeaking) {
           break;
@@ -317,24 +279,29 @@ export class TtsPage implements OnInit, OnDestroy {
   }
 
   changeSpeed(str: string) {
-    if (this.speed > 0) {
+    const speed = this.speed;
+    if (speed > 0) {
       if (str === '-') {
-        this.spritzBoolean ? this.speed -= 10 : this.speed -= 1;
+        if (this.spritzBoolean) {
+          this.speed = speed - 10;
+        } else {
+          this.sp.changeSpeed(speed - 1);
+        }
       } else {
-        this.spritzBoolean ? this.speed += 10 : this.speed += 1;
+        if (this.spritzBoolean) {
+          this.speed = speed + 10;
+        } else {
+          this.sp.changeSpeed(speed + 1);
+        }
       }
 
-      this.spritzBoolean ? this.strg.set('spritzSpeed', this.speed) : this.strg.set('speed', this.speed);
+
+      if (this.spritzBoolean) {
+        this.strg.set('spritzSpeed', this.speed);
+      }
     }
   }
 
-  changeLanguage() {
-    if (this.language === 'cs-CZ') {
-      this.language = 'en-US';
-    } else {
-      this.language = 'cs-CZ';
-    }
-  }
 
   ngOnDestroy() {
     if (this.texts) {

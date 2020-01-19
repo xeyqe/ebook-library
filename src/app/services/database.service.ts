@@ -209,7 +209,9 @@ export class DatabaseService {
 
   deleteAuthor(id: number) {
     return this.database.executeSql('DELETE FROM authors WHERE id = ?', [id]).then(_ => {
-      this.loadAuthors();
+      this.database.executeSql('DELETE FROM books WHERE creatorId = ?', [id]).then(() => {
+        this.loadAuthors();
+      });
     });
   }
 
@@ -281,31 +283,9 @@ export class DatabaseService {
     );
   }
 
-  addBookIfNotExists(name: string, authorId: number, pth: string) {
-    this.database.executeSql('SELECT * FROM books WHERE title = ? AND creatorId = ?', [name, authorId]).then(
-      data => {
-        if (data.rows.length === 0) {
-          this.addBook({id: null,
-                        title: name,
-                        creatorId: authorId,
-                        originalTitle: null,
-                        annotation: null,
-                        publisher: null,
-                        published: null,
-                        genre: null,
-                        length: null,
-                        language: null,
-                        translator: null,
-                        ISBN: null,
-                        path: pth,
-                        progress: null,
-                        rating: null
-          });
-        }
-      });
-  }
 
   updateBookProgress(id: number, progress: string) {
+    console.log('updatebook: ' + id + ' ' + progress);
     this.database.executeSql('UPDATE books SET progress = ? WHERE id = ?', [progress, id]);
   }
 
