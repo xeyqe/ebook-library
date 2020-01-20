@@ -9,6 +9,9 @@
         <ion-icon *ngIf="!ready2editing" slot="icon-only" name="create"></ion-icon>
         <ion-icon *ngIf="ready2editing" slot="icon-only" name="close"></ion-icon>
       </ion-button>
+      <ion-button (click)="getFromWikipedia()">
+        W
+      </ion-button>
     </ion-row>
   </ion-toolbar>
 </ion-header>
@@ -17,6 +20,9 @@
   
   <div *ngIf="author !== null">
     <ion-grid>
+      <div *ngIf="author.img">
+        <ion-img [src]="author.img"></ion-img>
+      </div>
       <ion-row>
         <ion-col  *ngIf="author.name || ready2editing">
           <ion-item >
@@ -60,19 +66,25 @@
         <ion-textarea disabled={{!ready2editing}} autoGrow="true" (change)="authorChanged = true" [(ngModel)]="author.biography"></ion-textarea>
       </ion-item>
     </ion-grid>
-    <ion-list>
-        <ion-item button *ngFor="let book of books" [routerLink]="['/book', book.id]">
-          <ion-label>
-            <div class="ion-text-wrap">
-              <h2>{{ book.title }}</h2>
-            </div>
-            <ion-progress-bar [value]="(book.progress | percent2:book.progress) / 100"></ion-progress-bar>
-          </ion-label>
-        </ion-item>
-      </ion-list>
-    
+    <ion-list *ngIf="!wikiOutputBoolean">
+      <ion-item button *ngFor="let book of books" [routerLink]="['/book', book.id]">
+        <ion-label>
+          <div class="ion-text-wrap">
+            <h2>{{ book.title }}</h2>
+          </div>
+          <ion-progress-bar [value]="(book.progress | percent2:book.progress) / 100"></ion-progress-bar>
+        </ion-label>
+      </ion-item>
+    </ion-list>
 
-    
+    <ion-list *ngIf="wikiOutputBoolean">
+      <ion-item button *ngFor="let output of fromWiki" (click)="log(output)">
+        <ion-grid>
+          <ion-row><span>{{ output.title }}</span></ion-row>
+          <ion-row><p><small> {{ unhtml(output.snippet) }}...</small></p></ion-row>
+        </ion-grid>
+      </ion-item>
+    </ion-list>
 
   </div>
 </ion-content>

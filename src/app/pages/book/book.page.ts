@@ -19,8 +19,6 @@ export class BookPage implements OnInit {
   dontworryiwillnameyoulater: string;
   dontworryiwillnameyoulater2: string;
 
-
-
   constructor(private route: ActivatedRoute,
               private db: DatabaseService) { }
 

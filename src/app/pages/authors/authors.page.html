@@ -31,6 +31,11 @@
   <ion-list class="ion-padding">
     <ion-item *ngFor="let author of authors | filter:filterStatus:selectedCharacter"
        [routerLink]="['/author', author.id]">
+       <div *ngIf="author.img">
+         <ion-avatar>
+           <img [src]="author.img">
+         </ion-avatar>
+       </div>
       <ion-label>
         <h2>{{ author.surname }}</h2>
         <p>{{ author.name }}</p>
