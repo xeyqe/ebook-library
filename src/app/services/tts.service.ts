@@ -1,11 +1,9 @@
 import { Injectable } from '@angular/core';
 import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
-import { LocalNotifications } from '@ionic-native/local-notifications/ngx';
 import { DatabaseService } from './database.service';
 import { Subject } from 'rxjs';
 import { FileReaderService } from './file-reader.service';
 import { Storage } from '@ionic/storage';
-
 
 
 @Injectable({
@@ -23,13 +21,12 @@ export class TtsService {
   private speedSubject = new Subject<number>();
   private progressSubject = new Subject<number>();
 
-
+  count = 0;
 
   bookId: number;
 
   constructor(
     private tts: TextToSpeech,
-    private notif: LocalNotifications,
     private db: DatabaseService,
     private fs: FileReaderService,
     private strg: Storage
@@ -65,15 +62,6 @@ export class TtsService {
             this.db.updateBookProgress(bookId, '0/' + this.texts.length);
             this.changeProgress(0);
           }
-
-          this.launchNotification(bookId);
-          this.notif.on('pause').subscribe(_ => {
-            if (this.isSpeaking) {
-              this.stopSpeaking();
-            } else {
-              this.speak();
-            }
-          });
           this.initialized = true;
           resolve();
         });
@@ -90,9 +78,10 @@ export class TtsService {
       let text2Speak = '';
       for (let i = this.progress; i < this.progress + 5; i++) {
         if (this.texts[i]) {
-          text2Speak = text2Speak + this.texts[i] + '.';
+          text2Speak = text2Speak + this.texts[i] + '. ';
         }
       }
+      console.log(text2Speak);
 
       this.tts.speak({
         text: text2Speak,
@@ -100,8 +89,9 @@ export class TtsService {
         rate: this.speed / 10}).then(_ => {
           if (this.progress < this.texts.length) {
             this.changeProgress(this.progress + 5);
-            this.notif.update({id: 1, progressBar: {value: this.percents()}});
             this.db.updateBookProgress(this.bookId, this.progress + '/' + this.texts.length);
+            this.count++;
+            console.log(this.count);
             this.speak();
           } else {
             this.isSpeaking = false;
@@ -116,38 +106,11 @@ export class TtsService {
     }
   }
 
-  launchNotification(bookId: number) {
-    this.db.getBook(bookId).then(book => {
-      const bookTitle = book.title;
-      this.db.getAuthor(book.creatorId).then(author => {
-        const authorName = author.name + ' ' + author.surname;
-        this.notif.schedule({
-          id: 1,
-          title: authorName,
-          text: bookTitle,
-          sticky: true,
-          sound: null,
-          wakeup: false,
-          color: 'black',
-          progressBar: { value: this.percents()},
-          actions: [
-              { id: 'pause', title: '||' }
-          ]
-        });
-      });
-    });
-  }
-
   stopSpeaking() {
-    this.notif.update({
-      id: 1,
-      sticky: false
-    });
+    this.count = 0;
     this.isSpeaking = false;
     return this.tts.speak('');
   }
-
-
 
   percents() {
     return (this.progress / this.texts.length) * 100;
@@ -165,7 +128,6 @@ export class TtsService {
         progress = this.texts.length;
       }
       this.progress = progress;
-      this.notif.update({id: 1, progressBar: {value: this.percents()}});
       this.progressSubject.next(progress);
       this.db.updateBookProgress(this.bookId, progress + '/' + this.texts.length);
     }
@@ -188,17 +150,15 @@ export class TtsService {
     const regex = RegExp('[A-Za-z0-9]+');
     const newArray = [];
 
-    // for (let i = 0; i < array.length; i ++) {
-    //   const element = array[i];
     array.forEach(element => {
       if (regex.test(element)) {
         const length = element.length;
-        if (length < 4000) {
+        if (length < 790) {
           newArray.push(element);
         } else {
-          const thousands = Math.floor(length / 1000);
+          const thousands = Math.floor(length / 790);
           for (let j = 0; j < thousands; j++) {
-            const token = element.substring(j * 1000, (j + 1) * 1000);
+            const token = element.substring(j * 790, (j + 1) * 790);
             if (regex.test(token)) {
               newArray.push(token);
             }

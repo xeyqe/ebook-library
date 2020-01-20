@@ -173,7 +173,6 @@ export class FileReaderService {
    _getPathAndFilename(fullPath: string) {
     const path = fullPath.substring(0, fullPath.lastIndexOf('/') + 1);
     const fileName = fullPath.substring(fullPath.lastIndexOf('/') + 1);
-    console.log([path, fileName]);
     return [path, fileName];
    }
 

@@ -15,9 +15,7 @@ import { SQLite } from '@ionic-native/sqlite/ngx';
 import { HttpClientModule } from '@angular/common/http';
 import { File } from '@ionic-native/file/ngx';
 import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
-import { BackgroundMode } from '@ionic-native/background-mode/ngx';
 import { IonicStorageModule } from '@ionic/storage';
-import { LocalNotifications } from '@ionic-native/local-notifications/ngx';
 
 @NgModule({
   declarations: [AppComponent],
@@ -31,9 +29,7 @@ import { LocalNotifications } from '@ionic-native/local-notifications/ngx';
     SQLite,
     SQLitePorter,
     File,
-    TextToSpeech,
-    BackgroundMode,
-    LocalNotifications
+    TextToSpeech
     ],
   bootstrap: [AppComponent]
 })

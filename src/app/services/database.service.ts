@@ -285,7 +285,6 @@ export class DatabaseService {
 
 
   updateBookProgress(id: number, progress: string) {
-    console.log('updatebook: ' + id + ' ' + progress);
     this.database.executeSql('UPDATE books SET progress = ? WHERE id = ?', [progress, id]);
   }
 

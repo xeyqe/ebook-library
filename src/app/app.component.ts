@@ -7,6 +7,8 @@ import { Storage } from '@ionic/storage';
 import { Router } from '@angular/router';
 import { DatabaseService } from './services/database.service';
 import { ToastController } from '@ionic/angular';
+// import { BackgroundMode } from '@ionic-native/background-mode/ngx';
+// import { TtsService } from './services/tts.service';
 
 @Component({
   selector: 'app-root',
@@ -21,7 +23,9 @@ export class AppComponent {
     public storage: Storage,
     private router: Router,
     private db: DatabaseService,
-    private toastCtrl: ToastController
+    private toastCtrl: ToastController,
+    // private bg: BackgroundMode,
+    // private sp: TtsService
   ) {
     this.initializeApp();
   }
@@ -45,18 +49,20 @@ export class AppComponent {
     console.log(url);
 
     if (url === '/authors') {
-      console.log('kurvo');
-      console.log(this.lastTimeBackPress, new Date().getTime());
-
       if (this.lastTimeBackPress + 2000 > new Date().getTime()) {
         navigator['app'].exitApp();
+        // this.bg.moveToBackground();
+        // this.bg.on('activate').subscribe(_ => {
+        //   this.sp.stopSpeaking().then(_ => {
+        //     this.sp.speak();
+        //   });
+        // });
       } else {
         this.lastTimeBackPress = new Date().getTime();
         this.presentToast();
       }
 
     } else if (/^(\/author\/[0-9]+)$/.test(url)) {
-      console.log('/authors');
       this.router.navigate(['/authors']);
 
     } else if (/^(\/book\/[0-9]+)$/.test(url)) {
@@ -64,17 +70,15 @@ export class AppComponent {
       this.db.getBook(bookId).then(book => {
         this.db.getAuthor(book.creatorId).then(author => {
           const authorId = author.id + '';
-          console.log('/author/' + authorId);
           this.router.navigate(['/author', authorId]);
         });
       });
 
     } else if (/^(\/tts\/[0-9]+)$/.test(url)) {
       const bookId = url.substring(url.lastIndexOf('/') + 1, url.length - 1);
-      console.log('/book/' + bookId);
       this.router.navigate(['/book', bookId]);
     } else {
-      console.log('else');
+      console.log('else ?');
     }
   }
 
