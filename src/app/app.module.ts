@@ -16,6 +16,8 @@ import { HttpClientModule } from '@angular/common/http';
 import { File } from '@ionic-native/file/ngx';
 import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
 import { IonicStorageModule } from '@ionic/storage';
+import { HTTP } from '@ionic-native/http/ngx';
+
 
 @NgModule({
   declarations: [AppComponent],
@@ -29,7 +31,8 @@ import { IonicStorageModule } from '@ionic/storage';
     SQLite,
     SQLitePorter,
     File,
-    TextToSpeech
+    TextToSpeech,
+    HTTP
     ],
   bootstrap: [AppComponent]
 })
