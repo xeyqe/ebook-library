@@ -20,6 +20,7 @@
     "@angular/platform-browser-dynamic": "~8.1.2",
     "@angular/router": "~8.1.2",
     "@ionic-native/core": "^5.0.0",
+    "@ionic-native/dialogs": "^5.20.0",
     "@ionic-native/file": "^5.18.0",
     "@ionic-native/file-path": "^4.20.0",
     "@ionic-native/http": "^5.19.1",
@@ -32,6 +33,7 @@
     "@ionic/storage": "^2.2.0",
     "cordova-android": "8.1.0",
     "cordova-plugin-advanced-http": "^2.3.1",
+    "cordova-plugin-dialogs": "^2.0.2",
     "cordova-plugin-file": "^6.0.2",
     "cordova-plugin-filepath": "^1.5.6",
     "cordova-res": "^0.8.1",
@@ -93,7 +95,8 @@
       "cordova-plugin-tts": {},
       "cordova-plugin-advanced-http": {
         "OKHTTP_VERSION": "3.10.0"
-      }
+      },
+      "cordova-plugin-dialogs": {}
     },
     "platforms": [
       "android"

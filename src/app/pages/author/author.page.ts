@@ -1,8 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { DatabaseService, Author, Book } from './../../services/database.service';
 import { FileReaderService } from './../../services/file-reader.service';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HTTP } from '@ionic-native/http/ngx';
+import { Dialogs } from '@ionic-native/dialogs/ngx';
+
 
 @Component({
   selector: 'app-author',
@@ -26,7 +28,9 @@ export class AuthorPage implements OnInit {
   constructor(private route: ActivatedRoute,
               private db: DatabaseService,
               private fs: FileReaderService,
-              private http: HTTP) {
+              private http: HTTP,
+              private dialog: Dialogs,
+              private router: Router) {
                }
 
   ngOnInit() {
@@ -132,7 +136,17 @@ export class AuthorPage implements OnInit {
     } else {
       this.author.img = this.imArray[0];
     }
+  }
 
+  deleteAuthor() {
+    this.dialog.confirm('Do you really want to delete this author?\n(Files won\'t be deleted.)', null, ['Ok', 'Cancel']).then(res => {
+      if (res === 1) {
+        this.db.deleteAuthor(this.author.id).then(_ => {
+          this.router.navigate(['/authors']);
+        });
+      }
+    });
+    
   }
 
 }

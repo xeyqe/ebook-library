@@ -1,7 +1,10 @@
 <ion-header>
   <ion-toolbar>
     <ion-row>
-      <ion-title>author</ion-title>
+      <ion-title *ngIf="!ready2editing">author</ion-title>
+      <ion-col size="7" *ngIf="ready2editing">
+        <ion-button (click)="deleteAuthor()">delete</ion-button>
+      </ion-col>
       <ion-button *ngIf="authorChanged" (click)="updateAuthor()">
         <ion-icon slot="icon-only" name="save"></ion-icon>
       </ion-button>
