@@ -20,6 +20,8 @@ export class AuthorPage implements OnInit {
   ready2editing = false;
   fromWiki;
   wikiOutputBoolean = false;
+  listOfPictures;
+  imArray = [];
 
   constructor(private route: ActivatedRoute,
               private db: DatabaseService,
@@ -61,6 +63,7 @@ export class AuthorPage implements OnInit {
       this.authorChanged = false;
       this.ready2editing = false;
       this.oldAuthor = { ...this.author};
+      this.fromWiki = null;
     }).catch(e => {
       console.log('updateAuthor failed: ');
       console.log(e);
@@ -74,6 +77,7 @@ export class AuthorPage implements OnInit {
     }
     this.ready2editing = !this.ready2editing;
     this.authorChanged = false;
+    this.fromWiki = null;
   }
 
   getFromWikipedia() {
@@ -95,15 +99,18 @@ export class AuthorPage implements OnInit {
   log(aa: any) {
     const pageid = aa.pageid + '';
     this.http.get('https://wikipedia.org/w/api.php',
-    { action: 'query', prop: 'extracts|pageimages', format: 'json',
-     pageids: pageid, exintro: 'explaintext', piprop: 'thumbnail', pithumbsize: '300', pilimit: '10'}, {}).then(output => {
+    { action: 'query', prop: 'extracts|images|pageimages', format: 'json',
+     pageids: pageid, exintro: 'explaintext', imlimit: '130', piprop: 'thumbnail', pithumbsize: '300'}, {}).then(output => {
       try {
         const data = JSON.parse(output.data);
         this.author.biography = data.query.pages[pageid].extract.replace(/<[^>]*>/g, '').trim();
-        this.author.img = data.query.pages[pageid].thumbnail.source;
         this.wikiOutputBoolean = false;
         this.authorChanged = true;
-        console.log(data);
+        const array = Array.from(data.query.pages[pageid].images, im => im['title'])
+                         .filter(img => !img.includes('.svg'));
+        this.imArray = Array.from(array, item => 'https://commons.wikimedia.org/wiki/Special:FilePath/' + item + '?width=200');
+        this.imArray.push(null);
+        this.author.img = data.query.pages[pageid].thumbnail.source;
       } catch {
         console.log('cannot parse data from wikipedia');
       }
@@ -112,6 +119,20 @@ export class AuthorPage implements OnInit {
 
   unhtml(str: string): string {
     return str.replace(/<[^>]*>/g, '');
+  }
+
+  changePicture() {
+    if (!this.imArray.length) {
+      return;
+    }
+    if (this.imArray.includes(this.author.img)) {
+      let index = this.imArray.indexOf(this.author.img);
+      index = (index + 1) % this.imArray.length;
+      this.author.img = this.imArray[index];
+    } else {
+      this.author.img = this.imArray[0];
+    }
+
   }
 
 }
