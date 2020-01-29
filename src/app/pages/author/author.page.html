@@ -20,9 +20,17 @@
   
   <div *ngIf="author !== null">
     <ion-grid>
-      <div *ngIf="author.img">
-        <ion-img [src]="author.img"></ion-img>
+
+      <div>
+        <ion-item>
+          <ion-button *ngIf="ready2editing" class="bu-change-pic" (click)="changePicture()">
+            <ion-icon slot="icon-only" name="create"></ion-icon>
+          </ion-button>
+          <ion-img *ngIf="author.img" [src]="author.img"></ion-img>
+          <ion-img *ngIf="!author.img && ready2editing" style="background-color: #413d3d;" src="https://upload.wikimedia.org/wikipedia/commons/7/7c/User_font_awesome.svg"></ion-img>
+        </ion-item>
       </div>
+
       <ion-row>
         <ion-col  *ngIf="author.name || ready2editing">
           <ion-item >
@@ -41,7 +49,7 @@
     
 
       <ion-row>
-        <ion-col *ngIf="author.nationality || ready2editing">
+        <ion-col *ngIf="author.nationality || ready2editing" size="6">
           <ion-item>
             <ion-label class="red" position="floating">Nationality</ion-label>
             <ion-input disabled={{!ready2editing}} (change)="authorChanged = true" [(ngModel)]="author.nationality"></ion-input>
