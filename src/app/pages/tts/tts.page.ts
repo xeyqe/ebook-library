@@ -302,7 +302,6 @@ export class TtsPage implements OnInit, OnDestroy {
     }
   }
 
-
   ngOnDestroy() {
     if (this.texts) {
       this.db.updateBookProgress(this.id, this.progress + '/' + this.texts.length);
