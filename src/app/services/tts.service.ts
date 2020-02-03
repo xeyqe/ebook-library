@@ -84,7 +84,8 @@ export class TtsService {
           text2Speak = text2Speak + this.texts[this.progress + add2Progress];
         }
         add2Progress++;
-      } while (text2Speak.length + this.texts[this.progress + add2Progress].length < this.speakingLengthLimit);
+      } while (this.texts[this.progress + add2Progress] &&
+        text2Speak.length + this.texts[this.progress + add2Progress].length < this.speakingLengthLimit);
 
       this.tts.speak({
         text: text2Speak,
@@ -93,7 +94,6 @@ export class TtsService {
           if (this.progress < this.texts.length) {
             this.changeProgress(this.progress + add2Progress);
             this.db.updateBookProgress(this.bookId, this.progress + '/' + this.texts.length);
-            this.count++;
             this.speak();
           } else {
             this.isSpeaking = false;
