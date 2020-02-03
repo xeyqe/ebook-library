@@ -1,14 +1,14 @@
 import { Component } from '@angular/core';
 
-import { Platform, NavController } from '@ionic/angular';
+import { Platform } from '@ionic/angular';
 import { SplashScreen } from '@ionic-native/splash-screen/ngx';
 import { StatusBar } from '@ionic-native/status-bar/ngx';
 import { Storage } from '@ionic/storage';
 import { Router } from '@angular/router';
 import { DatabaseService } from './services/database.service';
 import { ToastController } from '@ionic/angular';
-// import { BackgroundMode } from '@ionic-native/background-mode/ngx';
-// import { TtsService } from './services/tts.service';
+import { BackgroundMode } from '@ionic-native/background-mode/ngx';
+import { TtsService } from './services/tts.service';
 
 @Component({
   selector: 'app-root',
@@ -24,8 +24,8 @@ export class AppComponent {
     private router: Router,
     private db: DatabaseService,
     private toastCtrl: ToastController,
-    // private bg: BackgroundMode,
-    // private sp: TtsService
+    private bg: BackgroundMode,
+    private sp: TtsService
   ) {
     this.initializeApp();
   }
@@ -37,9 +37,17 @@ export class AppComponent {
 
       this.statusBar.styleDefault();
       this.splashScreen.hide();
-      
+
       this.platform.backButton.subscribeWithPriority(9999, () => {
         this.hwBackButtonFunction();
+      });
+      this.platform.resume.subscribe(() => {
+        this.sp.changeSpeakingLimit(500);
+        this.bg.disable();
+      });
+      this.platform.pause.subscribe(() => {
+        this.sp.changeSpeakingLimit(4000);
+        this.bg.enable();
       });
     });
   }
@@ -51,12 +59,6 @@ export class AppComponent {
     if (url === '/authors') {
       if (this.lastTimeBackPress + 2000 > new Date().getTime()) {
         navigator['app'].exitApp();
-        // this.bg.moveToBackground();
-        // this.bg.on('activate').subscribe(_ => {
-        //   this.sp.stopSpeaking().then(_ => {
-        //     this.sp.speak();
-        //   });
-        // });
       } else {
         this.lastTimeBackPress = new Date().getTime();
         this.presentToast();

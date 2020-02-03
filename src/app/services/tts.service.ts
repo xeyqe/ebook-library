@@ -17,6 +17,7 @@ export class TtsService {
   speed = 30;
   progress = 0;
   isSpeaking = false;
+  speakingLengthLimit = 500;
 
   private speedSubject = new Subject<number>();
   private progressSubject = new Subject<number>();
@@ -76,22 +77,23 @@ export class TtsService {
     if (this.texts) {
       this.isSpeaking = true;
       let text2Speak = '';
-      for (let i = this.progress; i < this.progress + 5; i++) {
-        if (this.texts[i]) {
-          text2Speak = text2Speak + this.texts[i] + '. ';
+      let add2Progress = 0;
+
+      do {
+        if (this.texts[this.progress + add2Progress]) {
+          text2Speak = text2Speak + this.texts[this.progress + add2Progress];
         }
-      }
-      console.log(text2Speak);
+        add2Progress++;
+      } while (text2Speak.length + this.texts[this.progress + add2Progress].length < this.speakingLengthLimit);
 
       this.tts.speak({
         text: text2Speak,
         locale: this.language,
         rate: this.speed / 10}).then(_ => {
           if (this.progress < this.texts.length) {
-            this.changeProgress(this.progress + 5);
+            this.changeProgress(this.progress + add2Progress);
             this.db.updateBookProgress(this.bookId, this.progress + '/' + this.texts.length);
             this.count++;
-            console.log(this.count);
             this.speak();
           } else {
             this.isSpeaking = false;
@@ -146,28 +148,42 @@ export class TtsService {
   }
 
   getTexts(str: string) {
-    const array = str.split(/(\.\ )|\n]+/g);
+    const arrayOfParagraphs = str.split(/\n+/g);
     const regex = RegExp('[A-Za-z0-9]+');
     const newArray = [];
 
-    array.forEach(element => {
-      if (regex.test(element)) {
-        const length = element.length;
+    arrayOfParagraphs.forEach(element => {
+      if (element && regex.test(element)) {
+        let length = element.length;
         if (length < 790) {
           newArray.push(element);
         } else {
-          const thousands = Math.floor(length / 790);
-          for (let j = 0; j < thousands; j++) {
-            const token = element.substring(j * 790, (j + 1) * 790);
-            if (regex.test(token)) {
-              newArray.push(token);
+          const arrayOfSentences = element.split(/\.\ /g);
+          arrayOfSentences.forEach(sentence => {
+            length = sentence.length;
+            if (sentence && length < 790 && regex.test(sentence)) {
+              newArray.push(sentence + '. ');
+            } else {
+              const thousands = Math.floor(length / 790);
+              for (let j = 0; j < thousands; j++) {
+                const partOfSentence = sentence.substring(j * 790, (j + 1) * 790);
+                if (partOfSentence && regex.test(partOfSentence)) {
+                  newArray.push(partOfSentence);
+                }
+              }
             }
-          }
+          });
         }
       }
     });
     return newArray;
   }
 
-
+  changeSpeakingLimit(limit: number) {
+    if (limit > 4000 || limit < 500) {
+      return;
+    }
+    this.speakingLengthLimit = limit;
+  }
+  
 }
