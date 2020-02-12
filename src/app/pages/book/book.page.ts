@@ -10,11 +10,11 @@ import { ActivatedRoute } from '@angular/router';
 })
 export class BookPage implements OnInit {
   book: Book = null;
-  oldBook: Book = null;
 
   bookChanged = false;
   fileName: string;
   ready2editing = false;
+  bookId: number;
 
   dontworryiwillnameyoulater: string;
   dontworryiwillnameyoulater2: string;
@@ -26,6 +26,7 @@ export class BookPage implements OnInit {
       this.route.paramMap.subscribe(params => {
         const bookId = params.get('id');
         const id = parseInt(bookId, 10);
+        this.bookId = id;
         this.db.getDatabaseState().subscribe(ready => {
           if (ready) {
 
@@ -33,7 +34,6 @@ export class BookPage implements OnInit {
               this.fileName = data.title;
 
               this.book = data;
-              this.oldBook = data;
               this.dontworryiwillnameyoulater = this.book.id + '0';
               this.dontworryiwillnameyoulater2 = this.book.id + '1';
 
@@ -47,8 +47,16 @@ export class BookPage implements OnInit {
     }
 
     updateBook() {
+      const bookRating = this.book.rating;
+      if (bookRating) {
+        this.book.rating = Math.floor(bookRating * 10) / 10;
+      }
+      if (bookRating > 5) {
+        this.book.rating = 5;
+      } else if (bookRating < 0) {
+        this.book.rating = 0;
+      }
       this.db.updateBook(this.book).then(() => {
-        this.oldBook = { ...this.book};
         this.bookChanged = false;
         this.ready2editing = !this.ready2editing;
       }).catch(e => {
@@ -59,7 +67,9 @@ export class BookPage implements OnInit {
 
     editable() {
       if (this.ready2editing) {
-        this.book = { ...this.oldBook};
+        this.db.getBook(this.bookId).then(book => {
+          this.book = book;
+        });
       }
       this.ready2editing = !this.ready2editing;
       this.bookChanged = false;

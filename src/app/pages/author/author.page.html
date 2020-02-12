@@ -2,81 +2,88 @@
   <ion-toolbar>
     <ion-row>
       <ion-title *ngIf="!ready2editing">author</ion-title>
-      <ion-col size="7" *ngIf="ready2editing">
+      <ion-col *ngIf="ready2editing">
         <ion-button (click)="deleteAuthor()">delete</ion-button>
       </ion-col>
-      <ion-button *ngIf="authorChanged" (click)="updateAuthor()">
-        <ion-icon slot="icon-only" name="save"></ion-icon>
-      </ion-button>
-      <ion-button (click)="editable()">
-        <ion-icon *ngIf="!ready2editing" slot="icon-only" name="create"></ion-icon>
-        <ion-icon *ngIf="ready2editing" slot="icon-only" name="close"></ion-icon>
-      </ion-button>
-      <ion-button (click)="getFromWikipedia()">
-        W
-      </ion-button>
+      <div class="col text-right">
+        <ion-button *ngIf="authorChanged" (click)="updateAuthor()">
+          <ion-icon slot="icon-only" name="save"></ion-icon>
+        </ion-button>
+        <ion-button (click)="editable()">
+          <ion-icon *ngIf="!ready2editing" slot="icon-only" name="create"></ion-icon>
+          <ion-icon *ngIf="ready2editing" slot="icon-only" name="close"></ion-icon>
+        </ion-button>
+        <ion-button (click)="getFromWikipedia()">
+          W
+        </ion-button>
+      </div>
     </ion-row>
   </ion-toolbar>
 </ion-header>
 
 <ion-content>
-  
-  <div *ngIf="author !== null">
-    <ion-grid>
 
-      <div>
-        <ion-item>
+  <div *ngIf="author !== null">
+      <ion-grid>
+        <ion-item *ngIf="ready2editing || author.img">
           <ion-button *ngIf="ready2editing" class="bu-change-pic" (click)="changePicture()">
             <ion-icon slot="icon-only" name="create"></ion-icon>
           </ion-button>
-          <ion-img *ngIf="author.img" [src]="author.img"></ion-img>
-          <ion-img *ngIf="!author.img && ready2editing" style="background-color: #413d3d;" src="https://upload.wikimedia.org/wikipedia/commons/7/7c/User_font_awesome.svg"></ion-img>
+            <ion-img *ngIf="author.img" [src]="author.img"></ion-img>
+          <ion-img *ngIf="!author.img && ready2editing" style="background-color: #413d3d;"
+                  src="https://upload.wikimedia.org/wikipedia/commons/7/7c/User_font_awesome.svg"></ion-img>
+        </ion-item> 
+
+        <ion-row>
+          <ion-col  *ngIf="author.name || ready2editing">
+            <ion-item>
+              <ion-label class="red" position="floating">Name</ion-label>
+              <ion-input class="intp" disabled={{!ready2editing}} (change)="authorChanged = true"
+                [(ngModel)]="author.name"></ion-input>
+            </ion-item>
+          </ion-col>
+
+          <ion-col *ngIf="author.surname || ready2editing">
+            <ion-item>
+              <ion-label class="red" position="floating">Surname</ion-label>
+              <ion-input name="authorSurname" disabled={{!ready2editing}}
+                [(ngModel)]="author.surname" (change)="authorChanged = true"></ion-input>
+            </ion-item>
+          </ion-col>
+        </ion-row>
+      
+        <ion-row>
+          <ion-col *ngIf="author.nationality || ready2editing" size="6">
+            <div>
+            <ion-item>
+              <ion-label class="red" position="floating">Nationality</ion-label>
+              <ion-input disabled={{!ready2editing}} (change)="authorChanged = true"
+                [(ngModel)]="author.nationality"></ion-input>
+            </ion-item>
+            </div>
+          </ion-col>
+          <ion-col *ngIf="author.birth || ready2editing">
+            <ion-item>
+              <ion-label class="red" position="floating">Birth</ion-label>
+              <ion-input disabled={{!ready2editing}} type="number" (change)="authorChanged = true"
+                [(ngModel)]="author.birth"></ion-input>
+            </ion-item>
+          </ion-col>
+          <ion-col *ngIf="author.death || ready2editing">
+            <ion-item>
+              <ion-label class="red" position="floating">Death</ion-label>
+              <ion-input disabled={{!ready2editing}} type="number" (change)="authorChanged = true"
+                [(ngModel)]="author.death"></ion-input>
+            </ion-item>
+          </ion-col>
+        </ion-row>
+
+        <ion-item *ngIf="author.biography || ready2editing" class="form-group">
+          <ion-label class="red" position="floating">Biography</ion-label>
+          <ion-textarea disabled={{!ready2editing}} autoGrow="true" (change)="authorChanged = true"
+            [(ngModel)]="author.biography"></ion-textarea>
         </ion-item>
-      </div>
-
-      <ion-row>
-        <ion-col  *ngIf="author.name || ready2editing">
-          <ion-item >
-            <ion-label class="red" position="floating">Name</ion-label>
-            <ion-input class="intp" disabled={{!ready2editing}} (change)="authorChanged = true" [(ngModel)]="author.name"></ion-input>
-          </ion-item>
-        </ion-col>
-
-        <ion-col *ngIf="author.surname || ready2editing">
-          <ion-item>
-            <ion-label class="red" position="floating">Surname</ion-label>
-            <ion-input disabled={{!ready2editing}} (change)="authorChanged = true" [(ngModel)]="author.surname"></ion-input>
-          </ion-item>
-        </ion-col>
-      </ion-row>
-    
-
-      <ion-row>
-        <ion-col *ngIf="author.nationality || ready2editing" size="6">
-          <ion-item>
-            <ion-label class="red" position="floating">Nationality</ion-label>
-            <ion-input disabled={{!ready2editing}} (change)="authorChanged = true" [(ngModel)]="author.nationality"></ion-input>
-          </ion-item>
-        </ion-col>
-        <ion-col *ngIf="author.birth || ready2editing">
-          <ion-item>
-            <ion-label class="red" position="floating">Birth</ion-label>
-            <ion-input disabled={{!ready2editing}} type="number" (change)="authorChanged = true" [(ngModel)]="author.birth"></ion-input>
-          </ion-item>
-        </ion-col>
-        <ion-col *ngIf="author.death || ready2editing">
-          <ion-item>
-            <ion-label class="red" position="floating">Death</ion-label>
-            <ion-input disabled={{!ready2editing}} type="number" (change)="authorChanged = true" [(ngModel)]="author.death"></ion-input>
-          </ion-item>
-        </ion-col>
-      </ion-row>
-
-      <ion-item *ngIf="author.biography || ready2editing">
-        <ion-label class="red" position="floating">Biography</ion-label>
-        <ion-textarea disabled={{!ready2editing}} autoGrow="true" (change)="authorChanged = true" [(ngModel)]="author.biography"></ion-textarea>
-      </ion-item>
-    </ion-grid>
+      </ion-grid>
     <ion-list *ngIf="!wikiOutputBoolean">
       <ion-item button *ngFor="let book of books" [routerLink]="['/book', book.id]">
         <ion-label>

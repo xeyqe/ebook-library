@@ -4,6 +4,7 @@ import { FileReaderService } from './../../services/file-reader.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HTTP } from '@ionic-native/http/ngx';
 import { Dialogs } from '@ionic-native/dialogs/ngx';
+import { FormGroup, FormControl } from '@angular/forms';
 
 
 @Component({
@@ -12,9 +13,17 @@ import { Dialogs } from '@ionic-native/dialogs/ngx';
   styleUrls: ['./author.page.scss'],
 })
 export class AuthorPage implements OnInit {
+  authorForm = new FormGroup({
+    authorImg: new FormControl(''),
+    authorName: new FormControl(''),
+    authorSurname: new FormControl(''),
+    authorNationality: new FormControl(''),
+    authorBirth: new FormControl(''),
+    authorDeath: new FormControl(''),
+    authorBiography: new FormControl('')
+  });
 
   author: Author = null;
-  oldAuthor: Author = null;
   books: Book[] = [];
   biography = '';
   textareaFocus = false;
@@ -24,6 +33,7 @@ export class AuthorPage implements OnInit {
   wikiOutputBoolean = false;
   listOfPictures;
   imArray = [];
+  authorId: number;
 
   constructor(private route: ActivatedRoute,
               private db: DatabaseService,
@@ -37,12 +47,12 @@ export class AuthorPage implements OnInit {
     this.route.paramMap.subscribe(params => {
       const autId = params.get('id');
       const id = parseInt(autId, 10);
+      this.authorId = id;
 
       this.db.getDatabaseState().subscribe(ready => {
         if (ready) {
           this.db.getAuthor(id).then(data => {
             this.author = data;
-            this.oldAuthor = data;
 
             this.db.getBooksOfAuthor(id).then(_ => {
               this.db.getBooks().subscribe(books => {
@@ -66,7 +76,6 @@ export class AuthorPage implements OnInit {
     this.db.updateAuthor(this.author).then(_ => {
       this.authorChanged = false;
       this.ready2editing = false;
-      this.oldAuthor = { ...this.author};
       this.fromWiki = null;
     }).catch(e => {
       console.log('updateAuthor failed: ');
@@ -76,9 +85,11 @@ export class AuthorPage implements OnInit {
 
   editable() {
     if (this.ready2editing) {
-      this.author = { ...this.oldAuthor};
       this.wikiOutputBoolean = false;
     }
+    this.db.getAuthor(this.authorId).then(author => {
+      this.author = author;
+    });
     this.ready2editing = !this.ready2editing;
     this.authorChanged = false;
     this.fromWiki = null;
@@ -146,7 +157,6 @@ export class AuthorPage implements OnInit {
         });
       }
     });
-    
   }
 
 }
