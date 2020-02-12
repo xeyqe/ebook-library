@@ -47,7 +47,9 @@ export class AppComponent {
       });
       this.platform.pause.subscribe(() => {
         this.sp.changeSpeakingLimit(4000);
-        this.bg.enable();
+        if (this.sp.ifSpeaking()) {
+          this.bg.enable();
+        }
       });
     });
   }

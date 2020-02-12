@@ -39,8 +39,10 @@ export class TtsService {
       this.strg.get('speed').then(val => {
         if (val) {
           this.speed = val;
+          this.speedSubject.next(val);
         } else {
           this.speed = 30;
+          this.speedSubject.next(30);
         }
       }).catch(e => {
         console.log('storage failed: ');
@@ -143,6 +145,10 @@ export class TtsService {
     return this.speedSubject.asObservable();
   }
 
+  getSp() {
+    return this.speed;
+  }
+
   getTextsLenght() {
     return this.texts.length;
   }
@@ -185,5 +191,9 @@ export class TtsService {
     }
     this.speakingLengthLimit = limit;
   }
-  
+
+  ifSpeaking() {
+    return this.isSpeaking;
+  }
+
 }

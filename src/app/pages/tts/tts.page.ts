@@ -91,7 +91,9 @@ export class TtsPage implements OnInit, OnDestroy {
                 this.sp.getProgress().subscribe(progress => {
                   this.progress = progress;
                 });
+                this.speed = this.sp.getSp();
                 this.sp.getSpeed().subscribe(speed => {
+                  console.log(speed);
                   this.speed = speed;
                 });
                 this.textsLength = this.sp.getTextsLenght();
