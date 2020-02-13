@@ -99,7 +99,8 @@ export class AuthorPage implements OnInit {
     const searchValue = this.author.name + ' ' + this.author.surname;
 
     this.http.get('https://wikipedia.org/w/api.php',
-    { action: 'query', list: 'search', srsearch: searchValue, format: 'json'}, {}).then(output => {
+    { action: 'query', list: 'search', srsearch: searchValue, rvprop: 'content', rvsection: '0',
+     rvslots: '*', format: 'json'}, {}).then(output => {
       this.ready2editing = true;
       this.wikiOutputBoolean = true;
 
@@ -114,7 +115,7 @@ export class AuthorPage implements OnInit {
   log(aa: any) {
     const pageid = aa.pageid + '';
     this.http.get('https://wikipedia.org/w/api.php',
-    { action: 'query', prop: 'extracts|images|pageimages', format: 'json',
+    { action: 'query', prop: 'revisions|extracts|images|pageimages', format: 'json', rvprop: 'content', rvsection: '0', rvslots: '*',
      pageids: pageid, exintro: 'explaintext', imlimit: '130', piprop: 'thumbnail', pithumbsize: '300'}, {}).then(output => {
       try {
         const data = JSON.parse(output.data);
@@ -125,8 +126,12 @@ export class AuthorPage implements OnInit {
                          .filter(img => !img.includes('.svg'));
         this.imArray = Array.from(array, item => 'https://commons.wikimedia.org/wiki/Special:FilePath/' + item + '?width=200');
         this.imArray.push(null);
-        this.author.img = data.query.pages[pageid].thumbnail.source;
-      } catch {
+        if (data.query.pages[pageid].thumbnail) {
+          this.author.img = data.query.pages[pageid].thumbnail.source;
+        }
+        this.parseInfobox(data.query.pages[pageid].revisions[0].slots.main['*']);
+      } catch (er) {
+        console.log(er);
         console.log('cannot parse data from wikipedia');
       }
     });
@@ -157,6 +162,43 @@ export class AuthorPage implements OnInit {
         });
       }
     });
+  }
+
+  parseInfobox(data: any) {
+    const infobox = data.split('\n\n')[0];
+    const array = infobox.split('\n');
+    const obj = {name: null, birth_date: null, death_date: null, nationality: null};
+    for (let item of array) {
+      if (item.indexOf('= ') !== -1) {
+        const neco = item.split('= ');
+        const key = neco[0].substring(1).trim();
+        let value = neco[1].trim();
+        if (obj[key] === null) {
+          if (key === 'birth_date' || key === 'death_date') {
+            const myRe = new RegExp(/\|[0-9]+\|/, 'g');
+            const date = myRe.exec(value);
+            if (date) {
+              value = parseInt(date[0].substring(1, date[0].length - 1), 10);
+            }
+          }
+          obj[key] = value;
+        }
+      }
+    }
+    if (obj.nationality) {
+      this.author.nationality = obj.nationality.replace(/{{[^}]*}}/g, '').trim();
+    }
+    this.author.birth = obj.birth_date;
+    this.author.death = obj.death_date;
+    if (obj.name) {
+      if (obj.name.indexOf(' ') !== -1) {
+        this.author.name = obj.name.substring(0, obj.name.lastIndexOf(' '));
+        this.author.surname = obj.name.substring(obj.name.lastIndexOf(' ') + 1);
+      } else {
+        this.author.surname = obj.name;
+      }
+    }
+
   }
 
 }

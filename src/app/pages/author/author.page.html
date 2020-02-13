@@ -78,11 +78,14 @@
           </ion-col>
         </ion-row>
 
-        <ion-item *ngIf="author.biography || ready2editing" class="form-group">
+        <ion-item *ngIf="author.biography || ready2editing">
           <ion-label class="red" position="floating">Biography</ion-label>
-          <ion-textarea disabled={{!ready2editing}} autoGrow="true" (change)="authorChanged = true"
-            [(ngModel)]="author.biography"></ion-textarea>
+          <ion-textarea disabled={{!ready2editing}} autoGrow=true
+            (change)="authorChanged = true"
+            [(ngModel)]="author.biography">
+          </ion-textarea>
         </ion-item>
+
       </ion-grid>
     <ion-list *ngIf="!wikiOutputBoolean">
       <ion-item button *ngFor="let book of books" [routerLink]="['/book', book.id]">

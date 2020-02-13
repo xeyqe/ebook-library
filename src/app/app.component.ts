@@ -37,6 +37,7 @@ export class AppComponent {
 
       this.statusBar.styleDefault();
       this.splashScreen.hide();
+      // this.bg.setDefaults({ silent: true });
 
       this.platform.backButton.subscribeWithPriority(9999, () => {
         this.hwBackButtonFunction();
