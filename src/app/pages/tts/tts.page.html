@@ -29,10 +29,10 @@
 
 <ion-content (pinchout)="increaseFontSize()"
 (pinchin)="decreaseFontSize()">
-  <div *ngIf="spritzBoolean" [style.fontSize]="fontSize">
+  <div *ngIf="spritzBoolean" [style.fontSize]="fontSize" [style.lineHeight]="fontSize">
     <ion-row>
       <ion-col size="2"></ion-col>
-      <ion-col size="6">
+      <ion-col size="10">
         <ion-label class="red" style="float: left;">|</ion-label>
       </ion-col>
     </ion-row>
@@ -42,7 +42,7 @@
         <ion-label class="right">{{ spritzPreText }}</ion-label>
       </ion-col>
 
-      <ion-col class="col" size="6">
+      <ion-col class="col" size="10">
         <ion-label class="red">{{ spritzRedText }}</ion-label>
         <ion-label>{{ spritzPostText }}</ion-label>
       </ion-col>
@@ -50,7 +50,7 @@
 
     <ion-row>
       <ion-col size="2"></ion-col>
-      <ion-col size="6">
+      <ion-col size="10">
         <ion-label class="red" style="float: left;">|</ion-label>
       </ion-col>
     </ion-row>
@@ -59,7 +59,7 @@
   
 </ion-content>
 
-<ion-footer>
+<!-- <ion-footer> -->
   <ion-row class="ion-align-items-center ion-justify-content-center">
     <ion-label class="white" *ngIf="progress">
       {{ progress }}
@@ -70,16 +70,16 @@
 
     <ion-item>
       <ion-button (click)="backward()">
-        <ion-icon slot="icon-only" name="rewind"></ion-icon>
+        <ion-icon slot="icon-only" name="play-back-sharp"></ion-icon>
       </ion-button>
 
       <ion-button [disabled]="!initialized" (click)="onOff()">
-        <ion-icon slot="icon-only" name="play" *ngIf="!isSpeaking"></ion-icon>
-        <ion-icon slot="icon-only" name="pause" *ngIf="isSpeaking"></ion-icon>
+        <ion-icon slot="icon-only" name="play-sharp" *ngIf="!isSpeaking"></ion-icon>
+        <ion-icon slot="icon-only" name="pause-sharp" *ngIf="isSpeaking"></ion-icon>
       </ion-button>
 
       <ion-button (click)="forward()">
-        <ion-icon slot="icon-only" name="fastforward"></ion-icon>
+        <ion-icon slot="icon-only" name="play-forward-sharp"></ion-icon>
       </ion-button>
 
     </ion-item>
@@ -89,8 +89,8 @@
     </ion-label>
   </ion-row>
   <ion-item>
-    <ion-range *ngIf="textsLength" [value]="progress" min="0" [max]="textsLength" step="1" color="primary"
-      (ionChange)="changeProgress($event)" (ionBlur)="stopStartSpeaking()">
+    <ion-range *ngIf="textsLength" [value]="progress" min="0" [max]="textsLength" step="1" color="primary" style="height: 0px;"
+      (ionChange)="changeProgress($event)" (touchend)="stopStartSpeaking()">
     </ion-range>
   </ion-item>
-</ion-footer>
+<!-- </ion-footer> -->

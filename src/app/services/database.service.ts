@@ -4,7 +4,7 @@ import { SQLitePorter } from '@ionic-native/sqlite-porter/ngx';
 import { HttpClient } from '@angular/common/http';
 import { SQLite, SQLiteObject } from '@ionic-native/sqlite/ngx';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { Storage } from '@ionic/storage'
+import { Storage } from '@ionic/storage';
 
 export interface Author {
   id: number;
@@ -17,6 +17,7 @@ export interface Author {
   img: string;
   rating: number;
   path: string;
+  idInJson: string;
 }
 
 export interface Book {
@@ -35,6 +36,7 @@ export interface Book {
   path: string;
   progress: string;
   rating: number;
+  img: string;
 }
 
 
@@ -83,6 +85,9 @@ export class DatabaseService {
     });
   }
 
+  a() {
+  }
+
   getDatabaseState() {
     return this.dbReady.asObservable();
   }
@@ -111,7 +116,8 @@ export class DatabaseService {
             biography: data.rows.item(i).biography,
             img: data.rows.item(i).img,
             rating: data.rows.item(i).rating,
-            path: data.rows.item(i).path
+            path: data.rows.item(i).path,
+            idInJson: data.rows.item(i).idInJson
            });
         }
       }
@@ -150,7 +156,8 @@ export class DatabaseService {
         biography: data.rows.item(0).biography ? data.rows.item(0).biography.replace(/<br>/g, '\n') : data.rows.item(0).biography,
         img: data.rows.item(0).img,
         rating: data.rows.item(0).rating,
-        path: data.rows.item(0).path
+        path: data.rows.item(0).path,
+        idInJson: data.rows.item(0).idInJson
       };
     });
   }
@@ -176,7 +183,8 @@ export class DatabaseService {
             ISBN: data.rows.item(i).ISBN,
             path: data.rows.item(i).path,
             progress: data.rows.item(i).progress,
-            rating: data.rows.item(i).rating
+            rating: data.rows.item(i).rating,
+            img: data.rows.item(i).img
           });
         }
       }
@@ -202,7 +210,8 @@ export class DatabaseService {
         ISBN: data.rows.item(0).ISBN,
         path: data.rows.item(0).path,
         progress: data.rows.item(0).progress,
-        rating: data.rows.item(0).rating
+        rating: data.rows.item(0).rating,
+        img: data.rows.item(0).img
       };
     });
   }
@@ -215,13 +224,19 @@ export class DatabaseService {
     });
   }
 
+  deleteBook(bookId: number, authorId: number) {
+    return this.database.executeSql('DELETE FROM books WHERE id = ?', [bookId]).then(_ => {
+        this.loadBooks(authorId);
+    });
+  }
+
   updateAuthor(author: Author) {
     const biography = author.biography ? author.biography.replace(/\n/g, '<br>') : null;
-    const data = [author.name, author.surname, author.nationality, author.birth,
-                  author.death, biography, author.img, author.rating, author.path];
+    const data = [author.name, author.surname, author.nationality, author.birth, author.death,
+                  biography, author.img, author.rating, author.path, author.idInJson];
     return this.database.executeSql(`UPDATE authors SET name = ?,
      surname = ?, nationality = ?, birth = ?, death = ?,
-     biography = ?, img = ?, rating = ?, path = ? WHERE id = ${author.id}`, data).then(_ => {
+     biography = ?, img = ?, rating = ?, path = ?, idInJson = ? WHERE id = ${author.id}`, data).then(_ => {
       this.loadAuthors();
     });
   }
@@ -245,7 +260,8 @@ export class DatabaseService {
             ISBN: data.rows.item(i).ISBN,
             path: data.rows.item(i).path,
             progress: data.rows.item(i).progress,
-            rating: data.rows.item(i).rating
+            rating: data.rows.item(i).rating,
+            img: data.rows.item(i).img
            });
         }
       }
@@ -254,12 +270,12 @@ export class DatabaseService {
   }
 
   addBook(book: Book) {
-    const data = [book.title, book.creatorId, book.originalTitle, book.annotation, book.publisher, book.published,
-      book.genre, book.length, book.language, book.translator, book.ISBN, book.path, book.progress, book.rating];
+    const data = [book.title, book.creatorId, book.originalTitle, book.annotation, book.publisher, book.published, book.genre,
+      book.length, book.language, book.translator, book.ISBN, book.path, book.progress, book.rating, book.img];
     return this.database.executeSql(
       `INSERT INTO books (title, creatorId, originalTitle, annotation, publisher, published, genre,
-        lenght, language, translator, ISBN, path, progress, rating)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, data).then(
+        lenght, language, translator, ISBN, path, progress, rating, img)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, data).then(
       output => {
         const books = this.books.getValue();
         book.id = output.insertId;
@@ -290,8 +306,8 @@ export class DatabaseService {
 
   updateBook(book: Book) {
     const data = [book.title, book.originalTitle, book.annotation, book.publisher,
-                  book.published, book.genre, book.length, book.language,
-                  book.translator, book.ISBN, book.path, book.progress, book.rating];
+                  book.published, book.genre, book.length, book.language, book.translator,
+                  book.ISBN, book.path, book.progress, book.rating, book.img];
     return this.database.executeSql(`UPDATE books SET title = ?,
                                     originalTitle = ?,
                                     annotation = ?,
@@ -304,7 +320,8 @@ export class DatabaseService {
                                     ISBN = ?,
                                     path = ?,
                                     progress = ?,
-                                    rating = ?
+                                    rating = ?,
+                                    img = ?
                                     WHERE id = ${book.id}`, data).then(_ => {
       // this.loadAuthors();
     });

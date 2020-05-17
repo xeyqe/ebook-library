@@ -1,7 +1,8 @@
-import { DatabaseService, Author } from './../../services/database.service';
-import { FileReaderService } from './../../services/file-reader.service';
 import { Component, OnInit } from '@angular/core';
 import { Platform } from '@ionic/angular';
+
+import { DatabaseService, Author } from './../../services/database.service';
+import { FileReaderService } from './../../services/file-reader.service';
 
 
 @Component({
@@ -23,10 +24,11 @@ export class AuthorsPage implements OnInit {
               'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#'];
   selectedCharacter = 'A';
 
-  constructor(private db: DatabaseService,
-              private fr: FileReaderService,
-              private platform: Platform) {
-     }
+  constructor(
+    private db: DatabaseService,
+    private fr: FileReaderService,
+    private platform: Platform
+  ) {}
 
   ngOnInit() {
     this.db.getDatabaseState().subscribe(ready => {
@@ -34,7 +36,6 @@ export class AuthorsPage implements OnInit {
         this.db.getAuthors().subscribe(authors => {
           this.authors = authors;
         });
-
         this.platform.ready().then(() => {
           this.fr.createApplicationFolder();
           this.fr.listOfAuthors();
@@ -48,7 +49,7 @@ export class AuthorsPage implements OnInit {
 
   ionViewWillEnter() {
     this.db.getValue('as').then(data => {
-      this.lastListenedBookId = data;
+      data ? this.lastListenedBookId = data : this.lastListenedBookId = '10';
     });
   }
 
