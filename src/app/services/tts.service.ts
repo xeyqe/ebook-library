@@ -161,27 +161,29 @@ export class TtsService {
     arrayOfParagraphs.forEach(element => {
       if (element && regex.test(element)) {
         let length = element.length;
-        if (length < 790) {
-          newArray.push(element);
-        } else {
-          const arrayOfSentences = element.split(/\.\ /g);
-          arrayOfSentences.forEach(sentence => {
-            length = sentence.length;
-            if (sentence && length < 790 && regex.test(sentence)) {
-              newArray.push(sentence + '. ');
-            } else {
-              const thousands = Math.floor(length / 790);
-              for (let j = 0; j < thousands; j++) {
-                const partOfSentence = sentence.substring(j * 790, (j + 1) * 790);
-                if (partOfSentence && regex.test(partOfSentence)) {
-                  newArray.push(partOfSentence);
-                }
+
+        const arrayOfSentences = element.split(/\.\ /g);
+
+        for (let i=0; i<arrayOfSentences.length; i++) {
+          let sentence = arrayOfSentences[i];
+          length = arrayOfSentences[i].length;
+          if (sentence && length < 790 && regex.test(sentence)) {
+            i === arrayOfSentences.length - 1 ? sentence = sentence : sentence += '.';
+            newArray.push(sentence);
+          } else {
+            const thousands = Math.floor(length / 790);
+            for (let j = 0; j < thousands; j++) {
+              const partOfSentence = sentence.substring(j * 790, (j + 1) * 790);
+              if (partOfSentence && regex.test(partOfSentence)) {
+                newArray.push(partOfSentence);
               }
             }
-          });
+          }
         }
+
       }
     });
+
     return newArray;
   }
 

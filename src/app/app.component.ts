@@ -36,28 +36,28 @@ export class AppComponent {
     this.platform.ready().then(() => {
 
       this.statusBar.styleDefault();
-      this.splashScreen.hide();
-      // this.bg.setDefaults({ silent: true });
 
+      // this.bg.setDefaults({ silent: true });
+      
       this.platform.backButton.subscribeWithPriority(9999, () => {
         this.hwBackButtonFunction();
       });
       this.platform.resume.subscribe(() => {
-        this.sp.changeSpeakingLimit(500);
+        // this.sp.changeSpeakingLimit(500);
         this.bg.disable();
       });
       this.platform.pause.subscribe(() => {
-        this.sp.changeSpeakingLimit(4000);
+        // this.sp.changeSpeakingLimit(4000);
         if (this.sp.ifSpeaking()) {
           this.bg.enable();
         }
       });
+      this.splashScreen.hide();
     });
   }
 
   hwBackButtonFunction() {
     const url = this.router.url;
-    console.log(url);
 
     if (url === '/authors') {
       if (this.lastTimeBackPress + 2000 > new Date().getTime()) {

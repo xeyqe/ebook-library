@@ -1,11 +1,14 @@
 import { Component, OnInit } from '@angular/core';
-import { DatabaseService, Author, Book } from './../../services/database.service';
-import { FileReaderService } from './../../services/file-reader.service';
 import { ActivatedRoute, Router } from '@angular/router';
+import { FormControl } from '@angular/forms';
 import { HTTP } from '@ionic-native/http/ngx';
 import { Dialogs } from '@ionic-native/dialogs/ngx';
-import { FormGroup, FormControl } from '@angular/forms';
+import { Observable } from 'rxjs';
+import { map, startWith} from 'rxjs/operators';
 
+import { DatabaseService, Author, Book } from './../../services/database.service';
+import { FileReaderService } from './../../services/file-reader.service';
+import { JsonDataParserService } from './../../services/json-data-parser.service';
 
 @Component({
   selector: 'app-author',
@@ -13,16 +16,6 @@ import { FormGroup, FormControl } from '@angular/forms';
   styleUrls: ['./author.page.scss'],
 })
 export class AuthorPage implements OnInit {
-  authorForm = new FormGroup({
-    authorImg: new FormControl(''),
-    authorName: new FormControl(''),
-    authorSurname: new FormControl(''),
-    authorNationality: new FormControl(''),
-    authorBirth: new FormControl(''),
-    authorDeath: new FormControl(''),
-    authorBiography: new FormControl('')
-  });
-
   author: Author = null;
   books: Book[] = [];
   biography = '';
@@ -34,16 +27,29 @@ export class AuthorPage implements OnInit {
   listOfPictures;
   imArray = [];
   authorId: number;
+  jsonOfAuthorsIndex;
+  fullHeight = false;
+
+  myControl = new FormControl();
+  filteredOptions: Observable<any[]>;
 
   constructor(private route: ActivatedRoute,
               private db: DatabaseService,
               private fs: FileReaderService,
               private http: HTTP,
               private dialog: Dialogs,
-              private router: Router) {
+              private router: Router,
+              private jsonServ: JsonDataParserService ) {
                }
 
   ngOnInit() {
+    this.myControl.disable();
+    this.filteredOptions = this.myControl.valueChanges
+      .pipe(
+        startWith(''),
+        map(value => this._filter(value))
+      );
+
     this.route.paramMap.subscribe(params => {
       const autId = params.get('id');
       const id = parseInt(autId, 10);
@@ -69,7 +75,62 @@ export class AuthorPage implements OnInit {
           });
         }
       });
+      this.jsonServ.jsonAuthorsIndexesData().then(_ => {
+        this.jsonOfAuthorsIndex = this.jsonServ.getListOfAuthors();
+        console.log(this.jsonOfAuthorsIndex[0]);
+      }).catch(e => {
+        console.log('jsonServ failed');
+        console.log(e);
+      });
     });
+  }
+
+  getPosts(index: string) {
+    this.jsonServ.jsonAuthorsData().then(_ => {
+      const jsonAuthor = this.jsonServ.getAuthor(index);
+
+      console.log(jsonAuthor);
+
+      if (jsonAuthor) {
+        this.author.img = jsonAuthor.img;
+        this.author.name = jsonAuthor.name;
+        this.author.surname = jsonAuthor.surname;
+        this.author.nationality = jsonAuthor.nationality;
+        this.author.birth = jsonAuthor.birth;
+        this.author.death = jsonAuthor.death;
+        this.author.biography = jsonAuthor.biography;
+        this.author.idInJson = index;
+
+        this.authorChanged = true;
+      }
+    });
+  }
+
+  _filter(value: any): any[] {
+    console.log(value);
+    if (this.jsonOfAuthorsIndex && value) {
+      const filterValue = value.toLowerCase();
+      return this.jsonOfAuthorsIndex.filter(option =>
+        option.name.toLowerCase().includes(filterValue));
+    } else {
+      return undefined;
+    }
+  }
+
+  displayFn(subject) {
+    if (subject && !subject.name) {
+      return subject;
+    } else if (subject && subject.name) {
+      const index = subject.name.lastIndexOf(' ');
+      if (index === -1) {
+        return subject;
+      } else {
+        return subject.name.substring(subject.name.lastIndexOf(' ') + 1); // subject.name.split(' ')[subject.name.split(' ').length - 1];
+      }
+    } else {
+      return undefined;
+    }
+    // return subject ? subject.name.substring(subject.name.lastIndexOf(' ')) : undefined;
   }
 
   updateAuthor() {
@@ -83,9 +144,12 @@ export class AuthorPage implements OnInit {
     });
   }
 
-  editable() {
+  async editable() {
     if (this.ready2editing) {
       this.wikiOutputBoolean = false;
+      this.myControl.disable();
+    } else {
+      this.myControl.enable();
     }
     this.db.getAuthor(this.authorId).then(author => {
       this.author = author;
@@ -99,11 +163,10 @@ export class AuthorPage implements OnInit {
     const searchValue = this.author.name + ' ' + this.author.surname;
 
     this.http.get('https://wikipedia.org/w/api.php',
-    { action: 'query', list: 'search', srsearch: searchValue, rvprop: 'content', rvsection: '0',
+    { action: 'query', list: 'search', srsearch: 'intitle:' + searchValue, rvprop: 'content', rvsection: '0',
      rvslots: '*', format: 'json'}, {}).then(output => {
       this.ready2editing = true;
       this.wikiOutputBoolean = true;
-
       this.fromWiki = JSON.parse(output.data).query.search;
     }).catch(e => {
       this.ready2editing = false;
@@ -198,7 +261,22 @@ export class AuthorPage implements OnInit {
         this.author.surname = obj.name;
       }
     }
-
   }
 
+  downloadPicture() {
+    const uri = this.author.img;
+    const path = this.author.path;
+    const index = this.author.img.lastIndexOf('.');
+    const extension = this.author.img.substring(index);
+
+    const filename = this.author.name + '_' + this.author.surname + extension;
+
+    this.fs.downloadPicture(uri, path, filename).then(src => {
+      this.author.img = src;
+      console.log(src);
+    }).catch(e => {
+      console.log(e);
+      alert(JSON.stringify(e));
+    });
+  }
 }

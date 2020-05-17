@@ -1,7 +1,10 @@
 <ion-header>
   <ion-toolbar>
     <ion-row>
-      <ion-title>book</ion-title>
+      <ion-title *ngIf="!ready2editing">book</ion-title>
+      <ion-col *ngIf="ready2editing">
+        <ion-button (click)="deleteBook()">delete</ion-button>
+      </ion-col>
       <div *ngIf="dontworryiwillnameyoulater && dontworryiwillnameyoulater2 && book">
         <ion-button *ngIf="!ready2editing" [routerLink]="['/', 'tts', dontworryiwillnameyoulater]">
           <ion-icon slot="icon-only" name="megaphone"></ion-icon>
@@ -22,12 +25,28 @@
 </ion-header>
 
 <ion-content>
-  <div *ngIf="book !== null">
+  <div *ngIf="book">
     <ion-grid>
+      <ion-item *ngIf="ready2editing || book.img">
+
+        <div class="bu-change-pic" *ngIf="book.img && ready2editing" >
+          <ion-button *ngIf="!book.img.startsWith('http://localhost/')" (click)="downloadPicture()">
+            <ion-icon slot="icon-only" name="download-sharp"></ion-icon>
+          </ion-button>
+        </div>
+
+        <ion-img *ngIf="book.img" [src]="book.img"></ion-img>
+        <ion-img *ngIf="!book.img && ready2editing" style="background-color: #413d3d;"
+                src="https://upload.wikimedia.org/wikipedia/commons/7/7c/User_font_awesome.svg">
+        </ion-img>
+      </ion-item>
       <ion-item *ngIf="book.title || ready2editing">
         <ion-label position="floating">Title</ion-label>
         <ion-input disabled={{!ready2editing}} (change)="bookChanged = true" [(ngModel)]="book.title"></ion-input>
       </ion-item>
+      <ion-select *ngIf="jsonBooks && ready2editing" interface="popover" (ionChange)="getBookData($event.detail.value)">
+        <ion-select-option *ngFor="let book of jsonBooks" [value]="book.index">{{ book.title }}</ion-select-option>
+      </ion-select>
       <ion-item *ngIf="book.originalTitle || ready2editing">
         <ion-label position="floating">Original title</ion-label>
         <ion-input disabled={{!ready2editing}} (change)="bookChanged = true" [(ngModel)]="book.originalTitle"></ion-input>

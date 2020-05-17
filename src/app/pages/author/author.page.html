@@ -10,7 +10,7 @@
           <ion-icon slot="icon-only" name="save"></ion-icon>
         </ion-button>
         <ion-button (click)="editable()">
-          <ion-icon *ngIf="!ready2editing" slot="icon-only" name="create"></ion-icon>
+          <ion-icon *ngIf="!ready2editing" slot="icon-only" name="create-sharp"></ion-icon>
           <ion-icon *ngIf="ready2editing" slot="icon-only" name="close"></ion-icon>
         </ion-button>
         <ion-button (click)="getFromWikipedia()">
@@ -26,16 +26,21 @@
   <div *ngIf="author !== null">
       <ion-grid>
         <ion-item *ngIf="ready2editing || author.img">
-          <ion-button *ngIf="ready2editing" class="bu-change-pic" (click)="changePicture()">
-            <ion-icon slot="icon-only" name="create"></ion-icon>
-          </ion-button>
+          <div class="bu-change-pic" *ngIf="ready2editing && author.img" >
+            <ion-button *ngIf="!author.img.startsWith('http://localhost/')" (click)="downloadPicture()">
+              <ion-icon slot="icon-only" name="download-sharp"></ion-icon>
+            </ion-button>
+            <ion-button *ngIf="imArray.length" (click)="changePicture()">
+              <ion-icon slot="icon-only" name="arrow-forward-circle"></ion-icon>
+            </ion-button>
+          </div>
             <ion-img *ngIf="author.img" [src]="author.img"></ion-img>
           <ion-img *ngIf="!author.img && ready2editing" style="background-color: #413d3d;"
                   src="https://upload.wikimedia.org/wikipedia/commons/7/7c/User_font_awesome.svg"></ion-img>
         </ion-item> 
 
         <ion-row>
-          <ion-col  *ngIf="author.name || ready2editing">
+          <ion-col size="auto" *ngIf="author.name || ready2editing">
             <ion-item>
               <ion-label class="red" position="floating">Name</ion-label>
               <ion-input class="intp" disabled={{!ready2editing}} (change)="authorChanged = true"
@@ -43,15 +48,36 @@
             </ion-item>
           </ion-col>
 
-          <ion-col *ngIf="author.surname || ready2editing">
+          <ion-col size="auto" *ngIf="author.surname || ready2editing">
             <ion-item>
-              <ion-label class="red" position="floating">Surname</ion-label>
-              <ion-input name="authorSurname" disabled={{!ready2editing}}
-                [(ngModel)]="author.surname" (change)="authorChanged = true"></ion-input>
-            </ion-item>
+
+                <form>
+                  <mat-form-field>
+                    <mat-label class="red">Surname</mat-label>
+                    <input type="text" 
+                      matInput 
+                      [matAutocomplete]="auto" 
+                      [formControl]="myControl" 
+                      [(ngModel)]="author.surname"
+                      (change)="authorChanged = true"
+                      aria-label="author.surname"
+                      [disabled]="!ready2editing"
+                      [ngClass]="ready2editing ? 'white' : 'gray'">
+                    <mat-autocomplete 
+                      #auto="matAutocomplete" 
+                      (optionSelected)='getPosts($event.option.value.index)'
+                      [displayWith]="displayFn">
+                      <mat-option *ngFor="let option of filteredOptions | async" [value]="option">
+                        {{ option.name }} 
+                      </mat-option>
+                    </mat-autocomplete>
+                  </mat-form-field>
+                </form>
+
+              </ion-item>
           </ion-col>
         </ion-row>
-      
+
         <ion-row>
           <ion-col *ngIf="author.nationality || ready2editing" size="6">
             <div>
@@ -78,12 +104,16 @@
           </ion-col>
         </ion-row>
 
-        <ion-item *ngIf="author.biography || ready2editing">
+        <ion-item *ngIf="ready2editing">
           <ion-label class="red" position="floating">Biography</ion-label>
           <ion-textarea disabled={{!ready2editing}} autoGrow=true
             (change)="authorChanged = true"
             [(ngModel)]="author.biography">
           </ion-textarea>
+        </ion-item>
+        <ion-item *ngIf="author.biography && !ready2editing" (click)="fullHeight = !fullHeight">
+          <ion-label class="red" style="padding-bottom: 20px" position="stacked">Biography</ion-label>
+          <span [ngClass]="{'height100' : !fullHeight}" class="gray">{{ author.biography }}</span>
         </ion-item>
 
       </ion-grid>

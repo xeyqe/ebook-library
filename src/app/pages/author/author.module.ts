@@ -7,7 +7,8 @@ import { IonicModule } from '@ionic/angular';
 import { AuthorPageRoutingModule } from './author-routing.module';
 
 import { AuthorPage } from './author.page';
-import { ApplicationPipesModuleModule } from './../../application-pipes-module/application-pipes-module.module';
+import { ApplicationPipesModuleModule } from '../../application-pipes-module/application-pipes-module.module';
+import { MaterialModule } from 'src/app/material/material.module';
 
 
 @NgModule({
@@ -17,7 +18,8 @@ import { ApplicationPipesModuleModule } from './../../application-pipes-module/a
     ReactiveFormsModule,
     IonicModule,
     AuthorPageRoutingModule,
-    ApplicationPipesModuleModule
+    ApplicationPipesModuleModule,
+    MaterialModule
   ],
   declarations: [AuthorPage]
 })

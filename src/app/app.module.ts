@@ -1,7 +1,6 @@
 import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
+import { BrowserModule, HammerModule } from '@angular/platform-browser';
 import { RouteReuseStrategy } from '@angular/router';
-
 import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
 import { SplashScreen } from '@ionic-native/splash-screen/ngx';
 import { StatusBar } from '@ionic-native/status-bar/ngx';
@@ -19,8 +18,11 @@ import { IonicStorageModule } from '@ionic/storage';
 import { HTTP } from '@ionic-native/http/ngx';
 import { Dialogs } from '@ionic-native/dialogs/ngx';
 import { BackgroundMode } from '@ionic-native/background-mode/ngx';
-import { ReactiveFormsModule, FormsModule } from '@angular/forms';
-
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { MaterialModule } from './material/material.module';
+import { Downloader } from '@ionic-native/downloader/ngx';
+import { WebView } from '@ionic-native/ionic-webview/ngx';
 
 @NgModule({
   declarations: [AppComponent],
@@ -31,7 +33,10 @@ import { ReactiveFormsModule, FormsModule } from '@angular/forms';
     AppRoutingModule,
     HttpClientModule,
     IonicStorageModule.forRoot(),
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    MaterialModule,
+    BrowserAnimationsModule,
+    HammerModule
   ],
   providers: [
     StatusBar,
@@ -43,7 +48,9 @@ import { ReactiveFormsModule, FormsModule } from '@angular/forms';
     TextToSpeech,
     HTTP,
     Dialogs,
-    BackgroundMode
+    BackgroundMode,
+    Downloader,
+    WebView
     ],
   bootstrap: [AppComponent]
 })

@@ -93,7 +93,6 @@ export class TtsPage implements OnInit, OnDestroy {
                 });
                 this.speed = this.sp.getSp();
                 this.sp.getSpeed().subscribe(speed => {
-                  console.log(speed);
                   this.speed = speed;
                 });
                 this.textsLength = this.sp.getTextsLenght();
@@ -139,12 +138,8 @@ export class TtsPage implements OnInit, OnDestroy {
 
   onOff() {
     if (this.spritzBoolean) {
-      if (!this.isSpeaking) {
-        this.isSpeaking = !this.isSpeaking;
-        this.spritz();
-      } else {
-        this.isSpeaking = !this.isSpeaking;
-      }
+      this.isSpeaking = !this.isSpeaking;
+      this.spritz2();
     } else {
       if (this.isSpeaking) {
         this.sp.stopSpeaking();
@@ -159,7 +154,7 @@ export class TtsPage implements OnInit, OnDestroy {
     if (!this.progress) {
       this.progress = 0;
     }
-    if (this.spritzBoolean) {
+    if (this.spritzBoolean && this.progress > 0) {
       this.progress -= 1;
     } else {
       this.sp.changeProgress(this.progress - 1);
@@ -171,7 +166,7 @@ export class TtsPage implements OnInit, OnDestroy {
     if (!this.progress) {
       this.progress = 0;
     }
-    if (this.spritzBoolean) {
+    if (this.spritzBoolean && this.progress < this.texts.length - 1) {
       this.progress += 1;
     } else {
       this.sp.changeProgress(this.progress + 1);
@@ -199,65 +194,140 @@ export class TtsPage implements OnInit, OnDestroy {
       if (this.isSpeaking) {
         this.isSpeaking = false;
       }
-      this.sentense = this.texts[this.progress] + '.';
-      this.printWord(this.sentense.split(/\ /)[0]);
+      this.sentense = this.texts[this.progress];
+      this.spritz2();
+      // this.printWord2(this.sentense.split(/\ /)[0], this.redIndexFinder(this.sentense.split(/\ /)[0].length)[0]);
     }
   }
 
-  async spritz() {
-    let slova: string[];
+  // async spritz() {
+  //   let slova: string[];
 
+  //   for (let i = this.progress; i < this.texts.length; i++) {
+  //     if (!this.isSpeaking) {
+  //       break;
+  //     }
+  //     this.sentense = this.texts[i];
+  //     const msForOneWord = Math.floor(60000 / this.speed);
+  //     const msForOneCharacter = Math.floor(msForOneWord / this.averageWordLength);
+
+  //     const paragraph = this.texts[i];
+  //     slova = paragraph.split(/[\s]+/);
+  //     for (const word of slova) {
+  //       if (!this.isSpeaking) {
+  //         break;
+  //       }
+  //       if (word.length) {
+  //         const timeoutMs = word.length * msForOneCharacter < msForOneWord ? msForOneWord : Math.floor(word.length * msForOneCharacter);
+  //         this.printWord2(word);
+  //         await  new Promise((resolve) => {
+  //           setTimeout(() => {
+  //             resolve();
+  //           }, Math.floor(timeoutMs));
+  //         });
+  //       }
+  //     }
+  //     if (this.isSpeaking) {
+  //       this.progress++;
+  //     }
+  //   }
+  // }
+
+
+  redIndexFinder(length: number): number[] {
+    if (length === 1) {
+      return [1];
+    } else if (length >= 2 && length <= 4) {
+      return [2];
+    } else if (length >= 5 && length <= 9) {
+      return [3];
+    } else if (length >= 10 && length <= 13) {
+      return [4];
+    } else if (length === 14) {
+      return [3, 10];
+    } else if (length === 15 || length === 16) {
+      return [3, 11];
+    } else if (length === 17 || length === 18) {
+      return [3, 12];
+    } else if (length === 19) {
+      return [3, 13];
+    } else {
+      return [3, 14];
+    }
+
+  }
+
+
+  async spritz2() {
+    const timeout = Math.floor(60000/this.speed);
     for (let i = this.progress; i < this.texts.length; i++) {
-      if (!this.isSpeaking) {
-        break;
-      }
-      this.sentense = this.texts[i] + '.';
-      const msForOneWord = Math.floor(60000 / this.speed);
-      const msForOneCharacter = Math.floor(msForOneWord / this.averageWordLength);
-
-      const paragraph = this.texts[i];
-      slova = paragraph.split(/[\s]+/);
-      for (const word of slova) {
-        if (!this.isSpeaking) {
-          break;
+      const words = this.texts[i].split(/[\s]+/);
+      this.sentense = this.texts[i];
+      for (const word of words) {
+        const slovo = word.trim();
+        const regex = new RegExp('[A-Za-z0-9]+');
+        if (regex.test(slovo)) {
+          for (const index of this.redIndexFinder(slovo.length)) {
+            this.printWord2(slovo, index);
+            if (!this.isSpeaking) {
+              break;
+            }
+            await  new Promise((resolve) => {
+              setTimeout(() => {
+                resolve();
+              }, timeout);
+            });
+          };
+          if (!this.isSpeaking) {
+            break;
+          }
         }
-        if (word.length) {
-          const timeoutMs = word.length * msForOneCharacter < msForOneWord ? msForOneWord : Math.floor(word.length * msForOneCharacter);
-          this.printWord(word);
-          await  new Promise((resolve) => {
-            setTimeout(() => {
-              resolve();
-            }, Math.floor(timeoutMs));
-          });
-        }
-      }
+      };
       if (this.isSpeaking) {
         this.progress++;
+      } else {
+        break;
       }
     }
   }
 
-  printWord(word: string) {
-    word = word.trim();
 
-    if (word.length === 1) {
-      this.spritzPreText = '';
-      this.spritzRedText = word[0];
-      this.spritzPostText = '';
-    } else if (word.length < 6) {
-      this.spritzPreText = word[0];
-      this.spritzRedText = word[1];
-      this.spritzPostText = word.substring(2);
-    } else if (word.length < 10) {
-      this.spritzPreText = word.substring(0, 2);
-      this.spritzRedText = word[2];
-      this.spritzPostText = word.substring(3);
-    } else {
-      this.spritzPreText = word.substring(0, 3);
-      this.spritzRedText = word[3];
-      this.spritzPostText = word.substring(4);
-    }
+  printWord2(word: string, index: number) {
+    this.spritzPreText = word.substring(0, index-1);
+    this.spritzRedText = word[index-1];
+    this.spritzPostText = word.substring(index);
   }
+
+  async waitFn() {
+    const ms = 60000/this.speed;
+    await  new Promise((resolve) => {
+      setTimeout(() => {
+        resolve();
+      }, ms);
+    });
+  }
+
+  // printWord(word: string) {
+  //   word = word.trim();
+
+  //   if (word.length === 1) {
+  //     this.spritzPreText = '';
+  //     this.spritzRedText = word[0];
+  //     this.spritzPostText = '';
+  //   } else if (word.length < 5) {
+  //     this.spritzPreText = word[0];
+  //     this.spritzRedText = word[1];
+  //     this.spritzPostText = word.substring(2);
+  //   } else if (word.length < 10) {
+  //     this.spritzPreText = word.substring(0, 2);
+  //     this.spritzRedText = word[2];
+  //     this.spritzPostText = word.substring(3);
+  //   } else {
+  //     this.spritzPreText = word.substring(0, 3);
+  //     this.spritzRedText = word[3];
+  //     this.spritzPostText = word.substring(4);
+  //   }
+  // }
 
   increaseFontSize() {
     let str = this.fontSize;
