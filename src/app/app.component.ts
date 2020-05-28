@@ -1,14 +1,15 @@
 import { Component } from '@angular/core';
-
 import { Platform } from '@ionic/angular';
 import { SplashScreen } from '@ionic-native/splash-screen/ngx';
 import { StatusBar } from '@ionic-native/status-bar/ngx';
 import { Storage } from '@ionic/storage';
 import { Router } from '@angular/router';
-import { DatabaseService } from './services/database.service';
 import { ToastController } from '@ionic/angular';
 import { BackgroundMode } from '@ionic-native/background-mode/ngx';
+
+import { DatabaseService } from './services/database.service';
 import { TtsService } from './services/tts.service';
+import { LocalNotifications } from '@ionic-native/local-notifications/ngx';
 
 @Component({
   selector: 'app-root',
@@ -25,7 +26,8 @@ export class AppComponent {
     private db: DatabaseService,
     private toastCtrl: ToastController,
     private bg: BackgroundMode,
-    private sp: TtsService
+    private sp: TtsService,
+    private notif: LocalNotifications
   ) {
     this.initializeApp();
   }
@@ -37,19 +39,25 @@ export class AppComponent {
 
       this.statusBar.styleDefault();
 
-      // this.bg.setDefaults({ silent: true });
-      
+      this.bg.setDefaults({ silent: true });
+
       this.platform.backButton.subscribeWithPriority(9999, () => {
         this.hwBackButtonFunction();
       });
       this.platform.resume.subscribe(() => {
         // this.sp.changeSpeakingLimit(500);
         this.bg.disable();
+        this.notif.cancelAll();
       });
       this.platform.pause.subscribe(() => {
         // this.sp.changeSpeakingLimit(4000);
         if (this.sp.ifSpeaking()) {
           this.bg.enable();
+          this.notif.schedule({
+            id: 1,
+            text: '',
+            sound: null,
+          });
         }
       });
       this.splashScreen.hide();

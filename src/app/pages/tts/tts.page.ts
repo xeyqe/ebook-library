@@ -259,6 +259,8 @@ export class TtsPage implements OnInit, OnDestroy {
 
 
   async spritz2() {
+    const slowRegex = new RegExp('[\.\,\?\!]');
+    let addedMs = 0;
     const timeout = Math.floor(60000/this.speed);
     for (let i = this.progress; i < this.texts.length; i++) {
       const words = this.texts[i].split(/[\s]+/);
@@ -277,6 +279,16 @@ export class TtsPage implements OnInit, OnDestroy {
                 resolve();
               }, timeout);
             });
+            addedMs = 0;
+            if (slowRegex.test(slovo)) {
+              this.printWord2(' ', 1)
+              addedMs = Math.floor(timeout/2);
+              await  new Promise((resolve) => {
+                setTimeout(() => {
+                  resolve();
+                }, addedMs);
+              });
+            }
           };
           if (!this.isSpeaking) {
             break;
@@ -352,25 +364,30 @@ export class TtsPage implements OnInit, OnDestroy {
 
   changeSpeed(str: string) {
     const speed = this.speed;
-    if (speed > 0) {
-      if (str === '-') {
-        if (this.spritzBoolean) {
+    if (str === '-') {
+      if (this.spritzBoolean) {
+        if (speed > 100) {
           this.speed = speed - 10;
-        } else {
-          this.sp.changeSpeed(speed - 1);
         }
       } else {
-        if (this.spritzBoolean) {
+        if (speed > 5) {
+          this.sp.changeSpeed(speed - 1);
+        }
+      }
+    } else {
+      if (this.spritzBoolean) {
+        if (speed < 1000) {
           this.speed = speed + 10;
-        } else {
+        }
+      } else {
+        if (speed < 40) {
           this.sp.changeSpeed(speed + 1);
         }
       }
+    }
 
-
-      if (this.spritzBoolean) {
-        this.strg.set('spritzSpeed', this.speed);
-      }
+    if (this.spritzBoolean) {
+      this.strg.set('spritzSpeed', this.speed);
     }
   }
 

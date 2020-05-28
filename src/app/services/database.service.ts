@@ -49,6 +49,8 @@ export class DatabaseService {
 
   authors = new BehaviorSubject([]);
   books = new BehaviorSubject([]);
+  allBooks = new BehaviorSubject([]);
+
 
   constructor(private plt: Platform,
               private sqlitePorter: SQLitePorter,
@@ -85,9 +87,6 @@ export class DatabaseService {
     });
   }
 
-  a() {
-  }
-
   getDatabaseState() {
     return this.dbReady.asObservable();
   }
@@ -98,6 +97,10 @@ export class DatabaseService {
 
   getBooks(): Observable<any[]> {
     return this.books.asObservable();
+  }
+
+  getAllBooks(): Observable<any[]> {
+    return this.allBooks.asObservable();
   }
 
   loadAuthors() {
@@ -162,7 +165,7 @@ export class DatabaseService {
     });
   }
 
-  getBooksOfAuthor(id: number): Promise<void> {
+  getBooksOfAuthor(id: number): Promise<any> {
     return this.database.executeSql('SELECT * FROM books WHERE creatorId = ? ORDER BY title ASC', [id]).then(data => {
       const books: Book[] = [];
 
@@ -189,6 +192,7 @@ export class DatabaseService {
         }
       }
       this.books.next(books);
+      // return books;
     });
   }
 
@@ -213,6 +217,34 @@ export class DatabaseService {
         rating: data.rows.item(0).rating,
         img: data.rows.item(0).img
       };
+    });
+  }
+
+  getAllBooksDb() {
+    return this.database.executeSql('SELECT * FROM books').then(data => {
+      const books = [];
+      if (data.rows.length > 0) {
+        for (let i = 0; i < data.rows.length; i++) {
+          books.push({
+            title: data.rows.item(i).title,
+            creatorId: data.rows.item(i).creatorId,
+            originalTitle: data.rows.item(i).originalTitle,
+            annotation: data.rows.item(i).annotation,
+            publisher: data.rows.item(i).publisher,
+            published: data.rows.item(i).published,
+            genre: data.rows.item(i).genre,
+            lenght: data.rows.item(i).lenght,
+            language: data.rows.item(i).language,
+            translator: data.rows.item(i).translator,
+            ISBN: data.rows.item(i).ISBN,
+            path: data.rows.item(i).path,
+            progress: data.rows.item(i).progress,
+            rating: data.rows.item(i).rating,
+            img: data.rows.item(i).img
+           });
+        }
+      }
+      this.allBooks.next(books);
     });
   }
 
@@ -266,6 +298,35 @@ export class DatabaseService {
         }
       }
       this.books.next(books);
+    });
+  }
+
+  loadAllBooks() {
+    return this.database.executeSql('SELECT * FROM books ORDER BY title COLLATE NOCASE ASC', []).then(data => {
+      const books = [];
+      if (data.rows.length > 0) {
+        for (let i = 0; i < data.rows.length; i++) {
+          books.push({
+            id: data.rows.item(i).id,
+            title: data.rows.item(i).title,
+            creatorId: data.rows.item(i).creatorId,
+            originalTitle: data.rows.item(i).originalTitle,
+            annotation: data.rows.item(i).annotation,
+            publisher: data.rows.item(i).publisher,
+            published: data.rows.item(i).published,
+            genre: data.rows.item(i).genre,
+            lenght: data.rows.item(i).lenght,
+            language: data.rows.item(i).language,
+            translator: data.rows.item(i).translator,
+            ISBN: data.rows.item(i).ISBN,
+            path: data.rows.item(i).path,
+            progress: data.rows.item(i).progress,
+            rating: data.rows.item(i).rating,
+            img: data.rows.item(i).img
+           });
+        }
+      }
+      this.allBooks.next(books);
     });
   }
 

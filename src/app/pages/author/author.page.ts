@@ -9,6 +9,7 @@ import { map, startWith} from 'rxjs/operators';
 import { DatabaseService, Author, Book } from './../../services/database.service';
 import { FileReaderService } from './../../services/file-reader.service';
 import { JsonDataParserService } from './../../services/json-data-parser.service';
+import { WebScraperService } from 'src/app/services/web-scraper.service';
 
 @Component({
   selector: 'app-author',
@@ -29,6 +30,8 @@ export class AuthorPage implements OnInit {
   authorId: number;
   jsonOfAuthorsIndex;
   fullHeight = false;
+  onlineAuthorsList;
+  showAble = false;
 
   myControl = new FormControl();
   filteredOptions: Observable<any[]>;
@@ -39,8 +42,9 @@ export class AuthorPage implements OnInit {
               private http: HTTP,
               private dialog: Dialogs,
               private router: Router,
-              private jsonServ: JsonDataParserService ) {
-               }
+              private jsonServ: JsonDataParserService,
+              private webScraper: WebScraperService
+  ) { }
 
   ngOnInit() {
     this.myControl.disable();
@@ -59,11 +63,11 @@ export class AuthorPage implements OnInit {
         if (ready) {
           this.db.getAuthor(id).then(data => {
             this.author = data;
+            this.fs.addBooksOfAuthor(id, data.path);
 
             this.db.getBooksOfAuthor(id).then(_ => {
               this.db.getBooks().subscribe(books => {
                 this.books = books;
-                this.fs.addBooksOfAuthor(id, data.path);
               });
             }).catch(e => {
               console.log('getBooksOfAuthor failed: ');
@@ -77,19 +81,17 @@ export class AuthorPage implements OnInit {
       });
       this.jsonServ.jsonAuthorsIndexesData().then(_ => {
         this.jsonOfAuthorsIndex = this.jsonServ.getListOfAuthors();
-        console.log(this.jsonOfAuthorsIndex[0]);
       }).catch(e => {
         console.log('jsonServ failed');
         console.log(e);
       });
     });
+    this.showAble = this.webScraper.showable;
   }
 
   getPosts(index: string) {
     this.jsonServ.jsonAuthorsData().then(_ => {
       const jsonAuthor = this.jsonServ.getAuthor(index);
-
-      console.log(jsonAuthor);
 
       if (jsonAuthor) {
         this.author.img = jsonAuthor.img;
@@ -107,7 +109,10 @@ export class AuthorPage implements OnInit {
   }
 
   _filter(value: any): any[] {
-    console.log(value);
+    if (!value) {
+      return value;
+    }
+
     if (this.jsonOfAuthorsIndex && value) {
       const filterValue = value.toLowerCase();
       return this.jsonOfAuthorsIndex.filter(option =>
@@ -187,8 +192,9 @@ export class AuthorPage implements OnInit {
         this.authorChanged = true;
         const array = Array.from(data.query.pages[pageid].images, im => im['title'])
                          .filter(img => !img.includes('.svg'));
+
         this.imArray = Array.from(array, item => 'https://commons.wikimedia.org/wiki/Special:FilePath/' + item + '?width=200');
-        this.imArray.push(null);
+
         if (data.query.pages[pageid].thumbnail) {
           this.author.img = data.query.pages[pageid].thumbnail.source;
         }
@@ -273,10 +279,39 @@ export class AuthorPage implements OnInit {
 
     this.fs.downloadPicture(uri, path, filename).then(src => {
       this.author.img = src;
-      console.log(src);
     }).catch(e => {
       console.log(e);
       alert(JSON.stringify(e));
     });
+  }
+
+  getAuthor() {
+    let authorsName: string;
+    if (!this.author.name || this.author.name.length < 3) {
+      authorsName = this.author.surname;
+    } else {
+      authorsName = this.author.name + ' ' + this.author.surname;
+    }
+
+    this.webScraper.getAuthorsList(authorsName).then(data => {
+      console.log(data);
+      this.onlineAuthorsList = data;
+    })
+  }
+
+  downloadAuthorInfo(url: string) {
+    this.webScraper.getAuthor(url).then(data => {
+        if (data) {
+          this.author.name = this.author.name || data.name;
+          this.author.surname = this.author.surname || data.surname;
+          this.author.nationality = this.author.nationality || data.nationality;
+          this.author.biography = this.author.biography || data.biography;
+          this.author.birth = this.author.birth || data.birth;
+          this.author.death = this.author.death || data.death;
+          this.author.img = this.author.img || data.img;
+
+          this.authorChanged = true;
+        }
+      })
   }
 }

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Platform } from '@ionic/angular';
 
-import { DatabaseService, Author } from './../../services/database.service';
+import { DatabaseService, Author, Book } from './../../services/database.service';
 import { FileReaderService } from './../../services/file-reader.service';
 
 
@@ -13,9 +13,13 @@ import { FileReaderService } from './../../services/file-reader.service';
 export class AuthorsPage implements OnInit {
 
   authors: Author[] = [];
+  books: Book[] = [];
   author = {};
   lastListenedBookId: string;
   subscribtion;
+  hideCharacters = false;
+  where2Search = ['A', 'B'];
+  where2SearchIndex = 0;
 
   selectedView = 'TODO';
   filterStatus = '';
@@ -36,6 +40,9 @@ export class AuthorsPage implements OnInit {
         this.db.getAuthors().subscribe(authors => {
           this.authors = authors;
         });
+        this.db.getAllBooks().subscribe(books => {
+          this.books = books;
+        })
         this.platform.ready().then(() => {
           this.fr.createApplicationFolder();
           this.fr.listOfAuthors();
@@ -51,6 +58,9 @@ export class AuthorsPage implements OnInit {
     this.db.getValue('as').then(data => {
       data ? this.lastListenedBookId = data : this.lastListenedBookId = '10';
     });
+    this.db.getValue('where2SearchIndex').then(data => {
+      data ? this.where2SearchIndex = parseInt(data, 10) : this.where2SearchIndex = 0;
+    });
   }
 
   changeSelectedChar(character: string) {
@@ -58,5 +68,10 @@ export class AuthorsPage implements OnInit {
       this.selectedCharacter = character;
     }
   }
+
+  where2SearchFn() {
+    this.where2SearchIndex =  (this.where2SearchIndex + 1) % this.where2Search.length;
+  }
+
 
 }
