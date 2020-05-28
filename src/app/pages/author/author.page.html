@@ -13,8 +13,11 @@
           <ion-icon *ngIf="!ready2editing" slot="icon-only" name="create-sharp"></ion-icon>
           <ion-icon *ngIf="ready2editing" slot="icon-only" name="close"></ion-icon>
         </ion-button>
-        <ion-button (click)="getFromWikipedia()">
+        <ion-button *ngIf="ready2editing" (click)="getFromWikipedia()">
           W
+        </ion-button>
+        <ion-button *ngIf="ready2editing && showAble" (click)="getAuthor()">
+          <ion-icon slot="icon-only" name="add-circle-sharp"></ion-icon>
         </ion-button>
       </div>
     </ion-row>
@@ -25,13 +28,16 @@
 
   <div *ngIf="author !== null">
       <ion-grid>
-        <ion-item *ngIf="ready2editing || author.img">
-          <div class="bu-change-pic" *ngIf="ready2editing && author.img" >
-            <ion-button *ngIf="!author.img.startsWith('http://localhost/')" (click)="downloadPicture()">
+        <ion-item>
+          <div class="bu-change-pic" *ngIf="ready2editing" >
+            <ion-button *ngIf="author.img && !author.img.startsWith('http://localhost/')" (click)="downloadPicture()">
               <ion-icon slot="icon-only" name="download-sharp"></ion-icon>
             </ion-button>
             <ion-button *ngIf="imArray.length" (click)="changePicture()">
               <ion-icon slot="icon-only" name="arrow-forward-circle"></ion-icon>
+            </ion-button>
+            <ion-button (click)="author.img = null; authorChanged = true">
+              <ion-icon slot="icon-only" name="remove"></ion-icon>
             </ion-button>
           </div>
             <ion-img *ngIf="author.img" [src]="author.img"></ion-img>
@@ -43,8 +49,8 @@
           <ion-col size="auto" *ngIf="author.name || ready2editing">
             <ion-item>
               <ion-label class="red" position="floating">Name</ion-label>
-              <ion-input class="intp" disabled={{!ready2editing}} (change)="authorChanged = true"
-                [(ngModel)]="author.name"></ion-input>
+              <ion-textarea class="intp" disabled={{!ready2editing}} (change)="authorChanged = true"
+                [(ngModel)]="author.name"></ion-textarea>
             </ion-item>
           </ion-col>
 
@@ -83,8 +89,8 @@
             <div>
             <ion-item>
               <ion-label class="red" position="floating">Nationality</ion-label>
-              <ion-input disabled={{!ready2editing}} (change)="authorChanged = true"
-                [(ngModel)]="author.nationality"></ion-input>
+              <ion-textarea disabled={{!ready2editing}} (change)="authorChanged = true"
+                [(ngModel)]="author.nationality"></ion-textarea>
             </ion-item>
             </div>
           </ion-col>
@@ -119,6 +125,9 @@
       </ion-grid>
     <ion-list *ngIf="!wikiOutputBoolean">
       <ion-item button *ngFor="let book of books" [routerLink]="['/book', book.id]">
+        <ion-avatar *ngIf="book.img">
+          <img [src]="book.img">
+         </ion-avatar>
         <ion-label>
           <div class="ion-text-wrap">
             <h2>{{ book.title }}</h2>
@@ -136,6 +145,20 @@
         </ion-grid>
       </ion-item>
     </ion-list>
+
+    <div *ngIf="ready2editing">
+      <ion-item *ngFor="let item of onlineAuthorsList">
+        <div (click)="downloadAuthorInfo(item.link)">
+          <ion-avatar>
+            <img [src]="item.img">
+          </ion-avatar>
+          <ion-label>{{ item.name }}</ion-label>
+          <ion-label>{{ item.year }}</ion-label>
+        </div>
+      </ion-item>
+    </div>
+
+    
 
   </div>
 </ion-content>

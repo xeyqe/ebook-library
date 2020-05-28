@@ -42,9 +42,12 @@
         <ion-label class="right">{{ spritzPreText }}</ion-label>
       </ion-col>
 
-      <ion-col class="col" size="10">
+      <ion-col class="col" size="9">
         <ion-label class="red">{{ spritzRedText }}</ion-label>
         <ion-label>{{ spritzPostText }}</ion-label>
+      </ion-col>
+      <ion-col class="col" size="1">
+        <ion-label style="color: black;">|</ion-label>
       </ion-col>
     </ion-row>
 
@@ -93,4 +96,3 @@
       (ionChange)="changeProgress($event)" (touchend)="stopStartSpeaking()">
     </ion-range>
   </ion-item>
-<!-- </ion-footer> -->

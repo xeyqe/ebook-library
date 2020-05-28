@@ -19,6 +19,9 @@
           <ion-icon *ngIf="!ready2editing" slot="icon-only" name="create"></ion-icon>
           <ion-icon *ngIf="ready2editing" slot="icon-only" name="close"></ion-icon>
         </ion-button>
+        <ion-button *ngIf="ready2editing && showAble" (click)="getBooksList()">
+          <ion-icon slot="icon-only" name="add-circle-sharp"></ion-icon>
+        </ion-button>
       </div>
     </ion-row>
   </ion-toolbar>
@@ -28,10 +31,12 @@
   <div *ngIf="book">
     <ion-grid>
       <ion-item *ngIf="ready2editing || book.img">
-
         <div class="bu-change-pic" *ngIf="book.img && ready2editing" >
           <ion-button *ngIf="!book.img.startsWith('http://localhost/')" (click)="downloadPicture()">
             <ion-icon slot="icon-only" name="download-sharp"></ion-icon>
+          </ion-button>
+          <ion-button (click)="book.img = null; bookChanged = true">
+            <ion-icon slot="icon-only" name="remove"></ion-icon>
           </ion-button>
         </div>
 
@@ -42,21 +47,21 @@
       </ion-item>
       <ion-item *ngIf="book.title || ready2editing">
         <ion-label position="floating">Title</ion-label>
-        <ion-input disabled={{!ready2editing}} (change)="bookChanged = true" [(ngModel)]="book.title"></ion-input>
+        <ion-textarea disabled={{!ready2editing}} (change)="bookChanged = true" [(ngModel)]="book.title"></ion-textarea>
       </ion-item>
       <ion-select *ngIf="jsonBooks && ready2editing" interface="popover" (ionChange)="getBookData($event.detail.value)">
         <ion-select-option *ngFor="let book of jsonBooks" [value]="book.index">{{ book.title }}</ion-select-option>
       </ion-select>
       <ion-item *ngIf="book.originalTitle || ready2editing">
         <ion-label position="floating">Original title</ion-label>
-        <ion-input disabled={{!ready2editing}} (change)="bookChanged = true" [(ngModel)]="book.originalTitle"></ion-input>
+        <ion-textarea disabled={{!ready2editing}} (change)="bookChanged = true" [(ngModel)]="book.originalTitle"></ion-textarea>
       </ion-item>
 
       <ion-row>
         <ion-col *ngIf="book.genre || ready2editing">
           <ion-item>
             <ion-label position="floating">Genre</ion-label>
-            <ion-input disabled={{!ready2editing}} (change)="bookChanged = true" [(ngModel)]="book.genre"></ion-input>
+            <ion-textarea disabled={{!ready2editing}} (change)="bookChanged = true" [(ngModel)]="book.genre"></ion-textarea>
           </ion-item>
         </ion-col>
         <ion-col *ngIf="book.ISBN || ready2editing">
@@ -71,13 +76,13 @@
         <ion-col *ngIf="book.publisher || ready2editing">
           <ion-item>
             <ion-label position="floating">Publisher</ion-label>
-            <ion-input disabled={{!ready2editing}} (change)="bookChanged = true" [(ngModel)]="book.publisher"></ion-input>
+            <ion-textarea disabled={{!ready2editing}} (change)="bookChanged = true" [(ngModel)]="book.publisher"></ion-textarea>
           </ion-item>
         </ion-col>
         <ion-col *ngIf="book.published || ready2editing">
           <ion-item>
             <ion-label position="floating">Published</ion-label>
-            <ion-input disabled={{!ready2editing}} type="number" [(ngModel)]="book.published"></ion-input>
+            <ion-textarea disabled={{!ready2editing}} type="number" [(ngModel)]="book.published"></ion-textarea>
           </ion-item>
         </ion-col>
       </ion-row>
@@ -97,7 +102,7 @@
         <ion-col *ngIf="book.translator || ready2editing">
           <ion-item>
             <ion-label position="floating">Tranlator</ion-label>
-            <ion-input disabled={{!ready2editing}} (change)="bookChanged = true" [(ngModel)]="book.translator"></ion-input>
+            <ion-textarea disabled={{!ready2editing}} (change)="bookChanged = true" [(ngModel)]="book.translator"></ion-textarea>
           </ion-item>
         </ion-col>
       </ion-row>
@@ -106,7 +111,7 @@
         <ion-col *ngIf="book.length || ready2editing">
           <ion-item>
             <ion-label position="floating">Pages</ion-label>
-            <ion-input disabled={{!ready2editing}} (change)="bookChanged = true" type="number" [(ngModel)]="book.length"></ion-input>
+            <ion-textarea disabled={{!ready2editing}} (change)="bookChanged = true" type="number" [(ngModel)]="book.length"></ion-textarea>
           </ion-item>
         </ion-col>
         <ion-col *ngIf="book.progress || ready2editing">
@@ -131,6 +136,27 @@
       <ion-label position="stacked">Annotation</ion-label>
       <ion-textarea disabled={{!ready2editing}} autoGrow="true" [(ngModel)]="book.annotation"></ion-textarea>
     </ion-item>
-  </div>
 
+
+      <div #target *ngIf="ready2editing">
+        <ion-item *ngFor="let item of onlineBookList">
+            <div (click)="downloadBookInfo(item.link)">
+              <!-- <ion-col size="2"> -->
+                <ion-avatar>
+                  <img [src]="item.img">
+                </ion-avatar>
+              <!-- </ion-col>
+              <ion-col size="6"> -->
+                  <ion-label >
+                    <div class="ion-text-wrap">
+                      <h2>{{ item.title }}</h2>
+                      <p>{{ item.comment }}</p>
+                    </div>
+                  </ion-label>
+              <!-- </ion-col> -->
+            </div>
+        </ion-item>
+      </div>
+  </div>
+  <ion-spinner class="spinner" name="bubbles" *ngIf="isWorking"></ion-spinner>
 </ion-content>

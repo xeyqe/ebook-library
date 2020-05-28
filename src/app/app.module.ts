@@ -23,6 +23,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MaterialModule } from './material/material.module';
 import { Downloader } from '@ionic-native/downloader/ngx';
 import { WebView } from '@ionic-native/ionic-webview/ngx';
+import { LocalNotifications } from '@ionic-native/local-notifications/ngx';
 
 @NgModule({
   declarations: [AppComponent],
@@ -50,7 +51,8 @@ import { WebView } from '@ionic-native/ionic-webview/ngx';
     Dialogs,
     BackgroundMode,
     Downloader,
-    WebView
+    WebView,
+    LocalNotifications
     ],
   bootstrap: [AppComponent]
 })
