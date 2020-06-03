@@ -1,22 +1,22 @@
 ion-label {
-    color: #ff3d3d !important;
-    opacity: 1 !important;
+  color: #ff3d3d !important;
+  opacity: 1 !important;
 }
 
 .ng-invalid {
-    color: red;
+  color: red;
 }
 
 .bu-change-pic {
-    position: absolute;
-    top: 0%;
-    left: 0%;
+  position: absolute;
+  top: 0%;
+  left: 0%;
 }
 
 .spinner {
-    position: fixed;
-    z-index: 1000;
-    left: 50%;
-    top: 50%;
-    transform: scale(9);
+  position: fixed;
+  z-index: 1000;
+  transform: translate(-50%, -50%) scale(9);
+  left: 50%;
+  top: 50%;
 }

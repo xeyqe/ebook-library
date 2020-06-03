@@ -1,10 +1,12 @@
-import { Platform } from '@ionic/angular';
 import { Injectable } from '@angular/core';
-import { SQLitePorter } from '@ionic-native/sqlite-porter/ngx';
 import { HttpClient } from '@angular/common/http';
-import { SQLite, SQLiteObject } from '@ionic-native/sqlite/ngx';
+
 import { BehaviorSubject, Observable } from 'rxjs';
+
+import { Platform } from '@ionic/angular';
 import { Storage } from '@ionic/storage';
+import { SQLitePorter } from '@ionic-native/sqlite-porter/ngx';
+import { SQLite, SQLiteObject } from '@ionic-native/sqlite/ngx';
 
 export interface Author {
   id: number;
@@ -39,9 +41,8 @@ export interface Book {
   img: string;
 }
 
-
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class DatabaseService {
   private database: SQLiteObject;
@@ -51,39 +52,45 @@ export class DatabaseService {
   books = new BehaviorSubject([]);
   allBooks = new BehaviorSubject([]);
 
-
-  constructor(private plt: Platform,
-              private sqlitePorter: SQLitePorter,
-              private sqlite: SQLite,
-              private http: HttpClient,
-              private storage: Storage) {
-
-    this.plt.ready().then(() => {
-      this.sqlite.create({
-        name: 'authors.db',
-        location: 'default'
-      }).then((db: SQLiteObject) => {
-        this.database = db;
-        this.seedDatabase();
-      }).catch(e => {
-        console.log('sqlite.create failed: ');
+  constructor(
+    private plt: Platform,
+    private sqlitePorter: SQLitePorter,
+    private sqlite: SQLite,
+    private http: HttpClient,
+    private storage: Storage
+  ) {
+    this.plt
+      .ready()
+      .then(() => {
+        this.sqlite
+          .create({
+            name: 'authors.db',
+            location: 'default',
+          })
+          .then((db: SQLiteObject) => {
+            this.database = db;
+            this.seedDatabase();
+          })
+          .catch((e) => {
+            console.log('sqlite.create failed: ');
+            console.log(e);
+          });
+      })
+      .catch((e) => {
+        console.log('db service plt.ready failed: ');
         console.log(e);
       });
-    }).catch(e => {
-      console.log('db service plt.ready failed: ');
-      console.log(e);
-    });
   }
 
   seedDatabase() {
-    this.http.get('assets/seed.sql', { responseType: 'text'})
-    .subscribe(sql => {
-      this.sqlitePorter.importSqlToDb(this.database, sql)
-        .then(_ => {
+    this.http.get('assets/seed.sql', { responseType: 'text' }).subscribe((sql) => {
+      this.sqlitePorter
+        .importSqlToDb(this.database, sql)
+        .then((_) => {
           this.loadAuthors();
           this.dbReady.next(true);
         })
-        .catch(e => console.error(e));
+        .catch((e) => console.error(e));
     });
   }
 
@@ -91,7 +98,7 @@ export class DatabaseService {
     return this.dbReady.asObservable();
   }
 
-  getAuthors(): Observable<Author[]> {
+  getAuthors(): Observable<{ name: string; surname: string; img: string; id: number }[]> {
     return this.authors.asObservable();
   }
 
@@ -104,51 +111,59 @@ export class DatabaseService {
   }
 
   loadAuthors() {
-    return this.database.executeSql('SELECT * FROM authors ORDER BY surname COLLATE NOCASE ASC', []).then(data => {
-      const authors: Author[] = [];
+    return this.database
+      .executeSql('SELECT * FROM authors ORDER BY surname COLLATE NOCASE ASC', [])
+      .then((data) => {
+        const authors = [];
 
-      if (data.rows.length > 0) {
-        for (let i = 0; i < data.rows.length; i++) {
+        if (data.rows.length > 0) {
+          for (let i = 0; i < data.rows.length; i++) {
             authors.push({
-            id: data.rows.item(i).id,
-            name: data.rows.item(i).name,
-            surname: data.rows.item(i).surname,
-            nationality: data.rows.item(i).nationality,
-            birth: data.rows.item(i).birth,
-            death: data.rows.item(i).death,
-            biography: data.rows.item(i).biography,
-            img: data.rows.item(i).img,
-            rating: data.rows.item(i).rating,
-            path: data.rows.item(i).path,
-            idInJson: data.rows.item(i).idInJson
-           });
+              id: data.rows.item(i).id,
+              name: data.rows.item(i).name,
+              surname: data.rows.item(i).surname,
+              img: data.rows.item(i).img,
+            });
+          }
         }
-      }
-      this.authors.next(authors);
-    }).catch(e => {
-      console.log('loadAuthors failed: ');
-      console.log(e);
-    });
+        this.authors.next(authors);
+      })
+      .catch((e) => {
+        console.log('loadAuthors failed: ');
+        console.log(e);
+      });
   }
 
   addAuthor(author: Author): Promise<number> {
-    const data = [author.name, author.surname, author.nationality, author.birth, author.death,
-                  author.biography, author.img, author.rating, author.path];
-    return this.database.executeSql(`INSERT INTO authors
-     (name, surname, nationality, birth, death, biography, img, rating, path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, data).then(
-      output => {
+    const data = [
+      author.name,
+      author.surname,
+      author.nationality,
+      author.birth,
+      author.death,
+      author.biography,
+      author.img,
+      author.rating,
+      author.path,
+    ];
+    return this.database
+      .executeSql(
+        `INSERT INTO authors
+          (name, surname, nationality, birth, death, biography, img, rating, path)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        data
+      )
+      .then((output) => {
         author.id = output.insertId;
         const athrs = this.authors.getValue();
-        athrs.push(author);
+        athrs.push({ name: author.name, surname: author.surname, img: author.img, id: author.id });
         this.authors.next(athrs);
         return output.insertId;
-      }
-    );
+      });
   }
 
   getAuthor(id: number): Promise<Author> {
-    return this.database.executeSql('SELECT * FROM authors WHERE id = ?', [id]).then(data => {
-
+    return this.database.executeSql('SELECT * FROM authors WHERE id = ?', [id]).then((data) => {
       return {
         id: data.rows.item(0).id,
         name: data.rows.item(0).name,
@@ -156,17 +171,19 @@ export class DatabaseService {
         nationality: data.rows.item(0).nationality,
         birth: data.rows.item(0).birth,
         death: data.rows.item(0).death,
-        biography: data.rows.item(0).biography ? data.rows.item(0).biography.replace(/<br>/g, '\n') : data.rows.item(0).biography,
+        biography: data.rows.item(0).biography
+          ? data.rows.item(0).biography.replace(/<br>/g, '\n')
+          : data.rows.item(0).biography,
         img: data.rows.item(0).img,
         rating: data.rows.item(0).rating,
         path: data.rows.item(0).path,
-        idInJson: data.rows.item(0).idInJson
+        idInJson: data.rows.item(0).idInJson,
       };
     });
   }
 
   getBooksOfAuthor(id: number): Promise<any> {
-    return this.database.executeSql('SELECT * FROM books WHERE creatorId = ? ORDER BY title ASC', [id]).then(data => {
+    return this.database.executeSql('SELECT * FROM books WHERE creatorId = ? ORDER BY title ASC', [id]).then((data) => {
       const books: Book[] = [];
 
       if (data.rows.length > 0) {
@@ -187,7 +204,7 @@ export class DatabaseService {
             path: data.rows.item(i).path,
             progress: data.rows.item(i).progress,
             rating: data.rows.item(i).rating,
-            img: data.rows.item(i).img
+            img: data.rows.item(i).img,
           });
         }
       }
@@ -197,10 +214,9 @@ export class DatabaseService {
   }
 
   getBook(id: number): Promise<Book> {
-    return this.database.executeSql('SELECT * FROM books WHERE id = ?', [id]).then(data => {
-
+    return this.database.executeSql('SELECT * FROM books WHERE id = ?', [id]).then((data) => {
       return {
-        id:  data.rows.item(0).id,
+        id: data.rows.item(0).id,
         title: data.rows.item(0).title,
         creatorId: data.rows.item(0).creatorId,
         originalTitle: data.rows.item(0).originalTitle,
@@ -215,33 +231,23 @@ export class DatabaseService {
         path: data.rows.item(0).path,
         progress: data.rows.item(0).progress,
         rating: data.rows.item(0).rating,
-        img: data.rows.item(0).img
+        img: data.rows.item(0).img,
       };
     });
   }
 
   getAllBooksDb() {
-    return this.database.executeSql('SELECT * FROM books').then(data => {
+    return this.database.executeSql('SELECT * FROM books').then((data) => {
       const books = [];
       if (data.rows.length > 0) {
         for (let i = 0; i < data.rows.length; i++) {
           books.push({
+            id: data.rows(i).id,
             title: data.rows.item(i).title,
-            creatorId: data.rows.item(i).creatorId,
-            originalTitle: data.rows.item(i).originalTitle,
-            annotation: data.rows.item(i).annotation,
-            publisher: data.rows.item(i).publisher,
-            published: data.rows.item(i).published,
-            genre: data.rows.item(i).genre,
-            lenght: data.rows.item(i).lenght,
-            language: data.rows.item(i).language,
-            translator: data.rows.item(i).translator,
-            ISBN: data.rows.item(i).ISBN,
-            path: data.rows.item(i).path,
             progress: data.rows.item(i).progress,
             rating: data.rows.item(i).rating,
-            img: data.rows.item(i).img
-           });
+            img: data.rows.item(i).img,
+          });
         }
       }
       this.allBooks.next(books);
@@ -249,7 +255,7 @@ export class DatabaseService {
   }
 
   deleteAuthor(id: number) {
-    return this.database.executeSql('DELETE FROM authors WHERE id = ?', [id]).then(_ => {
+    return this.database.executeSql('DELETE FROM authors WHERE id = ?', [id]).then((_) => {
       this.database.executeSql('DELETE FROM books WHERE creatorId = ?', [id]).then(() => {
         this.loadAuthors();
       });
@@ -257,24 +263,39 @@ export class DatabaseService {
   }
 
   deleteBook(bookId: number, authorId: number) {
-    return this.database.executeSql('DELETE FROM books WHERE id = ?', [bookId]).then(_ => {
-        this.loadBooks(authorId);
+    return this.database.executeSql('DELETE FROM books WHERE id = ?', [bookId]).then((_) => {
+      this.loadBooks(authorId);
     });
   }
 
   updateAuthor(author: Author) {
     const biography = author.biography ? author.biography.replace(/\n/g, '<br>') : null;
-    const data = [author.name, author.surname, author.nationality, author.birth, author.death,
-                  biography, author.img, author.rating, author.path, author.idInJson];
-    return this.database.executeSql(`UPDATE authors SET name = ?,
-     surname = ?, nationality = ?, birth = ?, death = ?,
-     biography = ?, img = ?, rating = ?, path = ?, idInJson = ? WHERE id = ${author.id}`, data).then(_ => {
-      this.loadAuthors();
-    });
+    const data = [
+      author.name,
+      author.surname,
+      author.nationality,
+      author.birth,
+      author.death,
+      biography,
+      author.img,
+      author.rating,
+      author.path,
+      author.idInJson,
+    ];
+    return this.database
+      .executeSql(
+        `UPDATE authors SET name = ?,
+          surname = ?, nationality = ?, birth = ?, death = ?,
+          biography = ?, img = ?, rating = ?, path = ?, idInJson = ? WHERE id = ${author.id}`,
+        data
+      )
+      .then((_) => {
+        this.loadAuthors();
+      });
   }
 
   loadBooks(id: number) {
-    return this.database.executeSql('SELECT * FROM authors WHERE id = ?', [id]).then(data => {
+    return this.database.executeSql('SELECT * FROM authors WHERE id = ?', [id]).then((data) => {
       const books = [];
       if (data.rows.length > 0) {
         for (let i = 0; i < data.rows.length; i++) {
@@ -293,8 +314,8 @@ export class DatabaseService {
             path: data.rows.item(i).path,
             progress: data.rows.item(i).progress,
             rating: data.rows.item(i).rating,
-            img: data.rows.item(i).img
-           });
+            img: data.rows.item(i).img,
+          });
         }
       }
       this.books.next(books);
@@ -302,28 +323,17 @@ export class DatabaseService {
   }
 
   loadAllBooks() {
-    return this.database.executeSql('SELECT * FROM books ORDER BY title COLLATE NOCASE ASC', []).then(data => {
+    return this.database.executeSql('SELECT * FROM books ORDER BY title COLLATE NOCASE ASC', []).then((data) => {
       const books = [];
       if (data.rows.length > 0) {
         for (let i = 0; i < data.rows.length; i++) {
           books.push({
             id: data.rows.item(i).id,
             title: data.rows.item(i).title,
-            creatorId: data.rows.item(i).creatorId,
-            originalTitle: data.rows.item(i).originalTitle,
-            annotation: data.rows.item(i).annotation,
-            publisher: data.rows.item(i).publisher,
-            published: data.rows.item(i).published,
-            genre: data.rows.item(i).genre,
-            lenght: data.rows.item(i).lenght,
-            language: data.rows.item(i).language,
-            translator: data.rows.item(i).translator,
-            ISBN: data.rows.item(i).ISBN,
-            path: data.rows.item(i).path,
             progress: data.rows.item(i).progress,
             rating: data.rows.item(i).rating,
-            img: data.rows.item(i).img
-           });
+            img: data.rows.item(i).img,
+          });
         }
       }
       this.allBooks.next(books);
@@ -331,45 +341,85 @@ export class DatabaseService {
   }
 
   addBook(book: Book) {
-    const data = [book.title, book.creatorId, book.originalTitle, book.annotation, book.publisher, book.published, book.genre,
-      book.length, book.language, book.translator, book.ISBN, book.path, book.progress, book.rating, book.img];
-    return this.database.executeSql(
-      `INSERT INTO books (title, creatorId, originalTitle, annotation, publisher, published, genre,
+    const data = [
+      book.title,
+      book.creatorId,
+      book.originalTitle,
+      book.annotation,
+      book.publisher,
+      book.published,
+      book.genre,
+      book.length,
+      book.language,
+      book.translator,
+      book.ISBN,
+      book.path,
+      book.progress,
+      book.rating,
+      book.img,
+    ];
+    return this.database
+      .executeSql(
+        `INSERT INTO books (title, creatorId, originalTitle, annotation, publisher, published, genre,
         lenght, language, translator, ISBN, path, progress, rating, img)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, data).then(
-      output => {
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        data
+      )
+      .then((output) => {
         const books = this.books.getValue();
         book.id = output.insertId;
         books.push(book);
         this.books.next(books);
-      }).catch(e => {
+      })
+      .catch((e) => {
         console.log('cannot add a book');
         console.log(e);
       });
   }
 
   checkIfAuthorExists(name: string, surname: string): Promise<boolean> {
-    return this.database.executeSql('SELECT * FROM authors WHERE name = ? AND surname = ?', [name, surname]).then(
-      data => {
+    return this.database
+      .executeSql('SELECT * FROM authors WHERE name = ? AND surname = ?', [name, surname])
+      .then((data) => {
         if (data.rows.length === 0) {
           return false;
         } else {
           return true;
         }
-      }
-    );
+      });
   }
 
-
   updateBookProgress(id: number, progress: string) {
-    this.database.executeSql('UPDATE books SET progress = ? WHERE id = ?', [progress, id]);
+    this.database.executeSql('UPDATE books SET progress = ? WHERE id = ?', [progress, id]).then((_) => {
+      this.allBooks.getValue().map((item) => {
+        if (item.id === id) {
+          return this.getBook(id);
+        }
+        return item;
+      });
+    });
   }
 
   updateBook(book: Book) {
-    const data = [book.title, book.originalTitle, book.annotation, book.publisher,
-                  book.published, book.genre, book.length, book.language, book.translator,
-                  book.ISBN, book.path, book.progress, book.rating, book.img];
-    return this.database.executeSql(`UPDATE books SET title = ?,
+    const data = [
+      book.title,
+      book.originalTitle,
+      book.annotation,
+      book.publisher,
+      book.published,
+      book.genre,
+      book.length,
+      book.language,
+      book.translator,
+      book.ISBN,
+      book.path,
+      book.progress,
+      book.rating,
+      book.img,
+    ];
+    return this.database
+      .executeSql(
+        `UPDATE books SET title = ?,
                                     originalTitle = ?,
                                     annotation = ?,
                                     publisher = ?,
@@ -383,14 +433,16 @@ export class DatabaseService {
                                     progress = ?,
                                     rating = ?,
                                     img = ?
-                                    WHERE id = ${book.id}`, data).then(_ => {
-      // this.loadAuthors();
-    });
+                                    WHERE id = ${book.id}`,
+        data
+      )
+      .then((_) => {
+        // this.loadAuthors();
+      });
   }
 
-
   allAuthorsPaths() {
-    return this.database.executeSql('SELECT path FROM authors', []).then(data => {
+    return this.database.executeSql('SELECT path FROM authors', []).then((data) => {
       const paths = [];
       if (data.rows.length > 0) {
         for (let i = 0; i < data.rows.length; i++) {
@@ -402,7 +454,7 @@ export class DatabaseService {
   }
 
   authorsBooksPaths(authorId: number) {
-    return this.database.executeSql('SELECT path FROM books WHERE creatorId = ?', [authorId]).then(data => {
+    return this.database.executeSql('SELECT path FROM books WHERE creatorId = ?', [authorId]).then((data) => {
       const paths = [];
       if (data.rows.length > 0) {
         for (let i = 0; i < data.rows.length; i++) {
@@ -410,6 +462,18 @@ export class DatabaseService {
         }
       }
       return paths;
+    });
+  }
+
+  getStartedBooks() {
+    return this.database.executeSql('SELECT * FROM books WHERE progress LIKE "%/%"', []).then((data) => {
+      return data;
+    });
+  }
+
+  getFinishedBooks() {
+    return this.database.executeSql('SELECT * FROM books WHERE progress == "finished"', []).then((data) => {
+      return data;
     });
   }
 

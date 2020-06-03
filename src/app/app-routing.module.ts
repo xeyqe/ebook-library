@@ -5,26 +5,24 @@ const routes: Routes = [
   { path: '', redirectTo: 'authors', pathMatch: 'full' },
   {
     path: 'authors',
-    loadChildren: () => import('./pages/authors/authors.module').then( m => m.AuthorsPageModule)
+    loadChildren: () => import('./pages/authors/authors.module').then((m) => m.AuthorsPageModule),
   },
   {
     path: 'author/:id',
-    loadChildren: () => import('./pages/author/author.module').then( m => m.AuthorPageModule)
+    loadChildren: () => import('./pages/author/author.module').then((m) => m.AuthorPageModule),
   },
   {
     path: 'book/:id',
-    loadChildren: () => import('./pages/book/book.module').then( m => m.BookPageModule)
+    loadChildren: () => import('./pages/book/book.module').then((m) => m.BookPageModule),
   },
   {
     path: 'tts/:id',
-    loadChildren: () => import('./pages/tts/tts.module').then( m => m.TtsPageModule)
-  },
+    loadChildren: () => import('./pages/tts/tts.module').then((m) => m.TtsPageModule),
+  }
 ];
 
 @NgModule({
-  imports: [
-    RouterModule.forRoot(routes, { preloadingStrategy: PreloadAllModules })
-  ],
-  exports: [RouterModule]
+  imports: [RouterModule.forRoot(routes, { preloadingStrategy: PreloadAllModules })],
+  exports: [RouterModule],
 })
-export class AppRoutingModule { }
+export class AppRoutingModule {}

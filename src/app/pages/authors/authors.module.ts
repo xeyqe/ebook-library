@@ -5,17 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
 
 import { AuthorsPageRoutingModule } from './authors-routing.module';
-
 import { AuthorsPage } from './authors.page';
 import { FilterPipe } from '../../pipes/filter.pipe';
+import { ApplicationPipesModuleModule } from '../../application-pipes-module/application-pipes-module.module';
 
 @NgModule({
-  imports: [
-    CommonModule,
-    FormsModule,
-    IonicModule,
-    AuthorsPageRoutingModule
-  ],
-  declarations: [AuthorsPage, FilterPipe]
+  imports: [CommonModule, FormsModule, IonicModule, AuthorsPageRoutingModule, ApplicationPipesModuleModule],
+  declarations: [AuthorsPage, FilterPipe],
 })
 export class AuthorsPageModule {}

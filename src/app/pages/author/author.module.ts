@@ -10,7 +10,6 @@ import { AuthorPage } from './author.page';
 import { ApplicationPipesModuleModule } from '../../application-pipes-module/application-pipes-module.module';
 import { MaterialModule } from 'src/app/material/material.module';
 
-
 @NgModule({
   imports: [
     CommonModule,
@@ -19,8 +18,8 @@ import { MaterialModule } from 'src/app/material/material.module';
     IonicModule,
     AuthorPageRoutingModule,
     ApplicationPipesModuleModule,
-    MaterialModule
+    MaterialModule,
   ],
-  declarations: [AuthorPage]
+  declarations: [AuthorPage],
 })
 export class AuthorPageModule {}

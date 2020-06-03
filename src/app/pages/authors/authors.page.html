@@ -2,11 +2,15 @@
   <ion-toolbar>
     <ion-row>
       <ion-col size="10">
-        <ion-searchbar [(ngModel)]="filterStatus" (ionFocus)="hideCharacters = true" (ionBlur)="hideCharacters = false"></ion-searchbar> 
+        <ion-searchbar
+          [(ngModel)]="filterStatus"
+          (ionFocus)="hideCharacters = true"
+          (ionBlur)="hideCharacters = false"
+        ></ion-searchbar>
       </ion-col>
       <ion-col size="1">
         <ion-button (click)="where2SearchFn()">
-          {{ where2Search[where2SearchIndex] }}
+          {{ where2Search }}
         </ion-button>
       </ion-col>
     </ion-row>
@@ -14,53 +18,78 @@
 </ion-header>
 
 <ion-content>
-  <ion-segment scrollable *ngIf="!hideCharacters && where2Search[where2SearchIndex] === 'A'">
-    <ion-segment-button *ngFor="let character of alphabet" value="{{ character }}"
-      (click)="changeSelectedChar(character)">
+  <ion-segment scrollable *ngIf="!hideCharacters && where2Search === 'A'">
+    <ion-segment-button
+      *ngFor="let character of alphabet"
+      value="{{ character }}"
+      (click)="changeSelectedChar(character)"
+    >
+      <ion-label>{{ character }}</ion-label>
+    </ion-segment-button>
+  </ion-segment>
+
+  <ion-segment scrollable *ngIf="!hideCharacters && where2Search === 'B'">
+    <ion-segment-button
+      *ngFor="let character of ['liked','started','finished']"
+      value="{{ character }}"
+      (click)="changeSelectedChar(character)"
+    >
       <ion-label>{{ character }}</ion-label>
     </ion-segment-button>
   </ion-segment>
 
   <ion-list class="ion-padding">
-    <div *ngIf="where2Search[where2SearchIndex] === 'A'">
-      <ion-item *ngFor="let author of authors | filter:filterStatus:selectedCharacter:'author'"
-         [routerLink]="['/author', author.id]">
-         <ion-col size="3">
-           <div *ngIf="author.img" >
-             <ion-avatar >
-               <img [src]="author.img">
-              </ion-avatar>
-            </div>
-          </ion-col>
-          <ion-col>
-            <ion-label>
-              <h2>{{ author.surname }}</h2>
-              <p>{{ author.name }}</p>
-            </ion-label>
-          </ion-col>
+    <div *ngIf="where2Search === 'A'">
+      <ion-item
+        *ngFor="let author of authors | filter:filterStatus:selectedCharacter:'author'"
+        [routerLink]="['/author', author.id]"
+      >
+        <ion-col size="3">
+          <div *ngIf="author.img">
+            <ion-avatar>
+              <img [src]="author.img" />
+            </ion-avatar>
+          </div>
+        </ion-col>
+        <ion-col>
+          <ion-label>
+            <h2>{{ author.surname }}</h2>
+            <p>{{ author.name }}</p>
+          </ion-label>
+        </ion-col>
       </ion-item>
     </div>
-    <div *ngIf="where2Search[where2SearchIndex] === 'B'">
-      <ion-item *ngFor="let book of books | filter:filterStatus:selectedCharacter:'book'"
-         [routerLink]="['/book', book.id]">
-         <ion-col size="3">
-           <div *ngIf="book.img" >
-             <ion-avatar >
-               <img [src]="book.img">
-              </ion-avatar>
-            </div>
-          </ion-col>
-          <ion-col>
-            <ion-label>
-              <ion-label class="ion-text-wrap">{{ book.title }}</ion-label>
-            </ion-label>
-          </ion-col>
+    <div *ngIf="where2Search === 'B'">
+      <ion-item
+        *ngFor="let book of books | filter:filterStatus:selectedCharacter:'book'"
+        [routerLink]="['/book', book.id]"
+      >
+        <!-- <ion-col size="3"> -->
+        <div *ngIf="book.img">
+          <ion-avatar>
+            <img [src]="book.img" />
+          </ion-avatar>
+        </div>
+        <!-- </ion-col> -->
+        <!-- <ion-col> -->
+        <ion-label>
+          <h2 class="ion-text-wrap">{{ book.title }}</h2>
+          <ion-progress-bar
+            *ngIf="book.progress"
+            [value]="(book.progress | percent2:book.progress) / 100"
+          ></ion-progress-bar>
+        </ion-label>
+        <!-- </ion-col> -->
       </ion-item>
     </div>
   </ion-list>
 
-  <ion-button *ngIf="lastListenedBookId !== null" class="playBu" expand="block" [routerLink]="['/tts', lastListenedBookId]">
+  <ion-button
+    *ngIf="lastListenedBookId !== null"
+    class="playBu"
+    expand="block"
+    [routerLink]="['/tts', lastListenedBookId]"
+  >
     <ion-icon slot="icon-only" name="play-sharp"></ion-icon>
   </ion-button>
-  
 </ion-content>

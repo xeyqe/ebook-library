@@ -4,7 +4,7 @@ import { FormControl } from '@angular/forms';
 import { HTTP } from '@ionic-native/http/ngx';
 import { Dialogs } from '@ionic-native/dialogs/ngx';
 import { Observable } from 'rxjs';
-import { map, startWith} from 'rxjs/operators';
+import { map, startWith } from 'rxjs/operators';
 
 import { DatabaseService, Author, Book } from './../../services/database.service';
 import { FileReaderService } from './../../services/file-reader.service';
@@ -18,7 +18,13 @@ import { WebScraperService } from 'src/app/services/web-scraper.service';
 })
 export class AuthorPage implements OnInit {
   author: Author = null;
-  books: Book[] = [];
+  books: {
+    id: number;
+    title: string;
+    img: string;
+    progress: string;
+    rating: number;
+  }[] = [];
   biography = '';
   textareaFocus = false;
   authorChanged = false;
@@ -36,61 +42,70 @@ export class AuthorPage implements OnInit {
   myControl = new FormControl();
   filteredOptions: Observable<any[]>;
 
-  constructor(private route: ActivatedRoute,
-              private db: DatabaseService,
-              private fs: FileReaderService,
-              private http: HTTP,
-              private dialog: Dialogs,
-              private router: Router,
-              private jsonServ: JsonDataParserService,
-              private webScraper: WebScraperService
-  ) { }
+  constructor(
+    private route: ActivatedRoute,
+    private db: DatabaseService,
+    private fs: FileReaderService,
+    private http: HTTP,
+    private dialog: Dialogs,
+    private router: Router,
+    private jsonServ: JsonDataParserService,
+    private webScraper: WebScraperService
+  ) {}
 
   ngOnInit() {
     this.myControl.disable();
-    this.filteredOptions = this.myControl.valueChanges
-      .pipe(
-        startWith(''),
-        map(value => this._filter(value))
-      );
+    this.filteredOptions = this.myControl.valueChanges.pipe(
+      startWith(''),
+      map((value) => this._filter(value))
+    );
 
-    this.route.paramMap.subscribe(params => {
+    this.route.paramMap.subscribe((params) => {
       const autId = params.get('id');
       const id = parseInt(autId, 10);
       this.authorId = id;
 
-      this.db.getDatabaseState().subscribe(ready => {
+      this.db.getDatabaseState().subscribe((ready) => {
         if (ready) {
-          this.db.getAuthor(id).then(data => {
-            this.author = data;
-            this.fs.addBooksOfAuthor(id, data.path);
+          this.db
+            .getAuthor(id)
+            .then((data) => {
+              this.author = data;
+              this.fs.addBooksOfAuthor(id, data.path);
 
-            this.db.getBooksOfAuthor(id).then(_ => {
-              this.db.getBooks().subscribe(books => {
-                this.books = books;
-              });
-            }).catch(e => {
-              console.log('getBooksOfAuthor failed: ');
+              this.db
+                .getBooksOfAuthor(id)
+                .then((_) => {
+                  this.db.getBooks().subscribe((books) => {
+                    this.books = books;
+                  });
+                })
+                .catch((e) => {
+                  console.log('getBooksOfAuthor failed: ');
+                  console.log(e);
+                });
+            })
+            .catch((e) => {
+              console.log('getAuthor failed: ');
               console.log(e);
             });
-          }).catch(e => {
-            console.log('getAuthor failed: ');
-            console.log(e);
-          });
         }
       });
-      this.jsonServ.jsonAuthorsIndexesData().then(_ => {
-        this.jsonOfAuthorsIndex = this.jsonServ.getListOfAuthors();
-      }).catch(e => {
-        console.log('jsonServ failed');
-        console.log(e);
-      });
+      this.jsonServ
+        .jsonAuthorsIndexesData()
+        .then((_) => {
+          this.jsonOfAuthorsIndex = this.jsonServ.getListOfAuthors();
+        })
+        .catch((e) => {
+          console.log('jsonServ failed');
+          console.log(e);
+        });
     });
     this.showAble = this.webScraper.showable;
   }
 
   getPosts(index: string) {
-    this.jsonServ.jsonAuthorsData().then(_ => {
+    this.jsonServ.jsonAuthorsData().then((_) => {
       const jsonAuthor = this.jsonServ.getAuthor(index);
 
       if (jsonAuthor) {
@@ -115,8 +130,7 @@ export class AuthorPage implements OnInit {
 
     if (this.jsonOfAuthorsIndex && value) {
       const filterValue = value.toLowerCase();
-      return this.jsonOfAuthorsIndex.filter(option =>
-        option.name.toLowerCase().includes(filterValue));
+      return this.jsonOfAuthorsIndex.filter((option) => option.name.toLowerCase().includes(filterValue));
     } else {
       return undefined;
     }
@@ -130,23 +144,25 @@ export class AuthorPage implements OnInit {
       if (index === -1) {
         return subject;
       } else {
-        return subject.name.substring(subject.name.lastIndexOf(' ') + 1); // subject.name.split(' ')[subject.name.split(' ').length - 1];
+        return subject.name.substring(subject.name.lastIndexOf(' ') + 1);
       }
     } else {
       return undefined;
     }
-    // return subject ? subject.name.substring(subject.name.lastIndexOf(' ')) : undefined;
   }
 
   updateAuthor() {
-    this.db.updateAuthor(this.author).then(_ => {
-      this.authorChanged = false;
-      this.ready2editing = false;
-      this.fromWiki = null;
-    }).catch(e => {
-      console.log('updateAuthor failed: ');
-      console.log(e);
-    });
+    this.db
+      .updateAuthor(this.author)
+      .then((_) => {
+        this.authorChanged = false;
+        this.ready2editing = false;
+        this.fromWiki = null;
+      })
+      .catch((e) => {
+        console.log('updateAuthor failed: ');
+        console.log(e);
+      });
   }
 
   async editable() {
@@ -156,7 +172,7 @@ export class AuthorPage implements OnInit {
     } else {
       this.myControl.enable();
     }
-    this.db.getAuthor(this.authorId).then(author => {
+    this.db.getAuthor(this.authorId).then((author) => {
       this.author = author;
     });
     this.ready2editing = !this.ready2editing;
@@ -167,43 +183,75 @@ export class AuthorPage implements OnInit {
   getFromWikipedia() {
     const searchValue = this.author.name + ' ' + this.author.surname;
 
-    this.http.get('https://wikipedia.org/w/api.php',
-    { action: 'query', list: 'search', srsearch: 'intitle:' + searchValue, rvprop: 'content', rvsection: '0',
-     rvslots: '*', format: 'json'}, {}).then(output => {
-      this.ready2editing = true;
-      this.wikiOutputBoolean = true;
-      this.fromWiki = JSON.parse(output.data).query.search;
-    }).catch(e => {
-      this.ready2editing = false;
-      console.log(e);
-    });
-
+    this.http
+      .get(
+        'https://wikipedia.org/w/api.php',
+        {
+          action: 'query',
+          list: 'search',
+          srsearch: 'intitle:' + searchValue,
+          rvprop: 'content',
+          rvsection: '0',
+          rvslots: '*',
+          format: 'json',
+        },
+        {}
+      )
+      .then((output) => {
+        this.ready2editing = true;
+        this.wikiOutputBoolean = true;
+        this.fromWiki = JSON.parse(output.data).query.search;
+      })
+      .catch((e) => {
+        this.ready2editing = false;
+        console.log(e);
+      });
   }
 
   log(aa: any) {
     const pageid = aa.pageid + '';
-    this.http.get('https://wikipedia.org/w/api.php',
-    { action: 'query', prop: 'revisions|extracts|images|pageimages', format: 'json', rvprop: 'content', rvsection: '0', rvslots: '*',
-     pageids: pageid, exintro: 'explaintext', imlimit: '130', piprop: 'thumbnail', pithumbsize: '300'}, {}).then(output => {
-      try {
-        const data = JSON.parse(output.data);
-        this.author.biography = data.query.pages[pageid].extract.replace(/<[^>]*>/g, '').trim();
-        this.wikiOutputBoolean = false;
-        this.authorChanged = true;
-        const array = Array.from(data.query.pages[pageid].images, im => im['title'])
-                         .filter(img => !img.includes('.svg'));
+    this.http
+      .get(
+        'https://wikipedia.org/w/api.php',
+        {
+          action: 'query',
+          prop: 'revisions|extracts|images|pageimages',
+          format: 'json',
+          rvprop: 'content',
+          rvsection: '0',
+          rvslots: '*',
+          pageids: pageid,
+          exintro: 'explaintext',
+          imlimit: '130',
+          piprop: 'thumbnail',
+          pithumbsize: '300',
+        },
+        {}
+      )
+      .then((output) => {
+        try {
+          const data = JSON.parse(output.data);
+          this.author.biography = data.query.pages[pageid].extract.replace(/<[^>]*>/g, '').trim();
+          this.wikiOutputBoolean = false;
+          this.authorChanged = true;
+          const array = Array.from(data.query.pages[pageid].images, (im) => im['title']).filter(
+            (img) => !img.includes('.svg')
+          );
 
-        this.imArray = Array.from(array, item => 'https://commons.wikimedia.org/wiki/Special:FilePath/' + item + '?width=200');
+          this.imArray = Array.from(
+            array,
+            (item) => 'https://commons.wikimedia.org/wiki/Special:FilePath/' + item + '?width=200'
+          );
 
-        if (data.query.pages[pageid].thumbnail) {
-          this.author.img = data.query.pages[pageid].thumbnail.source;
+          if (data.query.pages[pageid].thumbnail) {
+            this.author.img = data.query.pages[pageid].thumbnail.source;
+          }
+          this.parseInfobox(data.query.pages[pageid].revisions[0].slots.main['*']);
+        } catch (er) {
+          console.log(er);
+          console.log('cannot parse data from wikipedia');
         }
-        this.parseInfobox(data.query.pages[pageid].revisions[0].slots.main['*']);
-      } catch (er) {
-        console.log(er);
-        console.log('cannot parse data from wikipedia');
-      }
-    });
+      });
   }
 
   unhtml(str: string): string {
@@ -224,19 +272,26 @@ export class AuthorPage implements OnInit {
   }
 
   deleteAuthor() {
-    this.dialog.confirm('Do you really want to delete this author?\n(Files won\'t be deleted.)', null, ['Ok', 'Cancel']).then(res => {
-      if (res === 1) {
-        this.db.deleteAuthor(this.author.id).then(_ => {
-          this.router.navigate(['/authors']);
-        });
-      }
-    });
+    this.dialog
+      .confirm("Do you really want to delete this author?\n(Files won't be deleted.)", null, ['Ok', 'Cancel'])
+      .then((res) => {
+        if (res === 1) {
+          this.db.deleteAuthor(this.author.id).then((_) => {
+            this.router.navigate(['/authors']);
+          });
+        }
+      });
   }
 
   parseInfobox(data: any) {
     const infobox = data.split('\n\n')[0];
     const array = infobox.split('\n');
-    const obj = {name: null, birth_date: null, death_date: null, nationality: null};
+    const obj = {
+      name: null,
+      birth_date: null,
+      death_date: null,
+      nationality: null,
+    };
     for (let item of array) {
       if (item.indexOf('= ') !== -1) {
         const neco = item.split('= ');
@@ -277,12 +332,15 @@ export class AuthorPage implements OnInit {
 
     const filename = this.author.name + '_' + this.author.surname + extension;
 
-    this.fs.downloadPicture(uri, path, filename).then(src => {
-      this.author.img = src;
-    }).catch(e => {
-      console.log(e);
-      alert(JSON.stringify(e));
-    });
+    this.fs
+      .downloadPicture(uri, path, filename)
+      .then((src) => {
+        this.author.img = src;
+      })
+      .catch((e) => {
+        console.log(e);
+        alert(JSON.stringify(e));
+      });
   }
 
   getAuthor() {
@@ -293,25 +351,25 @@ export class AuthorPage implements OnInit {
       authorsName = this.author.name + ' ' + this.author.surname;
     }
 
-    this.webScraper.getAuthorsList(authorsName).then(data => {
+    this.webScraper.getAuthorsList(authorsName).then((data) => {
       console.log(data);
       this.onlineAuthorsList = data;
-    })
+    });
   }
 
   downloadAuthorInfo(url: string) {
-    this.webScraper.getAuthor(url).then(data => {
-        if (data) {
-          this.author.name = this.author.name || data.name;
-          this.author.surname = this.author.surname || data.surname;
-          this.author.nationality = this.author.nationality || data.nationality;
-          this.author.biography = this.author.biography || data.biography;
-          this.author.birth = this.author.birth || data.birth;
-          this.author.death = this.author.death || data.death;
-          this.author.img = this.author.img || data.img;
+    this.webScraper.getAuthor(url).then((data) => {
+      if (data) {
+        this.author.name = this.author.name || data.name;
+        this.author.surname = this.author.surname || data.surname;
+        this.author.nationality = this.author.nationality || data.nationality;
+        this.author.biography = this.author.biography || data.biography;
+        this.author.birth = this.author.birth || data.birth;
+        this.author.death = this.author.death || data.death;
+        this.author.img = this.author.img || data.img;
 
-          this.authorChanged = true;
-        }
-      })
+        this.authorChanged = true;
+      }
+    });
   }
 }

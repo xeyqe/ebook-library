@@ -1,20 +1,19 @@
 import { Component } from '@angular/core';
-import { Platform } from '@ionic/angular';
-import { SplashScreen } from '@ionic-native/splash-screen/ngx';
-import { StatusBar } from '@ionic-native/status-bar/ngx';
+import { Platform, ToastController } from '@ionic/angular';
 import { Storage } from '@ionic/storage';
 import { Router } from '@angular/router';
-import { ToastController } from '@ionic/angular';
+import { SplashScreen } from '@ionic-native/splash-screen/ngx';
+import { StatusBar } from '@ionic-native/status-bar/ngx';
 import { BackgroundMode } from '@ionic-native/background-mode/ngx';
-
-import { DatabaseService } from './services/database.service';
-import { TtsService } from './services/tts.service';
 import { LocalNotifications } from '@ionic-native/local-notifications/ngx';
+
+import { DatabaseService } from 'src/app/services/database.service';
+import { TtsService } from 'src/app/services/tts.service';
 
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
-  styleUrls: ['app.component.scss']
+  styleUrls: ['app.component.scss'],
 })
 export class AppComponent {
   constructor(
@@ -36,7 +35,6 @@ export class AppComponent {
 
   initializeApp() {
     this.platform.ready().then(() => {
-
       this.statusBar.styleDefault();
 
       this.bg.setDefaults({ silent: true });
@@ -74,19 +72,16 @@ export class AppComponent {
         this.lastTimeBackPress = new Date().getTime();
         this.presentToast();
       }
-
     } else if (/^(\/author\/[0-9]+)$/.test(url)) {
       this.router.navigate(['/authors']);
-
     } else if (/^(\/book\/[0-9]+)$/.test(url)) {
       const bookId = parseInt(url.substring(url.lastIndexOf('/') + 1), 10);
-      this.db.getBook(bookId).then(book => {
-        this.db.getAuthor(book.creatorId).then(author => {
+      this.db.getBook(bookId).then((book) => {
+        this.db.getAuthor(book.creatorId).then((author) => {
           const authorId = author.id + '';
           this.router.navigate(['/author', authorId]);
         });
       });
-
     } else if (/^(\/tts\/[0-9]+)$/.test(url)) {
       const bookId = url.substring(url.lastIndexOf('/') + 1, url.length - 1);
       this.router.navigate(['/book', bookId]);
@@ -98,7 +93,7 @@ export class AppComponent {
   async presentToast() {
     const toast = await this.toastCtrl.create({
       message: 'Press back again to exit.',
-      duration: 2000
+      duration: 2000,
     });
     toast.present();
   }

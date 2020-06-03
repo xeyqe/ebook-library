@@ -1,29 +1,28 @@
 import { NgModule } from '@angular/core';
-import { BrowserModule, HammerModule } from '@angular/platform-browser';
 import { RouteReuseStrategy } from '@angular/router';
-import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
-import { SplashScreen } from '@ionic-native/splash-screen/ngx';
-import { StatusBar } from '@ionic-native/status-bar/ngx';
-
-import { AppComponent } from './app.component';
-import { AppRoutingModule } from './app-routing.module';
-
-import { SQLitePorter } from '@ionic-native/sqlite-porter/ngx';
-import { SQLite } from '@ionic-native/sqlite/ngx';
-
+import { ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
-import { File } from '@ionic-native/file/ngx';
-import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
-import { IonicStorageModule } from '@ionic/storage';
-import { HTTP } from '@ionic-native/http/ngx';
-import { Dialogs } from '@ionic-native/dialogs/ngx';
-import { BackgroundMode } from '@ionic-native/background-mode/ngx';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { BrowserModule, HammerModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { MaterialModule } from './material/material.module';
+
+import { HTTP } from '@ionic-native/http/ngx';
+import { File } from '@ionic-native/file/ngx';
+import { SQLite } from '@ionic-native/sqlite/ngx';
+import { IonicStorageModule } from '@ionic/storage';
+import { Dialogs } from '@ionic-native/dialogs/ngx';
+import { StatusBar } from '@ionic-native/status-bar/ngx';
 import { Downloader } from '@ionic-native/downloader/ngx';
 import { WebView } from '@ionic-native/ionic-webview/ngx';
+import { SplashScreen } from '@ionic-native/splash-screen/ngx';
+import { SQLitePorter } from '@ionic-native/sqlite-porter/ngx';
+import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
+import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
+import { BackgroundMode } from '@ionic-native/background-mode/ngx';
 import { LocalNotifications } from '@ionic-native/local-notifications/ngx';
+
+import { AppComponent } from 'src/app/app.component';
+import { AppRoutingModule } from 'src/app/app-routing.module';
+import { MaterialModule } from 'src/app/material/material.module';
 
 @NgModule({
   declarations: [AppComponent],
@@ -53,7 +52,7 @@ import { LocalNotifications } from '@ionic-native/local-notifications/ngx';
     Downloader,
     WebView,
     LocalNotifications
-    ],
-  bootstrap: [AppComponent]
+  ],
+  bootstrap: [AppComponent],
 })
 export class AppModule {}
