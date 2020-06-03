@@ -1,16 +1,17 @@
 import { Injectable } from '@angular/core';
-import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
-import { DatabaseService } from './database.service';
-import { Subject } from 'rxjs';
-import { FileReaderService } from './file-reader.service';
-import { Storage } from '@ionic/storage';
 
+import { Subject } from 'rxjs';
+
+import { Storage } from '@ionic/storage';
+import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
+
+import { DatabaseService } from 'src/app/services/database.service';
+import { FileReaderService } from 'src/app/services/file-reader.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class TtsService {
-
   texts: string[];
   initialized = false;
   language = 'en-US';
@@ -31,48 +32,53 @@ export class TtsService {
     private db: DatabaseService,
     private fs: FileReaderService,
     private strg: Storage
-    ) { }
+  ) {}
 
   startSpeaking(bookId: number) {
     this.bookId = bookId;
     return new Promise((resolve, reject) => {
-      this.strg.get('speed').then(val => {
-        if (val) {
-          this.speed = val;
-          this.speedSubject.next(val);
-        } else {
-          this.speed = 30;
-          this.speedSubject.next(30);
-        }
-      }).catch(e => {
-        console.log('storage failed: ');
-        console.log(e);
-      });
-      this.db.getBook(bookId).then(book => {
-        const path = book.path;
-        if (book.language) {
-          this.language = book.language;
-        }
-
-        this.fs.readTextFile(path).then(str => {
-          this.texts = this.getTexts(str);
-
-          let progr = book.progress;
-          if (progr) {
-            progr = progr.substring(0, progr.indexOf('/'));
-            this.changeProgress(parseInt(progr, 10));
+      this.strg
+        .get('speed')
+        .then((val) => {
+          if (val) {
+            this.speed = val;
+            this.speedSubject.next(val);
           } else {
-            this.db.updateBookProgress(bookId, '0/' + this.texts.length);
-            this.changeProgress(0);
+            this.speed = 30;
+            this.speedSubject.next(30);
           }
-          this.initialized = true;
-          resolve();
+        })
+        .catch((e) => {
+          console.log('storage failed: ');
+          console.log(e);
         });
-      }).catch(e => {
-        reject(e);
-      });
-    });
+      this.db
+        .getBook(bookId)
+        .then((book) => {
+          const path = book.path;
+          if (book.language) {
+            this.language = book.language;
+          }
 
+          this.fs.readTextFile(path).then((str) => {
+            this.texts = this.getTexts(str);
+
+            let progr = book.progress;
+            if (progr) {
+              progr = progr.substring(0, progr.indexOf('/'));
+              this.changeProgress(parseInt(progr, 10));
+            } else {
+              // this.db.updateBookProgress(bookId, '0/' + this.texts.length);
+              this.changeProgress(0);
+            }
+            this.initialized = true;
+            resolve();
+          });
+        })
+        .catch((e) => {
+          reject(e);
+        });
+    });
   }
 
   speak() {
@@ -86,21 +92,27 @@ export class TtsService {
           text2Speak = text2Speak + this.texts[this.progress + add2Progress];
         }
         add2Progress++;
-      } while (this.texts[this.progress + add2Progress] &&
-        text2Speak.length + this.texts[this.progress + add2Progress].length < this.speakingLengthLimit);
+      } while (
+        this.texts[this.progress + add2Progress] &&
+        text2Speak.length + this.texts[this.progress + add2Progress].length < this.speakingLengthLimit
+      );
 
-      this.tts.speak({
-        text: text2Speak,
-        locale: this.language,
-        rate: this.speed / 10}).then(_ => {
+      this.tts
+        .speak({
+          text: text2Speak,
+          locale: this.language,
+          rate: this.speed / 10,
+        })
+        .then((_) => {
           if (this.progress < this.texts.length) {
             this.changeProgress(this.progress + add2Progress);
-            this.db.updateBookProgress(this.bookId, this.progress + '/' + this.texts.length);
+            // this.db.updateBookProgress(this.bookId, this.progress + '/' + this.texts.length);
             this.speak();
           } else {
             this.isSpeaking = false;
           }
-        }).catch(reason => {
+        })
+        .catch((reason) => {
           this.isSpeaking = false;
           console.log('tts speak failed: ');
           console.log(reason);
@@ -133,7 +145,16 @@ export class TtsService {
       }
       this.progress = progress;
       this.progressSubject.next(progress);
-      this.db.updateBookProgress(this.bookId, progress + '/' + this.texts.length);
+
+      let progress2DB;
+      if (this.progress === this.texts.length) {
+        progress2DB = 'finished';
+      } else if (progress) {
+        progress2DB = progress + '/' + this.texts.length;
+      } else {
+        progress2DB = null;
+      }
+      this.db.updateBookProgress(this.bookId, progress2DB);
     }
   }
 
@@ -158,17 +179,17 @@ export class TtsService {
     const regex = RegExp('[A-Za-z0-9]+');
     const newArray = [];
 
-    arrayOfParagraphs.forEach(element => {
+    arrayOfParagraphs.forEach((element) => {
       if (element && regex.test(element)) {
         let length = element.length;
 
         const arrayOfSentences = element.split(/\.\ /g);
 
-        for (let i=0; i<arrayOfSentences.length; i++) {
+        for (let i = 0; i < arrayOfSentences.length; i++) {
           let sentence = arrayOfSentences[i];
           length = arrayOfSentences[i].length;
           if (sentence && length < 790 && regex.test(sentence)) {
-            i === arrayOfSentences.length - 1 ? sentence = sentence : sentence += '.';
+            i === arrayOfSentences.length - 1 ? (sentence = sentence) : (sentence += '.');
             newArray.push(sentence);
           } else {
             const thousands = Math.floor(length / 790);
@@ -180,7 +201,6 @@ export class TtsService {
             }
           }
         }
-
       }
     });
 
@@ -197,5 +217,4 @@ export class TtsService {
   ifSpeaking() {
     return this.isSpeaking;
   }
-
 }
