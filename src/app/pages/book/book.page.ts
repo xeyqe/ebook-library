@@ -107,7 +107,7 @@ export class BookPage implements OnInit {
 
   deleteBook() {
     this.dialog
-      .confirm("Do you really want to delete this book?\n(A file won't be deleted.)", null, ['Ok', 'Cancel'])
+      .confirm('Do you really want to delete this book?\n(A file won\'t be deleted.)', null, ['Ok', 'Cancel'])
       .then((res) => {
         if (res === 1) {
           const bookId = this.book.id;

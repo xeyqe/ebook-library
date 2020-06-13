@@ -271,7 +271,7 @@ export class FileReaderService implements OnInit {
   downloadPicture(Uri: string, path: string, fileName: string): Promise<string> {
     const request: DownloadRequest = {
       uri: Uri,
-      title: 'MyDownload',
+      title: fileName.substring(fileName.lastIndexOf('/') + 1),
       description: '',
       mimeType: '',
       visibleInDownloadsUi: true,
