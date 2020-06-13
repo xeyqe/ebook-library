@@ -18,7 +18,6 @@ import { SQLitePorter } from '@ionic-native/sqlite-porter/ngx';
 import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
 import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
 import { BackgroundMode } from '@ionic-native/background-mode/ngx';
-import { LocalNotifications } from '@ionic-native/local-notifications/ngx';
 
 import { AppComponent } from 'src/app/app.component';
 import { AppRoutingModule } from 'src/app/app-routing.module';
@@ -50,8 +49,7 @@ import { MaterialModule } from 'src/app/material/material.module';
     Dialogs,
     BackgroundMode,
     Downloader,
-    WebView,
-    LocalNotifications
+    WebView
   ],
   bootstrap: [AppComponent],
 })

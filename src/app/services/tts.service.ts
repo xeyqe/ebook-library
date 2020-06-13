@@ -20,6 +20,9 @@ export class TtsService {
   isSpeaking = false;
   speakingLengthLimit = 500;
 
+  authorName: string;
+  bookTitle: string;
+
   private speedSubject = new Subject<number>();
   private progressSubject = new Subject<number>();
 
@@ -216,5 +219,21 @@ export class TtsService {
 
   ifSpeaking() {
     return this.isSpeaking;
+  }
+
+  setAuthorName(name: string) {
+    this.authorName = name;
+  }
+
+  getAuthorName(): string {
+    return this.authorName;
+  }
+
+  setBookTitle(title: string) {
+    this.bookTitle = title;
+  }
+
+  getBookTitle(): string {
+    return this.bookTitle;
   }
 }

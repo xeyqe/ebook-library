@@ -151,6 +151,8 @@ export class TtsPage implements OnInit, OnDestroy {
         this.sp.stopSpeaking();
       } else {
         this.sp.speak();
+        this.sp.setBookTitle(this.title);
+        this.sp.setAuthorName(this.authorName);
       }
       this.isSpeaking = !this.isSpeaking;
     }

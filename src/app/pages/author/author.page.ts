@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormControl } from '@angular/forms';
 import { HTTP } from '@ionic-native/http/ngx';
@@ -6,10 +6,11 @@ import { Dialogs } from '@ionic-native/dialogs/ngx';
 import { Observable } from 'rxjs';
 import { map, startWith } from 'rxjs/operators';
 
-import { DatabaseService, Author, Book } from './../../services/database.service';
-import { FileReaderService } from './../../services/file-reader.service';
-import { JsonDataParserService } from './../../services/json-data-parser.service';
+import { DatabaseService, Author } from 'src/app/services/database.service';
+import { FileReaderService } from 'src/app/services/file-reader.service';
+import { JsonDataParserService } from 'src/app/services/json-data-parser.service';
 import { WebScraperService } from 'src/app/services/web-scraper.service';
+import { IonContent } from '@ionic/angular';
 
 @Component({
   selector: 'app-author',
@@ -39,8 +40,14 @@ export class AuthorPage implements OnInit {
   onlineAuthorsList;
   showAble = false;
 
+  isWorking = false;
+
   myControl = new FormControl();
   filteredOptions: Observable<any[]>;
+
+  @ViewChild(IonContent) content: IonContent;
+  @ViewChild('target1') target1: any;
+  @ViewChild('target2') target2: any;
 
   constructor(
     private route: ActivatedRoute,
@@ -105,6 +112,7 @@ export class AuthorPage implements OnInit {
   }
 
   getPosts(index: string) {
+    this.isWorking = true;
     this.jsonServ.jsonAuthorsData().then((_) => {
       const jsonAuthor = this.jsonServ.getAuthor(index);
 
@@ -119,6 +127,7 @@ export class AuthorPage implements OnInit {
         this.author.idInJson = index;
 
         this.authorChanged = true;
+        this.isWorking = false;
       }
     });
   }
@@ -201,6 +210,7 @@ export class AuthorPage implements OnInit {
         this.ready2editing = true;
         this.wikiOutputBoolean = true;
         this.fromWiki = JSON.parse(output.data).query.search;
+        this.scrollElement(this.target1);
       })
       .catch((e) => {
         this.ready2editing = false;
@@ -210,6 +220,7 @@ export class AuthorPage implements OnInit {
 
   log(aa: any) {
     const pageid = aa.pageid + '';
+    this.isWorking = true;
     this.http
       .get(
         'https://wikipedia.org/w/api.php',
@@ -248,6 +259,8 @@ export class AuthorPage implements OnInit {
           }
           this.parseInfobox(data.query.pages[pageid].revisions[0].slots.main['*']);
         } catch (er) {
+          this.content.scrollToTop();
+          this.isWorking = false;
           console.log(er);
           console.log('cannot parse data from wikipedia');
         }
@@ -273,7 +286,7 @@ export class AuthorPage implements OnInit {
 
   deleteAuthor() {
     this.dialog
-      .confirm("Do you really want to delete this author?\n(Files won't be deleted.)", null, ['Ok', 'Cancel'])
+      .confirm('Do you really want to delete this author?\n(Files won\'t be deleted.)', null, ['Ok', 'Cancel'])
       .then((res) => {
         if (res === 1) {
           this.db.deleteAuthor(this.author.id).then((_) => {
@@ -292,7 +305,7 @@ export class AuthorPage implements OnInit {
       death_date: null,
       nationality: null,
     };
-    for (let item of array) {
+    for (const item of array) {
       if (item.indexOf('= ') !== -1) {
         const neco = item.split('= ');
         const key = neco[0].substring(1).trim();
@@ -322,6 +335,8 @@ export class AuthorPage implements OnInit {
         this.author.surname = obj.name;
       }
     }
+    this.isWorking = false;
+    this.content.scrollToTop();
   }
 
   downloadPicture() {
@@ -332,12 +347,17 @@ export class AuthorPage implements OnInit {
 
     const filename = this.author.name + '_' + this.author.surname + extension;
 
+    this.isWorking = true;
     this.fs
       .downloadPicture(uri, path, filename)
       .then((src) => {
+        this.isWorking = false;
         this.author.img = src;
+        this.content.scrollToTop();
       })
       .catch((e) => {
+        this.isWorking = false;
+        this.content.scrollToTop();
         console.log(e);
         alert(JSON.stringify(e));
       });
@@ -350,14 +370,17 @@ export class AuthorPage implements OnInit {
     } else {
       authorsName = this.author.name + ' ' + this.author.surname;
     }
-
+    this.isWorking = true
     this.webScraper.getAuthorsList(authorsName).then((data) => {
       console.log(data);
       this.onlineAuthorsList = data;
+      this.isWorking = false;
+      this.scrollElement(this.target2);
     });
   }
 
   downloadAuthorInfo(url: string) {
+    this.isWorking = true;
     this.webScraper.getAuthor(url).then((data) => {
       if (data) {
         this.author.name = this.author.name || data.name;
@@ -369,7 +392,12 @@ export class AuthorPage implements OnInit {
         this.author.img = this.author.img || data.img;
 
         this.authorChanged = true;
+        this.isWorking = false;
       }
     });
+  }
+
+  private scrollElement(target: any) {
+    this.content.scrollToPoint(0, target.nativeElement.offsetTop, 500);
   }
 }

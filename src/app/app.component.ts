@@ -5,7 +5,6 @@ import { Router } from '@angular/router';
 import { SplashScreen } from '@ionic-native/splash-screen/ngx';
 import { StatusBar } from '@ionic-native/status-bar/ngx';
 import { BackgroundMode } from '@ionic-native/background-mode/ngx';
-import { LocalNotifications } from '@ionic-native/local-notifications/ngx';
 
 import { DatabaseService } from 'src/app/services/database.service';
 import { TtsService } from 'src/app/services/tts.service';
@@ -26,7 +25,6 @@ export class AppComponent {
     private toastCtrl: ToastController,
     private bg: BackgroundMode,
     private sp: TtsService,
-    private notif: LocalNotifications
   ) {
     this.initializeApp();
   }
@@ -37,25 +35,28 @@ export class AppComponent {
     this.platform.ready().then(() => {
       this.statusBar.styleDefault();
 
-      this.bg.setDefaults({ silent: true });
+      this.bg.setDefaults({
+        title: 'author',
+        text: 'book',
+        icon: 'ic_launcher',
+        color: 'F14F4D',
+        resume: true,
+        hidden: false,
+        bigText: true
+      });
 
       this.platform.backButton.subscribeWithPriority(9999, () => {
         this.hwBackButtonFunction();
       });
       this.platform.resume.subscribe(() => {
-        // this.sp.changeSpeakingLimit(500);
         this.bg.disable();
-        this.notif.cancelAll();
       });
       this.platform.pause.subscribe(() => {
-        // this.sp.changeSpeakingLimit(4000);
         if (this.sp.ifSpeaking()) {
+          const author = this.sp.getAuthorName();
+          const title = this.sp.getBookTitle();
           this.bg.enable();
-          this.notif.schedule({
-            id: 1,
-            text: '',
-            sound: null,
-          });
+          this.bg.configure({title: author, text: title});
         }
       });
       this.splashScreen.hide();
