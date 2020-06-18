@@ -6,6 +6,8 @@ import { Storage } from '@ionic/storage';
 import { FileReaderService } from 'src/app/services/file-reader.service';
 import { DatabaseService } from 'src/app/services/database.service';
 import { TtsService } from 'src/app/services/tts.service';
+import { EpubService } from 'src/app/services/epub.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-tts',
@@ -26,7 +28,7 @@ export class TtsPage implements OnInit, OnDestroy {
   texts: string[];
   progress: number;
   spritzBoolean = false;
-  averageWordLength: number;
+  // averageWordLength: number;
   spritzPreText: string;
   spritzRedText: string;
   spritzPostText: string;
@@ -34,17 +36,24 @@ export class TtsPage implements OnInit, OnDestroy {
 
   initialized = false;
 
+  subscribtion: Subscription;
+
   constructor(
     private route: ActivatedRoute,
     private fs: FileReaderService,
     private db: DatabaseService,
     private strg: Storage,
-    private sp: TtsService
+    private sp: TtsService,
+    private epubService: EpubService
   ) {}
 
   ngOnInit() {
+    let oldBookId: string;
     this.route.paramMap.subscribe((params) => {
       let bookId = params.get('id');
+      this.db.getValue('as').then((num) => {
+        oldBookId = num;
+      });
       this.db.saveValue('as', bookId);
       if (bookId[bookId.length - 1] === '0') {
         this.spritzBoolean = false;
@@ -74,7 +83,9 @@ export class TtsPage implements OnInit, OnDestroy {
       bookId = bookId.substring(0, bookId.length - 1);
       this.id = parseInt(bookId, 10);
 
-      this.sp.stopSpeaking();
+      if (!oldBookId || oldBookId !== bookId) {
+        this.sp.stopSpeaking();
+      }
     });
 
     this.db.getDatabaseState().subscribe((ready) => {
@@ -93,15 +104,18 @@ export class TtsPage implements OnInit, OnDestroy {
               this.getText();
             } else {
               this.sp.startSpeaking(book.id).then((_) => {
-                this.sp.getProgress().subscribe((progress) => {
+                this.subscribtion = this.sp.getProgress().subscribe((progress) => {
                   this.progress = progress;
                 });
                 this.speed = this.sp.getSp();
                 this.sp.getSpeed().subscribe((speed) => {
                   this.speed = speed;
                 });
-                this.textsLength = this.sp.getTextsLenght();
-                this.initialized = true;
+                setTimeout(()=> {
+
+                  this.textsLength = this.sp.getTextsLenght();
+                  this.initialized = true;
+                }, 3000)
               });
             }
 
@@ -119,27 +133,32 @@ export class TtsPage implements OnInit, OnDestroy {
   }
 
   getText() {
-    this.fs
-      .readTextFile(this.path)
-      .then((str) => {
-        this.texts = this.sp.getTexts(str);
+    if (this.path.substring(this.path.lastIndexOf('.') + 1) === 'txt') {
+      this.fs
+        .readTextFile(this.path)
+        .then((str) => {
+          this.texts = this.sp.getTexts(str);
+          this.textsLength = this.texts.length;
+
+          if (!this.progress) {
+            this.progress = 0;
+          }
+        })
+        .catch((e) => {
+          console.log('readTextFile failed: ');
+          console.log(e);
+        });
+    }
+    else if (this.path.substring(this.path.lastIndexOf('.') + 1) === 'epub') {
+      this.sp.getTextsFromEpub().then(() => {
+        this.texts = this.sp.getEpubTexts();
         this.textsLength = this.texts.length;
-        const countOfWords = str.match(/\S+/g).length;
-        const countOfWhiteSpaces = str.match(/\s/g).length;
-
-        const lengthOfText = str.length;
-        const lengthWithoutWhiteSpaces = lengthOfText - countOfWhiteSpaces;
-
-        this.averageWordLength = lengthWithoutWhiteSpaces / countOfWords;
 
         if (!this.progress) {
           this.progress = 0;
         }
-      })
-      .catch((e) => {
-        console.log('readTextFile failed: ');
-        console.log(e);
       });
+    }
   }
 
   onOff() {
@@ -340,6 +359,9 @@ export class TtsPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    if (this.subscribtion) {
+      this.subscribtion.unsubscribe();
+    }
     if (this.texts) {
       let progress;
       if (this.progress === this.texts.length) {
