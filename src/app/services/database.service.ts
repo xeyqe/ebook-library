@@ -8,38 +8,8 @@ import { Storage } from '@ionic/storage';
 import { SQLitePorter } from '@ionic-native/sqlite-porter/ngx';
 import { SQLite, SQLiteObject } from '@ionic-native/sqlite/ngx';
 
-export interface Author {
-  id: number;
-  name: string;
-  surname: string;
-  nationality: string;
-  birth: number;
-  death: number;
-  biography: string;
-  img: string;
-  rating: number;
-  path: string;
-  idInJson: string;
-}
+import { Author, Book } from 'src/app/services/interfaces.service';
 
-export interface Book {
-  id: number;
-  title: string;
-  creatorId: number;
-  originalTitle: string;
-  annotation: string;
-  publisher: string;
-  published: number;
-  genre: string;
-  length: number;
-  language: string;
-  translator: string;
-  ISBN: string;
-  path: string;
-  progress: string;
-  rating: number;
-  img: string;
-}
 
 @Injectable({
   providedIn: 'root',

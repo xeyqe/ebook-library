@@ -1,11 +1,17 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Dialogs } from '@ionic-native/dialogs/ngx';
-import { DatabaseService, Book } from './../../services/database.service';
+import { IonContent } from '@ionic/angular';
+import { File } from '@ionic-native/file/ngx';
+import { WebView } from '@ionic-native/ionic-webview/ngx';
+
+import { DatabaseService } from 'src/app/services/database.service';
 import { JsonDataParserService } from 'src/app/services/json-data-parser.service';
 import { FileReaderService } from 'src/app/services/file-reader.service';
 import { WebScraperService } from 'src/app/services/web-scraper.service';
-import { IonContent } from '@ionic/angular';
+import { EpubService } from 'src/app/services/epub.service';
+import { Book } from 'src/app/services/interfaces.service';
+
 
 @Component({
   selector: 'app-book',
@@ -39,7 +45,10 @@ export class BookPage implements OnInit {
     private dialog: Dialogs,
     private jsonServ: JsonDataParserService,
     private fs: FileReaderService,
-    private webScrapper: WebScraperService
+    private webScrapper: WebScraperService,
+    private epub: EpubService,
+    private file: File,
+    private webView: WebView
   ) {}
 
   ngOnInit() {
@@ -226,6 +235,57 @@ export class BookPage implements OnInit {
         this.content.scrollToTop();
       }
     });
+  }
+
+  getMetadataFromEpub() {
+    this.epub.getEpubMetadata(this.book.path).then((metadata) => {
+      console.log('metadata');
+      console.log(metadata);
+      if (metadata) {
+        if (metadata.annotation) {
+          if (!this.book.annotation) {
+            this.book.annotation = metadata.annotation.replace(/<[^>]*>/g, '');
+            this.bookChanged = true;
+          }
+        }
+        if (metadata.isbn) {
+          if (!this.book.ISBN) {
+            this.book.ISBN = metadata.isbn;
+            this.bookChanged = true;
+          }
+        }
+        if (metadata.title) {
+          if (!this.book.title) {
+            this.book.title = metadata.title;
+            this.bookChanged = true;
+          }
+        }
+        if (metadata.published) {
+          if (!this.book.published) {
+            this.book.published = metadata.published;
+            this.bookChanged = true;
+          }
+        }
+        if (metadata.publisher) {
+          if (!this.book.publisher) {
+            this.book.publisher = metadata.publisher;
+            this.bookChanged = true;
+          }
+        }
+        if (metadata.imgPath) {
+          const path = metadata.imgPath.substring(0, metadata.imgPath.lastIndexOf('/'));
+          const filename = metadata.imgPath.substring(metadata.imgPath.lastIndexOf('/') + 1);
+          const newPath = this.file.externalRootDirectory.slice(0, -1) + this.book.path.substring(0, this.book.path.lastIndexOf('/') + 1);
+          const newFilename = this.book.title + metadata.imgPath.substring(metadata.imgPath.lastIndexOf('.'));
+          if (!this.book.img) {
+            this.file.copyFile(path, filename, newPath, newFilename).then(() => {
+              this.book.img = this.webView.convertFileSrc(newPath + newFilename);
+              this.bookChanged = true;
+            })
+          }
+        }
+      }
+    })
   }
 
   private scrollElement() {

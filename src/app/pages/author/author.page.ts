@@ -1,16 +1,17 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormControl } from '@angular/forms';
+import { IonContent } from '@ionic/angular';
 import { HTTP } from '@ionic-native/http/ngx';
 import { Dialogs } from '@ionic-native/dialogs/ngx';
 import { Observable } from 'rxjs';
 import { map, startWith } from 'rxjs/operators';
 
-import { DatabaseService, Author } from 'src/app/services/database.service';
+import { DatabaseService } from 'src/app/services/database.service';
 import { FileReaderService } from 'src/app/services/file-reader.service';
 import { JsonDataParserService } from 'src/app/services/json-data-parser.service';
 import { WebScraperService } from 'src/app/services/web-scraper.service';
-import { IonContent } from '@ionic/angular';
+import { Author } from 'src/app/services/interfaces.service';
 
 @Component({
   selector: 'app-author',

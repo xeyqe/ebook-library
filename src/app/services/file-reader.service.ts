@@ -4,7 +4,9 @@ import { File } from '@ionic-native/file/ngx';
 import { Downloader, DownloadRequest, NotificationVisibility } from '@ionic-native/downloader/ngx';
 import { WebView } from '@ionic-native/ionic-webview/ngx';
 
-import { DatabaseService, Book } from 'src/app/services/database.service';
+import { DatabaseService } from 'src/app/services/database.service';
+import { Book } from 'src/app/services/interfaces.service';
+
 
 @Injectable({
   providedIn: 'root',
@@ -17,7 +19,7 @@ export class FileReaderService implements OnInit {
     private file: File,
     private db: DatabaseService,
     private downloader: Downloader,
-    private webView: WebView
+    private webView: WebView,
   ) {}
 
   ngOnInit() {}
@@ -208,14 +210,17 @@ export class FileReaderService implements OnInit {
     const path = this.file.externalRootDirectory + folder.substring(0, folder.lastIndexOf('/') + 1);
 
     folder = folder.substring(folder.lastIndexOf('/') + 1);
-
+    console.log('_booksOfAuthor');
+    console.log('path: ' + path);
+    console.log('folder: ' + folder);
     this.file
       .listDir(path, folder)
       .then((output) => {
         for (const item of output) {
           if (item.isFile) {
-            const regex = RegExp('.+.txt');
-            if (regex.test(item.name)) {
+            // const regex = new RegExp('.+.txt');
+            const extension = item.name.substring(item.name.lastIndexOf('.') + 1);
+            if (extension === 'txt' || extension === 'epub') {
               const bookPath = item.fullPath;
               if (!paths.includes(bookPath)) {
                 let book: Book;
@@ -242,6 +247,11 @@ export class FileReaderService implements OnInit {
                 this.db.addBook(book);
               }
             }
+            // if (extension === 'epub') {
+            //   this.file.listDir(this.file.externalRootDirectory + 'ebook-library', 'epub').then((entries) => {
+            //     console.log(entries);
+            //   });
+            // }
           } else if (item.isDirectory) {
             this._booksOfAuthor(item.fullPath, authorId, paths);
           }
@@ -309,4 +319,5 @@ export class FileReaderService implements OnInit {
         });
     });
   }
+
 }

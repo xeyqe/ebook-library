@@ -7,18 +7,22 @@ import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
 
 import { DatabaseService } from 'src/app/services/database.service';
 import { FileReaderService } from 'src/app/services/file-reader.service';
+import { EpubService } from './epub.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class TtsService {
-  texts: string[];
+  texts: string[] = [];
   initialized = false;
   language = 'en-US';
   speed = 30;
   progress = 0;
   isSpeaking = false;
   speakingLengthLimit = 500;
+  extension = 'txt';
+  chapters;
+  path: string;
 
   authorName: string;
   bookTitle: string;
@@ -34,7 +38,8 @@ export class TtsService {
     private tts: TextToSpeech,
     private db: DatabaseService,
     private fs: FileReaderService,
-    private strg: Storage
+    private strg: Storage,
+    private epubService: EpubService
   ) {}
 
   startSpeaking(bookId: number) {
@@ -62,21 +67,43 @@ export class TtsService {
           if (book.language) {
             this.language = book.language;
           }
+          this.path = book.path;
 
-          this.fs.readTextFile(path).then((str) => {
-            this.texts = this.getTexts(str);
+          this.extension = book.path.substring(book.path.lastIndexOf('.') + 1);
 
-            let progr = book.progress;
-            if (progr) {
-              progr = progr.substring(0, progr.indexOf('/'));
-              this.changeProgress(parseInt(progr, 10));
-            } else {
-              // this.db.updateBookProgress(bookId, '0/' + this.texts.length);
-              this.changeProgress(0);
-            }
-            this.initialized = true;
-            resolve();
-          });
+          if (this.extension === 'epub') {
+            this.epubService.unzipEpub(book.path).then((num) => {
+              if (num === 0) {
+                this.getTextsFromEpub().then(() => {
+                  let progr = book.progress;
+                  if (progr) {
+                    progr = progr.substring(0, progr.indexOf('/'));
+                    this.changeProgress(parseInt(progr, 10));
+                  } else {
+                    this.changeProgress(0);
+                  }
+                  this.initialized = true;
+                  resolve();
+                });
+              } else {
+                reject();
+              }
+            });
+          } else {
+            this.fs.readTextFile(path).then((str) => {
+              this.texts = this.getTexts(str);
+
+              let progr = book.progress;
+              if (progr) {
+                progr = progr.substring(0, progr.indexOf('/'));
+                this.changeProgress(parseInt(progr, 10));
+              } else {
+                this.changeProgress(0);
+              }
+              this.initialized = true;
+              resolve();
+            });
+          }
         })
         .catch((e) => {
           reject(e);
@@ -97,7 +124,8 @@ export class TtsService {
         add2Progress++;
       } while (
         this.texts[this.progress + add2Progress] &&
-        text2Speak.length + this.texts[this.progress + add2Progress].length < this.speakingLengthLimit
+        text2Speak.length + this.texts[this.progress + add2Progress].length <
+          this.speakingLengthLimit
       );
 
       this.tts
@@ -142,22 +170,24 @@ export class TtsService {
   }
 
   changeProgress(progress: number) {
-    if (progress >= 0) {
-      if (progress > this.texts.length) {
-        progress = this.texts.length;
-      }
-      this.progress = progress;
-      this.progressSubject.next(progress);
+    if (this.texts) {
+      if (progress >= 0) {
+        if (progress > this.texts.length) {
+          progress = this.texts.length;
+        }
+        this.progress = progress;
+        this.progressSubject.next(progress);
 
-      let progress2DB;
-      if (this.progress === this.texts.length) {
-        progress2DB = 'finished';
-      } else if (progress) {
-        progress2DB = progress + '/' + this.texts.length;
-      } else {
-        progress2DB = null;
+        let progress2DB: string;
+        if (this.progress === this.texts.length) {
+          progress2DB = 'finished';
+        } else if (progress) {
+          progress2DB = progress + '/' + this.texts.length;
+        } else {
+          progress2DB = null;
+        }
+        this.db.updateBookProgress(this.bookId, progress2DB);
       }
-      this.db.updateBookProgress(this.bookId, progress2DB);
     }
   }
 
@@ -174,7 +204,7 @@ export class TtsService {
   }
 
   getTextsLenght() {
-    return this.texts.length;
+    return this.texts ? this.texts.length : 0;
   }
 
   getTexts(str: string) {
@@ -210,6 +240,33 @@ export class TtsService {
     return newArray;
   }
 
+  async getTextsFromEpub() {
+    this.epubService.getChapters().then(async (chapters) => {
+      for (const chapter of chapters) {
+        await new Promise((next) => {
+          this.getTextFromChapter(chapter).then((texts) => {
+            if (texts && (texts as string[]).length) {
+              for (const text of texts as string[]) {
+                if (text) {
+                  this.texts.push(text);
+                }
+              }
+            }
+            next();
+          });
+        });
+      }
+    });
+  }
+
+  private getTextFromChapter(chapter) {
+    return new Promise((resolve) => {
+      this.epubService.getTextFromEpub(this.path, chapter.src).then((str) => {
+        resolve(str);
+      });
+    });
+  }
+
   changeSpeakingLimit(limit: number) {
     if (limit > 4000 || limit < 500) {
       return;
@@ -231,6 +288,10 @@ export class TtsService {
 
   setBookTitle(title: string) {
     this.bookTitle = title;
+  }
+
+  getEpubTexts() {
+    return this.texts;
   }
 
   getBookTitle(): string {
