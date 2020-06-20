@@ -1,50 +1,49 @@
 import { Injectable, OnInit } from '@angular/core';
 import { Zip } from '@ionic-native/zip/ngx';
 import { File, Entry } from '@ionic-native/file/ngx';
-import { Metadata } from 'src/app/services/interfaces.service';
+import { METADATA, CHAPTER } from 'src/app/services/interfaces.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class EpubService implements OnInit {
-  constructor(private zip: Zip, private file: File) {}
+  constructor(private zip: Zip, private file: File) { }
 
-  ngOnInit() {}
+  ngOnInit() { }
 
-  private getOpfNcxText(optOrNcx: string): Promise<string> {
-    return this.file
-      .listDir(this.file.externalRootDirectory + 'ebook-library', 'epub')
-      .then((entries) => {
-        for (const entry of entries as Entry[]) {
-          if (entry.isFile && entry.name.substring(entry.name.lastIndexOf('.') + 1) === optOrNcx) {
-            return this.file.readAsText(
-              this.file.externalRootDirectory.slice(0, -1) +
-                entry.fullPath.substring(0, entry.fullPath.lastIndexOf('/')),
-              entry.name
-            );
-          }
+  private async getOpfNcxText(optOrNcx: string): Promise<string> {
+    try {
+      const entries = await this.file
+        .listDir(this.file.externalRootDirectory + 'ebook-library', 'epub');
+      for (const entry of entries as Entry[]) {
+        if (entry.isFile && entry.name.substring(entry.name.lastIndexOf('.') + 1) === optOrNcx) {
+          return this.file.readAsText(
+            this.file.externalRootDirectory.slice(0, -1) +
+            entry.fullPath.substring(0, entry.fullPath.lastIndexOf('/')),
+            entry.name
+          );
         }
-      })
-      .catch((e) => {
-        console.log('getOpfNcxText failed in checkDir');
-        console.log(e);
-        return null;
-      });
+      }
+    }
+    catch (e) {
+      console.log('getOpfNcxText failed in checkDir');
+      console.log(e);
+      return null;
+    }
   }
 
-  unzipEpub(pathWhat: string) {
+  async unzipEpub(pathWhat: string): Promise<number> {
     const rootPath = this.file.externalRootDirectory;
     const path = rootPath + 'ebook-library/';
     const folder = 'epub';
 
-    return this.file.createDir(path, folder, true).then(() => {
-      return this.zip.unzip(rootPath + pathWhat, path + folder, (progress) =>
-        console.log('Unzipping, ' + Math.round((progress.loaded / progress.total) * 100) + '%')
-      );
-    });
+    await this.file.createDir(path, folder, true);
+    return this.zip.unzip(rootPath + pathWhat, path + folder,
+      (progress) => console.log('Unzipping, ' + Math.round((progress.loaded / progress.total) * 100) + '%')
+    );
   }
 
-  private getMetadata(): Promise<Metadata> {
+  private getMetadata(): Promise<METADATA> {
     return new Promise((resolve) => {
       this.getOpfNcxText('opf')
         .then((opfText) => {
@@ -112,24 +111,21 @@ export class EpubService implements OnInit {
     });
   }
 
-  getChapters() {
-    return this.getOpfNcxText('opf').then((opfText) => {
-      const parser = new DOMParser();
-      const xml = parser.parseFromString(opfText, 'text/xml');
-
-      const _list = xml.getElementsByTagName('itemref');
-
-      const chapters = [];
-      for (let i = 0; i < _list.length; i++) {
-        const id = _list[i].attributes['idref'].value;
-        const src = xml.getElementById(id).attributes['href'].value;
-        chapters.push({ id, src });
-      }
-      return chapters;
-    });
+  async getChapters(): Promise<CHAPTER[]> {
+    const opfText = await this.getOpfNcxText('opf');
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(opfText, 'text/xml');
+    const _list = xml.getElementsByTagName('itemref');
+    const chapters:CHAPTER[] = [];
+    for (let i = 0; i < _list.length; i++) {
+      const id = _list[i].attributes['idref'].value;
+      const src = xml.getElementById(id).attributes['href'].value;
+      chapters.push({ id, src });
+    }
+    return chapters;
   }
 
-  private getTextFromChapter(chapterHtmlText: string) {
+  private getTextFromChapter(chapterHtmlText: string): Promise<string[]> {
     return new Promise((resolve) => {
       const parser = new DOMParser();
       const xml = parser.parseFromString(chapterHtmlText, 'text/xml');
@@ -148,18 +144,15 @@ export class EpubService implements OnInit {
     });
   }
 
-  getTextFromEpub(path2Epub: string, path2Chapter: string) {
+  async getTextFromEpub(path2Epub: string, path2Chapter: string): Promise<string[]> {
     path2Epub = this.file.externalRootDirectory + path2Epub;
-    return this.file
-      .readAsText(this.file.externalRootDirectory + 'ebook-library/' + 'epub', path2Chapter)
-      .then((xml) => {
-        return this.getTextFromChapter(xml).then((outputText) => {
-          return outputText as string[];
-        });
-      });
+    const xml = await this.file
+      .readAsText(this.file.externalRootDirectory + 'ebook-library/' + 'epub', path2Chapter);
+    const outputText = await this.getTextFromChapter(xml);
+    return outputText;
   }
 
-  getEpubMetadata(path: string): Promise<Metadata> {
+  getEpubMetadata(path: string): Promise<METADATA> {
     return new Promise((resolve, reject) => {
       this.prepareFolder().then(() => {
         this.unzipEpub(path)

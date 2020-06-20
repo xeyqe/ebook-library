@@ -4,8 +4,8 @@ import { FormsModule } from '@angular/forms';
 
 import { IonicModule } from '@ionic/angular';
 
-import { TtsPageRoutingModule } from './tts-routing.module';
-import { TtsPage } from './tts.page';
+import { TtsPageRoutingModule } from 'src/app/pages/tts/tts-routing.module';
+import { TtsPage } from 'src/app/pages/tts/tts.page';
 
 @NgModule({
   imports: [
@@ -14,6 +14,6 @@ import { TtsPage } from './tts.page';
     IonicModule,
     TtsPageRoutingModule
   ],
-  declarations: [TtsPage],
+  declarations: [TtsPage]
 })
-export class TtsPageModule {}
+export class TtsPageModule { }

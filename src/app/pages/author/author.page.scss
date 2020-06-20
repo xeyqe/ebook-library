@@ -1,43 +1,43 @@
 .red {
-  color: #ff3d3d !important;
+    color: #ff3d3d !important;
 }
 
 ion-label {
-  opacity: 1 !important;
+    opacity: 1 !important;
 }
 
 .bu-change-pic {
-  position: absolute;
-  top: 0%;
-  left: 0%;
+    position: absolute;
+    top: 0%;
+    left: 0%;
 }
 
 .ng-invalid {
-  color: white;
-  background: #ff3d3d;
+    color: white;
+    background: #ff3d3d;
 }
 
 mat-option {
-  background-color: black;
-  color: white;
+    background-color: black;
+    color: white;
 }
 
 .white {
-  color: white;
+    color: white;
 }
 
 .gray {
-  color: #545454;
+    color: #545454;
 }
 
 .height100 {
-  max-height: 100px;
+    max-height: 100px;
 }
 
 .spinner {
-  position: fixed;
-  z-index: 1000;
-  transform: translate(-50%, -50%) scale(9);
-  left: 50%;
-  top: 50%;
+    position: fixed;
+    z-index: 1000;
+    transform: translate(-50%, -50%) scale(9);
+    left: 50%;
+    top: 50%;
 }

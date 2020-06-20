@@ -53,6 +53,6 @@ import { MaterialModule } from 'src/app/material/material.module';
     WebView,
     Zip
   ],
-  bootstrap: [AppComponent],
+  bootstrap: [AppComponent]
 })
-export class AppModule {}
+export class AppModule { }

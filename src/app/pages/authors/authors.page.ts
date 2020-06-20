@@ -1,71 +1,52 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Platform } from '@ionic/angular';
 
 import { DatabaseService } from './../../services/database.service';
 import { FileReaderService } from './../../services/file-reader.service';
+import { SplashScreen } from '@ionic-native/splash-screen/ngx';
+import { Subscription } from 'rxjs';
+import { BOOKSIMPLIFIED, AUTHORSIMPLIFIED } from 'src/app/services/interfaces.service';
 
 @Component({
   selector: 'app-authors',
   templateUrl: './authors.page.html',
   styleUrls: ['./authors.page.scss'],
 })
-export class AuthorsPage implements OnInit {
-  authors: { id: number; name: string; surname: string; img: string }[] = [];
-  books: {
-    id: number;
-    title: string;
-    img: string;
-    progress: string;
-    rating: number;
-  }[] = [];
-  author = {};
+export class AuthorsPage implements OnInit, OnDestroy {
+  authors: AUTHORSIMPLIFIED[] = [];
+  books: BOOKSIMPLIFIED[] = [];
+  author: AUTHORSIMPLIFIED;
   lastListenedBookId: string;
-  subscribtion;
   hideCharacters = false;
   where2Search: string;
 
   selectedView = 'TODO';
   filterStatus = '';
   alphabet = [
-    'A',
-    'B',
-    'C',
-    'D',
-    'E',
-    'F',
-    'G',
-    'H',
-    'I',
-    'J',
-    'K',
-    'L',
-    'M',
-    'N',
-    'O',
-    'P',
-    'Q',
-    'R',
-    'S',
-    'T',
-    'U',
-    'V',
-    'W',
-    'X',
-    'Y',
-    'Z',
-    '#',
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+    'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#',
   ];
   selectedCharacter: string;
 
-  constructor(private db: DatabaseService, private fr: FileReaderService, private platform: Platform) {}
+  subs1: Subscription;
+  subs2: Subscription;
+  subs3: Subscription;
+
+
+  constructor(
+    private db: DatabaseService,
+    private fr: FileReaderService,
+    private platform: Platform,
+    private splashScreen: SplashScreen
+  ) { }
 
   ngOnInit() {
-    this.db.getDatabaseState().subscribe((ready) => {
+    this.subs1 = this.db.getDatabaseState().subscribe((ready) => {
       if (ready) {
-        this.db.getAuthors().subscribe((authors) => {
+        this.subs2 = this.db.getAuthors().subscribe((authors) => {
           this.authors = authors;
         });
-        this.db.getAllBooks().subscribe((books) => {
+        this.subs3 = this.db.getAllBooks().subscribe((books) => {
           this.books = books;
         });
         this.platform
@@ -73,6 +54,7 @@ export class AuthorsPage implements OnInit {
           .then(() => {
             this.fr.createApplicationFolder();
             this.fr.listOfAuthors();
+            this.splashScreen.hide();
           })
           .catch((e) => {
             console.log('plt.ready failed: ');
@@ -109,5 +91,17 @@ export class AuthorsPage implements OnInit {
     }
     this.db.saveValue('character', this.selectedCharacter);
     this.db.saveValue('where2Search', this.where2Search);
+  }
+
+  ngOnDestroy() {
+    if (this.subs1) {
+      this.subs1.unsubscribe();
+    }
+    if (this.subs2) {
+      this.subs2.unsubscribe();
+    }
+    if (this.subs3) {
+      this.subs3.unsubscribe();
+    }
   }
 }

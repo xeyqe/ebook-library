@@ -8,7 +8,7 @@ import { Storage } from '@ionic/storage';
 import { SQLitePorter } from '@ionic-native/sqlite-porter/ngx';
 import { SQLite, SQLiteObject } from '@ionic-native/sqlite/ngx';
 
-import { Author, Book } from 'src/app/services/interfaces.service';
+import { AUTHOR, BOOK, AUTHORSIMPLIFIED, BOOKSIMPLIFIED } from 'src/app/services/interfaces.service';
 
 
 @Injectable({
@@ -18,9 +18,9 @@ export class DatabaseService {
   private database: SQLiteObject;
   private dbReady: BehaviorSubject<boolean> = new BehaviorSubject(false);
 
-  authors = new BehaviorSubject([]);
+  authors = new BehaviorSubject<AUTHORSIMPLIFIED[]>([]);
   books = new BehaviorSubject([]);
-  allBooks = new BehaviorSubject([]);
+  allBooks = new BehaviorSubject<BOOKSIMPLIFIED[]>([]);
 
   constructor(
     private plt: Platform,
@@ -64,47 +64,47 @@ export class DatabaseService {
     });
   }
 
-  getDatabaseState() {
+  getDatabaseState(): Observable<boolean> {
     return this.dbReady.asObservable();
   }
 
-  getAuthors(): Observable<{ name: string; surname: string; img: string; id: number }[]> {
+  getAuthors(): Observable<AUTHORSIMPLIFIED[]> {
     return this.authors.asObservable();
   }
 
-  getBooks(): Observable<any[]> {
+  getBooks(): Observable<BOOK[]> {
     return this.books.asObservable();
   }
 
-  getAllBooks(): Observable<any[]> {
+  getAllBooks(): Observable<BOOKSIMPLIFIED[]> {
     return this.allBooks.asObservable();
   }
 
-  loadAuthors() {
-    return this.database
-      .executeSql('SELECT * FROM authors ORDER BY surname COLLATE NOCASE ASC', [])
-      .then((data) => {
-        const authors = [];
+  async loadAuthors() {
+    try {
+      const data = await this.database
+        .executeSql('SELECT * FROM authors ORDER BY surname COLLATE NOCASE ASC', []);
+      const authors = [];
 
-        if (data.rows.length > 0) {
-          for (let i = 0; i < data.rows.length; i++) {
-            authors.push({
-              id: data.rows.item(i).id,
-              name: data.rows.item(i).name,
-              surname: data.rows.item(i).surname,
-              img: data.rows.item(i).img,
-            });
-          }
+      if (data.rows.length > 0) {
+        for (let i = 0; i < data.rows.length; i++) {
+          authors.push({
+            id: data.rows.item(i).id,
+            name: data.rows.item(i).name,
+            surname: data.rows.item(i).surname,
+            img: data.rows.item(i).img,
+          });
         }
-        this.authors.next(authors);
-      })
-      .catch((e) => {
-        console.log('loadAuthors failed: ');
-        console.log(e);
-      });
+      }
+      this.authors.next(authors);
+    }
+    catch (e) {
+      console.log('loadAuthors failed: ');
+      console.log(e);
+    }
   }
 
-  addAuthor(author: Author): Promise<number> {
+  async addAuthor(author: AUTHOR): Promise<number> {
     const data = [
       author.name,
       author.surname,
@@ -116,129 +116,119 @@ export class DatabaseService {
       author.rating,
       author.path,
     ];
-    return this.database
+    const output = await this.database
       .executeSql(
         `INSERT INTO authors
           (name, surname, nationality, birth, death, biography, img, rating, path)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         data
-      )
-      .then((output) => {
-        author.id = output.insertId;
-        const athrs = this.authors.getValue();
-        athrs.push({ name: author.name, surname: author.surname, img: author.img, id: author.id });
-        this.authors.next(athrs);
-        return output.insertId;
-      });
+      );
+    author.id = output.insertId;
+    const athrs = this.authors.getValue();
+    athrs.push({ name: author.name, surname: author.surname, img: author.img, id: author.id });
+    this.authors.next(athrs);
+    return output.insertId;
   }
 
-  getAuthor(id: number): Promise<Author> {
-    return this.database.executeSql('SELECT * FROM authors WHERE id = ?', [id]).then((data) => {
-      return {
-        id: data.rows.item(0).id,
-        name: data.rows.item(0).name,
-        surname: data.rows.item(0).surname,
-        nationality: data.rows.item(0).nationality,
-        birth: data.rows.item(0).birth,
-        death: data.rows.item(0).death,
-        biography: data.rows.item(0).biography
-          ? data.rows.item(0).biography.replace(/<br>/g, '\n')
-          : data.rows.item(0).biography,
-        img: data.rows.item(0).img,
-        rating: data.rows.item(0).rating,
-        path: data.rows.item(0).path,
-        idInJson: data.rows.item(0).idInJson,
-      };
-    });
+  async getAuthor(id: number): Promise<AUTHOR> {
+    const data = await this.database.executeSql('SELECT * FROM authors WHERE id = ?', [id]);
+    return {
+      id: data.rows.item(0).id,
+      name: data.rows.item(0).name,
+      surname: data.rows.item(0).surname,
+      nationality: data.rows.item(0).nationality,
+      birth: data.rows.item(0).birth,
+      death: data.rows.item(0).death,
+      biography: data.rows.item(0).biography
+        ? data.rows.item(0).biography.replace(/<br>/g, '\n')
+        : data.rows.item(0).biography,
+      img: data.rows.item(0).img,
+      rating: data.rows.item(0).rating,
+      path: data.rows.item(0).path,
+      idInJson: data.rows.item(0).idInJson,
+    };
   }
 
-  getBooksOfAuthor(id: number): Promise<any> {
-    return this.database.executeSql('SELECT * FROM books WHERE creatorId = ? ORDER BY title ASC', [id]).then((data) => {
-      const books: Book[] = [];
-
-      if (data.rows.length > 0) {
-        for (let i = 0; i < data.rows.length; i++) {
-          books.push({
-            id: data.rows.item(i).id,
-            title: data.rows.item(i).title,
-            creatorId: data.rows.item(i).creatorId,
-            originalTitle: data.rows.item(i).originalTitle,
-            annotation: data.rows.item(i).annotation,
-            publisher: data.rows.item(i).publisher,
-            published: data.rows.item(i).published,
-            genre: data.rows.item(i).genre,
-            length: data.rows.item(i).length,
-            language: data.rows.item(i).language,
-            translator: data.rows.item(i).translator,
-            ISBN: data.rows.item(i).ISBN,
-            path: data.rows.item(i).path,
-            progress: data.rows.item(i).progress,
-            rating: data.rows.item(i).rating,
-            img: data.rows.item(i).img,
-          });
-        }
+  async getBooksOfAuthor(id: number): Promise<any> {
+    const data = await this.database.executeSql('SELECT * FROM books WHERE creatorId = ? ORDER BY title ASC', [id]);
+    const books: BOOK[] = [];
+    if (data.rows.length > 0) {
+      for (let i = 0; i < data.rows.length; i++) {
+        books.push({
+          id: data.rows.item(i).id,
+          title: data.rows.item(i).title,
+          creatorId: data.rows.item(i).creatorId,
+          originalTitle: data.rows.item(i).originalTitle,
+          annotation: data.rows.item(i).annotation,
+          publisher: data.rows.item(i).publisher,
+          published: data.rows.item(i).published,
+          genre: data.rows.item(i).genre,
+          length: data.rows.item(i).length,
+          language: data.rows.item(i).language,
+          translator: data.rows.item(i).translator,
+          ISBN: data.rows.item(i).ISBN,
+          path: data.rows.item(i).path,
+          progress: data.rows.item(i).progress,
+          rating: data.rows.item(i).rating,
+          img: data.rows.item(i).img,
+        });
       }
-      this.books.next(books);
-      // return books;
-    });
+    }
+    this.books.next(books);
   }
 
-  getBook(id: number): Promise<Book> {
-    return this.database.executeSql('SELECT * FROM books WHERE id = ?', [id]).then((data) => {
-      return {
-        id: data.rows.item(0).id,
-        title: data.rows.item(0).title,
-        creatorId: data.rows.item(0).creatorId,
-        originalTitle: data.rows.item(0).originalTitle,
-        annotation: data.rows.item(0).annotation,
-        publisher: data.rows.item(0).publisher,
-        published: data.rows.item(0).published,
-        genre: data.rows.item(0).genre,
-        length: data.rows.item(0).length,
-        language: data.rows.item(0).language,
-        translator: data.rows.item(0).translator,
-        ISBN: data.rows.item(0).ISBN,
-        path: data.rows.item(0).path,
-        progress: data.rows.item(0).progress,
-        rating: data.rows.item(0).rating,
-        img: data.rows.item(0).img,
-      };
-    });
+  async getBook(id: number): Promise<BOOK> {
+    const data = await this.database.executeSql('SELECT * FROM books WHERE id = ?', [id]);
+    return {
+      id: data.rows.item(0).id,
+      title: data.rows.item(0).title,
+      creatorId: data.rows.item(0).creatorId,
+      originalTitle: data.rows.item(0).originalTitle,
+      annotation: data.rows.item(0).annotation,
+      publisher: data.rows.item(0).publisher,
+      published: data.rows.item(0).published,
+      genre: data.rows.item(0).genre,
+      length: data.rows.item(0).length,
+      language: data.rows.item(0).language,
+      translator: data.rows.item(0).translator,
+      ISBN: data.rows.item(0).ISBN,
+      path: data.rows.item(0).path,
+      progress: data.rows.item(0).progress,
+      rating: data.rows.item(0).rating,
+      img: data.rows.item(0).img,
+    };
   }
 
-  getAllBooksDb() {
-    return this.database.executeSql('SELECT * FROM books').then((data) => {
-      const books = [];
-      if (data.rows.length > 0) {
-        for (let i = 0; i < data.rows.length; i++) {
-          books.push({
-            id: data.rows(i).id,
-            title: data.rows.item(i).title,
-            progress: data.rows.item(i).progress,
-            rating: data.rows.item(i).rating,
-            img: data.rows.item(i).img,
-          });
-        }
+  async getAllBooksDb() {
+    const data = await this.database.executeSql('SELECT * FROM books');
+    const books = [];
+    if (data.rows.length > 0) {
+      for (let i = 0; i < data.rows.length; i++) {
+        books.push({
+          id: data.rows(i).id,
+          title: data.rows.item(i).title,
+          progress: data.rows.item(i).progress,
+          rating: data.rows.item(i).rating,
+          img: data.rows.item(i).img,
+        });
       }
-      this.allBooks.next(books);
+    }
+    this.allBooks.next(books);
+  }
+
+  async deleteAuthor(id: number) {
+    const _ = await this.database.executeSql('DELETE FROM authors WHERE id = ?', [id]);
+    this.database.executeSql('DELETE FROM books WHERE creatorId = ?', [id]).then(() => {
+      this.loadAuthors();
     });
   }
 
-  deleteAuthor(id: number) {
-    return this.database.executeSql('DELETE FROM authors WHERE id = ?', [id]).then((_) => {
-      this.database.executeSql('DELETE FROM books WHERE creatorId = ?', [id]).then(() => {
-        this.loadAuthors();
-      });
-    });
+  async deleteBook(bookId: number, authorId: number) {
+    const _ = await this.database.executeSql('DELETE FROM books WHERE id = ?', [bookId]);
+    this.loadBooks(authorId);
   }
 
-  deleteBook(bookId: number, authorId: number) {
-    return this.database.executeSql('DELETE FROM books WHERE id = ?', [bookId]).then((_) => {
-      this.loadBooks(authorId);
-    });
-  }
-
-  updateAuthor(author: Author) {
+  async updateAuthor(author: AUTHOR) {
     const biography = author.biography ? author.biography.replace(/\n/g, '<br>') : null;
     const data = [
       author.name,
@@ -252,65 +242,61 @@ export class DatabaseService {
       author.path,
       author.idInJson,
     ];
-    return this.database
+    const _ = await this.database
       .executeSql(
         `UPDATE authors SET name = ?,
           surname = ?, nationality = ?, birth = ?, death = ?,
           biography = ?, img = ?, rating = ?, path = ?, idInJson = ? WHERE id = ${author.id}`,
         data
-      )
-      .then((_) => {
-        this.loadAuthors();
-      });
+      );
+    this.loadAuthors();
   }
 
-  loadBooks(id: number) {
-    return this.database.executeSql('SELECT * FROM authors WHERE id = ?', [id]).then((data) => {
-      const books = [];
-      if (data.rows.length > 0) {
-        for (let i = 0; i < data.rows.length; i++) {
-          books.push({
-            title: data.rows.item(i).title,
-            creatorId: data.rows.item(i).creatorId,
-            originalTitle: data.rows.item(i).originalTitle,
-            annotation: data.rows.item(i).annotation,
-            publisher: data.rows.item(i).publisher,
-            published: data.rows.item(i).published,
-            genre: data.rows.item(i).genre,
-            lenght: data.rows.item(i).lenght,
-            language: data.rows.item(i).language,
-            translator: data.rows.item(i).translator,
-            ISBN: data.rows.item(i).ISBN,
-            path: data.rows.item(i).path,
-            progress: data.rows.item(i).progress,
-            rating: data.rows.item(i).rating,
-            img: data.rows.item(i).img,
-          });
-        }
+  async loadBooks(id: number) {
+    const data = await this.database.executeSql('SELECT * FROM authors WHERE id = ?', [id]);
+    const books = [];
+    if (data.rows.length > 0) {
+      for (let i = 0; i < data.rows.length; i++) {
+        books.push({
+          title: data.rows.item(i).title,
+          creatorId: data.rows.item(i).creatorId,
+          originalTitle: data.rows.item(i).originalTitle,
+          annotation: data.rows.item(i).annotation,
+          publisher: data.rows.item(i).publisher,
+          published: data.rows.item(i).published,
+          genre: data.rows.item(i).genre,
+          lenght: data.rows.item(i).lenght,
+          language: data.rows.item(i).language,
+          translator: data.rows.item(i).translator,
+          ISBN: data.rows.item(i).ISBN,
+          path: data.rows.item(i).path,
+          progress: data.rows.item(i).progress,
+          rating: data.rows.item(i).rating,
+          img: data.rows.item(i).img,
+        });
       }
-      this.books.next(books);
-    });
+    }
+    this.books.next(books);
   }
 
-  loadAllBooks() {
-    return this.database.executeSql('SELECT * FROM books ORDER BY title COLLATE NOCASE ASC', []).then((data) => {
-      const books = [];
-      if (data.rows.length > 0) {
-        for (let i = 0; i < data.rows.length; i++) {
-          books.push({
-            id: data.rows.item(i).id,
-            title: data.rows.item(i).title,
-            progress: data.rows.item(i).progress,
-            rating: data.rows.item(i).rating,
-            img: data.rows.item(i).img,
-          });
-        }
+  async loadAllBooks() {
+    const data = await this.database.executeSql('SELECT * FROM books ORDER BY title COLLATE NOCASE ASC', []);
+    const books = [];
+    if (data.rows.length > 0) {
+      for (let i = 0; i < data.rows.length; i++) {
+        books.push({
+          id: data.rows.item(i).id,
+          title: data.rows.item(i).title,
+          progress: data.rows.item(i).progress,
+          rating: data.rows.item(i).rating,
+          img: data.rows.item(i).img,
+        });
       }
-      this.allBooks.next(books);
-    });
+    }
+    this.allBooks.next(books);
   }
 
-  addBook(book: Book) {
+  async addBook(book: BOOK) {
     const data = [
       book.title,
       book.creatorId,
@@ -328,35 +314,34 @@ export class DatabaseService {
       book.rating,
       book.img,
     ];
-    return this.database
-      .executeSql(
-        `INSERT INTO books (title, creatorId, originalTitle, annotation, publisher, published, genre,
+    try {
+      const output = await this.database
+        .executeSql(
+          `INSERT INTO books (title, creatorId, originalTitle, annotation, publisher, published, genre,
         lenght, language, translator, ISBN, path, progress, rating, img)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        data
-      )
-      .then((output) => {
-        const books = this.books.getValue();
-        book.id = output.insertId;
-        books.push(book);
-        this.books.next(books);
-      })
-      .catch((e) => {
-        console.log('cannot add a book');
-        console.log(e);
-      });
+          data
+        );
+      const books = this.books.getValue();
+      book.id = output.insertId;
+      books.push(book);
+      this.books.next(books);
+    }
+    catch (e) {
+      console.log('cannot add a book');
+      console.log(e);
+    }
   }
 
-  checkIfAuthorExists(name: string, surname: string): Promise<boolean> {
-    return this.database
-      .executeSql('SELECT * FROM authors WHERE name = ? AND surname = ?', [name, surname])
-      .then((data) => {
-        if (data.rows.length === 0) {
-          return false;
-        } else {
-          return true;
-        }
-      });
+  async checkIfAuthorExists(name: string, surname: string): Promise<boolean> {
+    const data = await this.database
+      .executeSql('SELECT * FROM authors WHERE name = ? AND surname = ?', [name, surname]);
+    if (data.rows.length === 0) {
+      return false;
+    }
+    else {
+      return true;
+    }
   }
 
   updateBookProgress(id: number, progress: string) {
@@ -370,7 +355,7 @@ export class DatabaseService {
     });
   }
 
-  updateBook(book: Book) {
+  async updateBook(book: BOOK) {
     const data = [
       book.title,
       book.originalTitle,
@@ -387,71 +372,64 @@ export class DatabaseService {
       book.rating,
       book.img,
     ];
-    return this.database
+    const _ = await this.database
       .executeSql(
         `UPDATE books SET title = ?,
-                                    originalTitle = ?,
-                                    annotation = ?,
-                                    publisher = ?,
-                                    published = ?,
-                                    genre = ?,
-                                    lenght = ?,
-                                    language = ?,
-                                    translator = ?,
-                                    ISBN = ?,
-                                    path = ?,
-                                    progress = ?,
-                                    rating = ?,
-                                    img = ?
-                                    WHERE id = ${book.id}`,
+          originalTitle = ?,
+          annotation = ?,
+          publisher = ?,
+          published = ?,
+          genre = ?,
+          lenght = ?,
+          language = ?,
+          translator = ?,
+          ISBN = ?,
+          path = ?,
+          progress = ?,
+          rating = ?,
+          img = ?
+          WHERE id = ${book.id}`,
         data
-      )
-      .then((_) => {
-        // this.loadAuthors();
-      });
+      );
   }
 
-  allAuthorsPaths() {
-    return this.database.executeSql('SELECT path FROM authors', []).then((data) => {
-      const paths = [];
-      if (data.rows.length > 0) {
-        for (let i = 0; i < data.rows.length; i++) {
-          paths.push(data.rows.item(i).path);
-        }
+  async allAuthorsPaths(): Promise<string[]> {
+    const data = await this.database.executeSql('SELECT path FROM authors', []);
+    const paths = [];
+    if (data.rows.length > 0) {
+      for (let i = 0; i < data.rows.length; i++) {
+        paths.push(data.rows.item(i).path);
       }
-      return paths;
-    });
+    }
+    return paths;
   }
 
-  authorsBooksPaths(authorId: number) {
-    return this.database.executeSql('SELECT path FROM books WHERE creatorId = ?', [authorId]).then((data) => {
-      const paths = [];
-      if (data.rows.length > 0) {
-        for (let i = 0; i < data.rows.length; i++) {
-          paths.push(data.rows.item(i).path);
-        }
+  async authorsBooksPaths(authorId: number): Promise<string[]> {
+    const data = await this.database.executeSql('SELECT path FROM books WHERE creatorId = ?', [authorId]);
+    const paths = [];
+    if (data.rows.length > 0) {
+      for (let i = 0; i < data.rows.length; i++) {
+        paths.push(data.rows.item(i).path);
       }
-      return paths;
-    });
+    }
+    return paths;
   }
 
-  getStartedBooks() {
-    return this.database.executeSql('SELECT * FROM books WHERE progress LIKE "%/%"', []).then((data) => {
-      return data;
-    });
+  async getStartedBooks(): Promise<BOOK[]> {
+    const data = await this.database.executeSql('SELECT * FROM books WHERE progress LIKE "%/%"', []);
+    return data;
   }
 
-  getFinishedBooks() {
-    return this.database.executeSql('SELECT * FROM books WHERE progress == "finished"', []).then((data) => {
-      return data;
-    });
+  async getFinishedBooks(): Promise<BOOK[]> {
+    const data = await this.database.executeSql('SELECT * FROM books WHERE progress == "finished"', []);
+    return data;
   }
 
   saveValue(name: string, value: any) {
     this.storage.set(name, value);
   }
 
-  getValue(name: string) {
+  getValue(name: string): Promise<any> {
     return this.storage.get(name);
   }
 }

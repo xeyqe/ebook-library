@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
 
-import { TtsPage } from './tts.page';
+import { TtsPage } from 'src/app/pages/tts/tts.page';
 
 const routes: Routes = [
   {
@@ -12,6 +12,6 @@ const routes: Routes = [
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule],
+  exports: [RouterModule]
 })
-export class TtsPageRoutingModule {}
+export class TtsPageRoutingModule { }
