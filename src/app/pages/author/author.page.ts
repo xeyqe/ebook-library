@@ -1,44 +1,38 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormControl } from '@angular/forms';
 import { IonContent } from '@ionic/angular';
 import { HTTP } from '@ionic-native/http/ngx';
 import { Dialogs } from '@ionic-native/dialogs/ngx';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { map, startWith } from 'rxjs/operators';
 
 import { DatabaseService } from 'src/app/services/database.service';
 import { FileReaderService } from 'src/app/services/file-reader.service';
 import { JsonDataParserService } from 'src/app/services/json-data-parser.service';
 import { WebScraperService } from 'src/app/services/web-scraper.service';
-import { Author } from 'src/app/services/interfaces.service';
+import { AUTHOR, WIKIPEDIADATA, BOOKSIMPLIFIED, ONLINEAUTHORLINK } from 'src/app/services/interfaces.service';
 
 @Component({
   selector: 'app-author',
   templateUrl: './author.page.html',
   styleUrls: ['./author.page.scss'],
 })
-export class AuthorPage implements OnInit {
-  author: Author = null;
-  books: {
-    id: number;
-    title: string;
-    img: string;
-    progress: string;
-    rating: number;
-  }[] = [];
+export class AuthorPage implements OnInit, OnDestroy {
+  author: AUTHOR = null;
+  books: BOOKSIMPLIFIED[] = [];
   biography = '';
   textareaFocus = false;
   authorChanged = false;
   ready2editing = false;
-  fromWiki;
+  fromWiki: WIKIPEDIADATA[];
   wikiOutputBoolean = false;
-  listOfPictures;
   imArray = [];
+  listOfPictures: string[];
   authorId: number;
   jsonOfAuthorsIndex;
   fullHeight = false;
-  onlineAuthorsList;
+  onlineAuthorsList: ONLINEAUTHORLINK[];
   showAble = false;
 
   isWorking = false;
@@ -46,9 +40,12 @@ export class AuthorPage implements OnInit {
   myControl = new FormControl();
   filteredOptions: Observable<any[]>;
 
+  subs1: Subscription;
+  subs2: Subscription;
+
   @ViewChild(IonContent) content: IonContent;
-  @ViewChild('target1') target1: any;
-  @ViewChild('target2') target2: any;
+  @ViewChild('target1') target1: ElementRef;
+  @ViewChild('target2') target2: ElementRef;
 
   constructor(
     private route: ActivatedRoute,
@@ -59,7 +56,7 @@ export class AuthorPage implements OnInit {
     private router: Router,
     private jsonServ: JsonDataParserService,
     private webScraper: WebScraperService
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.myControl.disable();
@@ -73,7 +70,7 @@ export class AuthorPage implements OnInit {
       const id = parseInt(autId, 10);
       this.authorId = id;
 
-      this.db.getDatabaseState().subscribe((ready) => {
+      this.subs1 = this.db.getDatabaseState().subscribe((ready) => {
         if (ready) {
           this.db
             .getAuthor(id)
@@ -84,7 +81,7 @@ export class AuthorPage implements OnInit {
               this.db
                 .getBooksOfAuthor(id)
                 .then((_) => {
-                  this.db.getBooks().subscribe((books) => {
+                  this.subs2 = this.db.getBooks().subscribe((books) => {
                     this.books = books;
                   });
                 })
@@ -133,14 +130,16 @@ export class AuthorPage implements OnInit {
     });
   }
 
-  _filter(value: any): any[] {
-    if (!value) {
-      return value;
+  _filter(value: string): string[] {
+    if (!value || value.length < 4) {
+      return null;
     }
 
-    if (this.jsonOfAuthorsIndex && value) {
+    if (this.jsonOfAuthorsIndex && value && value.length) {
       const filterValue = value.toLowerCase();
-      return this.jsonOfAuthorsIndex.filter((option) => option.name.toLowerCase().includes(filterValue));
+      return this.jsonOfAuthorsIndex.filter((option) =>
+        option.name.toLowerCase().includes(filterValue)
+      );
     } else {
       return undefined;
     }
@@ -165,6 +164,7 @@ export class AuthorPage implements OnInit {
     this.db
       .updateAuthor(this.author)
       .then((_) => {
+        this.wikiOutputBoolean = false;
         this.authorChanged = false;
         this.ready2editing = false;
         this.fromWiki = null;
@@ -192,6 +192,7 @@ export class AuthorPage implements OnInit {
 
   getFromWikipedia() {
     const searchValue = this.author.name + ' ' + this.author.surname;
+    this.isWorking = true;
 
     this.http
       .get(
@@ -211,6 +212,7 @@ export class AuthorPage implements OnInit {
         this.ready2editing = true;
         this.wikiOutputBoolean = true;
         this.fromWiki = JSON.parse(output.data).query.search;
+        this.isWorking = false;
         this.scrollElement(this.target1);
       })
       .catch((e) => {
@@ -219,7 +221,7 @@ export class AuthorPage implements OnInit {
       });
   }
 
-  log(aa: any) {
+  log(aa: WIKIPEDIADATA) {
     const pageid = aa.pageid + '';
     this.isWorking = true;
     this.http
@@ -287,7 +289,10 @@ export class AuthorPage implements OnInit {
 
   deleteAuthor() {
     this.dialog
-      .confirm('Do you really want to delete this author?\n(Files won\'t be deleted.)', null, ['Ok', 'Cancel'])
+      .confirm('Do you really want to delete this author?\n(Files won\'t be deleted.)', null, [
+        'Ok',
+        'Cancel',
+      ])
       .then((res) => {
         if (res === 1) {
           this.db.deleteAuthor(this.author.id).then((_) => {
@@ -297,7 +302,7 @@ export class AuthorPage implements OnInit {
       });
   }
 
-  parseInfobox(data: any) {
+  parseInfobox(data: string) {
     const infobox = data.split('\n\n')[0];
     const array = infobox.split('\n');
     const obj = {
@@ -310,7 +315,7 @@ export class AuthorPage implements OnInit {
       if (item.indexOf('= ') !== -1) {
         const neco = item.split('= ');
         const key = neco[0].substring(1).trim();
-        let value = neco[1].trim();
+        let value: string | number = neco[1].trim();
         if (obj[key] === null) {
           if (key === 'birth_date' || key === 'death_date') {
             const myRe = new RegExp(/\|[0-9]+\|/, 'g');
@@ -371,9 +376,8 @@ export class AuthorPage implements OnInit {
     } else {
       authorsName = this.author.name + ' ' + this.author.surname;
     }
-    this.isWorking = true
+    this.isWorking = true;
     this.webScraper.getAuthorsList(authorsName).then((data) => {
-      console.log(data);
       this.onlineAuthorsList = data;
       this.isWorking = false;
       this.scrollElement(this.target2);
@@ -394,11 +398,21 @@ export class AuthorPage implements OnInit {
 
         this.authorChanged = true;
         this.isWorking = false;
+        this.content.scrollToTop();
       }
     });
   }
 
-  private scrollElement(target: any) {
+  private scrollElement(target: ElementRef) {
     this.content.scrollToPoint(0, target.nativeElement.offsetTop, 500);
+  }
+
+  ngOnDestroy() {
+    if (this.subs1) {
+      this.subs1.unsubscribe();
+    }
+    if (this.subs2) {
+      this.subs2.unsubscribe();
+    }
   }
 }

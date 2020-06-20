@@ -1,10 +1,11 @@
 import { Pipe, PipeTransform } from '@angular/core';
+import { AUTHORSIMPLIFIED, BOOKSIMPLIFIED } from '../services/interfaces.service';
 
 @Pipe({
   name: 'filter',
 })
 export class FilterPipe implements PipeTransform {
-  transform(value: any, filterString: string, character: string, what2search: string): any {
+  transform(value: any, filterString: string, character: string, what2search: string): AUTHORSIMPLIFIED | BOOKSIMPLIFIED {
     if (what2search === 'book') {
       if (filterString && filterString.length) {
         return value
@@ -16,19 +17,19 @@ export class FilterPipe implements PipeTransform {
           .sort((a, b) => a.title.localeCompare(b.title, 'cs'));
       } else {
         if (character === 'started') {
-          return value.filter((item) => {
+          return value.filter((item: BOOKSIMPLIFIED) => {
             if (item.progress && item.progress.includes('/')) {
               return item;
             }
           });
         } else if (character === 'finished') {
-          return value.filter((item) => {
+          return value.filter((item: BOOKSIMPLIFIED) => {
             if (item.progress && item.progress === 'finished') {
               return item;
             }
           });
         } else {
-          return value.filter((item) => {
+          return value.filter((item: BOOKSIMPLIFIED) => {
             if (item.rating && item.rating > 3) {
               return item;
             }
@@ -37,49 +38,14 @@ export class FilterPipe implements PipeTransform {
       }
     } else {
       const hacky = {
-        Z: 'Ž',
-        S: 'Š',
-        C: 'Č',
-        R: 'Ř',
-        D: 'Ď',
-        T: 'Ť',
-        N: 'Ň',
+        Z: 'Ž', S: 'Š', C: 'Č', R: 'Ř', D: 'Ď', T: 'Ť', N: 'Ň',
       };
 
       const alphabet = {
-        A: true,
-        B: true,
-        C: true,
-        Č: true,
-        D: true,
-        Ď: true,
-        E: true,
-        F: true,
-        G: true,
-        H: true,
-        I: true,
-        J: true,
-        K: true,
-        L: true,
-        M: true,
-        N: true,
-        Ň: true,
-        O: true,
-        P: true,
-        Q: true,
-        R: true,
-        Ř: true,
-        S: true,
-        Š: true,
-        T: true,
-        Ť: true,
-        U: true,
-        V: true,
-        W: true,
-        X: true,
-        Y: true,
-        Z: true,
-        Ž: true,
+        A: true, B: true, C: true, Č: true, D: true, Ď: true, E: true, F: true, G: true, H: true,
+        I: true, J: true, K: true, L: true, M: true, N: true, Ň: true, O: true, P: true, Q: true,
+        R: true, Ř: true, S: true, Š: true, T: true, Ť: true, U: true, V: true, W: true, X: true,
+        Y: true, Z: true, Ž: true,
       };
 
       const iHacky = hacky[character];
@@ -101,7 +67,7 @@ export class FilterPipe implements PipeTransform {
           })
           .sort((a, b) => a.surname.localeCompare(b.surname, 'cs'));
       } else {
-        return value.filter((item) => {
+        return value.filter((item: AUTHORSIMPLIFIED) => {
           if (
             item.name.toLowerCase().includes(filterString.toLowerCase()) ||
             item.surname.toLowerCase().includes(filterString.toLowerCase())

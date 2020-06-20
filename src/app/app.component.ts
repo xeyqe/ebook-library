@@ -2,12 +2,10 @@ import { Component } from '@angular/core';
 import { Platform, ToastController } from '@ionic/angular';
 import { Storage } from '@ionic/storage';
 import { Router } from '@angular/router';
-import { SplashScreen } from '@ionic-native/splash-screen/ngx';
 import { StatusBar } from '@ionic-native/status-bar/ngx';
 import { BackgroundMode } from '@ionic-native/background-mode/ngx';
 
 import { DatabaseService } from 'src/app/services/database.service';
-import { TtsService } from 'src/app/services/tts.service';
 
 @Component({
   selector: 'app-root',
@@ -17,14 +15,12 @@ import { TtsService } from 'src/app/services/tts.service';
 export class AppComponent {
   constructor(
     private platform: Platform,
-    private splashScreen: SplashScreen,
     private statusBar: StatusBar,
     public storage: Storage,
     private router: Router,
     private db: DatabaseService,
     private toastCtrl: ToastController,
     private bg: BackgroundMode,
-    private sp: TtsService,
   ) {
     this.initializeApp();
   }
@@ -52,14 +48,17 @@ export class AppComponent {
         this.bg.disable();
       });
       this.platform.pause.subscribe(() => {
-        if (this.sp.ifSpeaking()) {
-          const author = this.sp.getAuthorName();
-          const title = this.sp.getBookTitle();
-          this.bg.enable();
-          this.bg.configure({title: author, text: title});
-        }
-      });
-      this.splashScreen.hide();
+        this.db.getValue('isSpeaking').then(value => {
+          if (value) {
+            this.bg.enable();
+            this.db.getValue('author').then(author => {
+              this.db.getValue('title').then(title => {
+                this.bg.configure({ title: author, text: title });
+              });
+            });
+          }
+        });
+      })
     });
   }
 

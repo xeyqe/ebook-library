@@ -4,7 +4,7 @@ import { Pipe, PipeTransform } from '@angular/core';
   name: 'percent2',
 })
 export class PercentPipe implements PipeTransform {
-  transform(value: any, progress: string): any {
+  transform(value: any, progress: string): number {
     if (!progress) {
       return 0;
     } else if (progress === 'finished') {

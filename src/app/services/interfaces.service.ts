@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 
-export interface Author {
+export interface AUTHOR {
   id: number;
   name: string;
   surname: string;
@@ -14,7 +14,7 @@ export interface Author {
   idInJson: string;
 }
 
-export interface Book {
+export interface BOOK {
   id: number;
   title: string;
   creatorId: number;
@@ -33,7 +33,22 @@ export interface Book {
   img: string;
 }
 
-export interface Metadata {
+export interface BOOKSIMPLIFIED {
+  id: number;
+  title: string;
+  img: string;
+  progress: string;
+  rating: number;
+}
+
+export interface AUTHORSIMPLIFIED {
+  name: string;
+  surname: string;
+  img: string;
+  id: number;
+}
+
+export interface METADATA {
   annotation: string;
   isbn: string;
   author: string;
@@ -44,10 +59,94 @@ export interface Metadata {
   imgPath: string;
 }
 
+export interface WIKIPEDIADATA {
+  ns: number;
+  pageid: number;
+  size: number;
+  snippet: string;
+  timestamp: string;
+  title: string;
+  wordcount: number;
+}
+
+export interface ONLINEAUTHORLINK {
+  name: string;
+  link: string;
+  year: number;
+  img: string;
+}
+
+export interface ONLINEBOOKLINK {
+  link: string,
+  img: string,
+  title: string,
+  comment: string
+}
+
+export interface ONLINEBOOK {
+  annotation: string,
+  genre: string[],
+  published: number,
+  publisher: string,
+  originalTitle: string,
+  title: string,
+  img: string
+}
+
+export interface ONLINEAUTHOR {
+  name: string,
+  surname: string,
+  nationality: string,
+  birth: number,
+  death: number,
+  biography: string,
+  img: string,
+}
+
+export interface INDEXOFAUTHOR {
+  index: string,
+  name: string,
+}
+
+export interface INDEXOFBOOK {
+  index: string,
+  title: string,
+}
+
+export interface BOOKJSON {
+  annotation: string,
+  genre: string,
+  img: string,
+  isbn: string,
+  language: string,
+  originalTitle: string,
+  pages: number,
+  published: number,
+  publisher: string,
+  title: string,
+  translator: string,
+}
+
+export interface AUTHORJSON {
+  img: string;
+  name: string;
+  surname: string;
+  birth: number;
+  death: number;
+  nationality: string;
+  biography: string;
+  books: INDEXOFBOOK[];
+}
+
+export interface CHAPTER {
+  id: string;
+  src: string;
+}
+
+
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class InterfacesService {
-
   constructor() { }
 }

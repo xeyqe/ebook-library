@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Dialogs } from '@ionic-native/dialogs/ngx';
 import { IonContent } from '@ionic/angular';
@@ -10,7 +10,8 @@ import { JsonDataParserService } from 'src/app/services/json-data-parser.service
 import { FileReaderService } from 'src/app/services/file-reader.service';
 import { WebScraperService } from 'src/app/services/web-scraper.service';
 import { EpubService } from 'src/app/services/epub.service';
-import { Book } from 'src/app/services/interfaces.service';
+import { BOOK, ONLINEBOOKLINK, INDEXOFBOOK } from 'src/app/services/interfaces.service';
+import { Subscription } from 'rxjs';
 
 
 @Component({
@@ -18,25 +19,27 @@ import { Book } from 'src/app/services/interfaces.service';
   templateUrl: './book.page.html',
   styleUrls: ['./book.page.scss'],
 })
-export class BookPage implements OnInit {
-  book: Book = null;
+export class BookPage implements OnInit, OnDestroy {
+  book: BOOK = null;
 
   bookChanged = false;
   fileName: string;
   ready2editing = false;
   bookId: number;
-  jsonBooks;
+  jsonBooks: INDEXOFBOOK[];
   showAble = false;
 
-  onlineBookList;
+  onlineBookList: ONLINEBOOKLINK[];
 
   isWorking = false;
 
   dontworryiwillnameyoulater: string;
   dontworryiwillnameyoulater2: string;
 
+  databaseSubscribtion: Subscription;
+
   @ViewChild(IonContent) content: IonContent;
-  @ViewChild('target') target: any;
+  @ViewChild('target') target: ElementRef;
 
   constructor(
     private route: ActivatedRoute,
@@ -49,14 +52,14 @@ export class BookPage implements OnInit {
     private epub: EpubService,
     private file: File,
     private webView: WebView
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.route.paramMap.subscribe((params) => {
       const bookId = params.get('id');
       const id = parseInt(bookId, 10);
       this.bookId = id;
-      this.db.getDatabaseState().subscribe((ready) => {
+      this.databaseSubscribtion = this.db.getDatabaseState().subscribe((ready) => {
         if (ready) {
           this.db
             .getBook(id)
@@ -109,7 +112,7 @@ export class BookPage implements OnInit {
     this.bookChanged = false;
   }
 
-  changeLanguage(lang: any) {
+  changeLanguage(lang: string) {
     this.book.language = lang;
     this.bookChanged = true;
   }
@@ -226,7 +229,7 @@ export class BookPage implements OnInit {
         this.book.img = this.book.img || data.img;
         this.book.title = this.book.title || data.title;
         this.book.originalTitle = this.book.originalTitle || data.originalTitle;
-        this.book.genre = this.book.genre || data.genre;
+        this.book.genre = this.book.genre || data.genre.toString(); // TODO
         this.book.publisher = this.book.publisher || data.publisher;
         this.book.published = this.book.published || data.published;
         this.book.annotation = this.book.annotation || data.annotation;
@@ -275,7 +278,8 @@ export class BookPage implements OnInit {
         if (metadata.imgPath) {
           const path = metadata.imgPath.substring(0, metadata.imgPath.lastIndexOf('/'));
           const filename = metadata.imgPath.substring(metadata.imgPath.lastIndexOf('/') + 1);
-          const newPath = this.file.externalRootDirectory.slice(0, -1) + this.book.path.substring(0, this.book.path.lastIndexOf('/') + 1);
+          const newPath = this.file.externalRootDirectory.slice(0, -1) +
+            this.book.path.substring(0, this.book.path.lastIndexOf('/') + 1);
           const newFilename = this.book.title + metadata.imgPath.substring(metadata.imgPath.lastIndexOf('.'));
           if (!this.book.img) {
             this.file.copyFile(path, filename, newPath, newFilename).then(() => {
@@ -290,5 +294,11 @@ export class BookPage implements OnInit {
 
   private scrollElement() {
     this.content.scrollToPoint(0, this.target.nativeElement.offsetTop, 500);
+  }
+
+  ngOnDestroy() {
+    if (this.databaseSubscribtion) {
+      this.databaseSubscribtion.unsubscribe();
+    }
   }
 }

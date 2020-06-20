@@ -5,7 +5,7 @@ import { Downloader, DownloadRequest, NotificationVisibility } from '@ionic-nati
 import { WebView } from '@ionic-native/ionic-webview/ngx';
 
 import { DatabaseService } from 'src/app/services/database.service';
-import { Book } from 'src/app/services/interfaces.service';
+import { BOOK } from 'src/app/services/interfaces.service';
 
 
 @Injectable({
@@ -20,9 +20,9 @@ export class FileReaderService implements OnInit {
     private db: DatabaseService,
     private downloader: Downloader,
     private webView: WebView,
-  ) {}
+  ) { }
 
-  ngOnInit() {}
+  ngOnInit() { }
 
   createApplicationFolder() {
     const path = this.file.externalRootDirectory;
@@ -81,24 +81,21 @@ export class FileReaderService implements OnInit {
       });
   }
 
-  dirExists(path: string, name: string) {
-    return this.file.checkDir(path, name).catch((e) => {
-      console.log('checkDir in dirExists failed: ');
-      console.log(e);
-    });
+  dirExists(path: string, name: string): Promise<boolean> {
+    return this.file.checkDir(path, name);
   }
 
-  createDir(path: string, name: string): Promise<boolean> {
-    return this.file
-      .createDir(path, name, false)
-      .then((_) => {
-        return true;
-      })
-      .catch((e) => {
-        console.log('createDir failed: ');
-        console.log(e);
-        return false;
-      });
+  async createDir(path: string, name: string): Promise<boolean> {
+    try {
+      const _ = await this.file
+        .createDir(path, name, false);
+      return true;
+    }
+    catch (e) {
+      console.log('createDir failed: ');
+      console.log(e);
+      return false;
+    }
   }
 
   copyDorian(path: string): Promise<boolean> {
@@ -223,7 +220,7 @@ export class FileReaderService implements OnInit {
             if (extension === 'txt' || extension === 'epub') {
               const bookPath = item.fullPath;
               if (!paths.includes(bookPath)) {
-                let book: Book;
+                let book: BOOK;
                 const id = authorId;
                 const name = item.name.substring(0, item.name.lastIndexOf('.'));
                 book = {
@@ -265,7 +262,7 @@ export class FileReaderService implements OnInit {
       });
   }
 
-  _getPathAndFilename(fullPath: string) {
+  _getPathAndFilename(fullPath: string): string[] {
     const path = fullPath.substring(0, fullPath.lastIndexOf('/') + 1);
     const fileName = fullPath.substring(fullPath.lastIndexOf('/') + 1);
     return [path, fileName];

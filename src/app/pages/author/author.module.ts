@@ -4,11 +4,10 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { IonicModule } from '@ionic/angular';
 
-import { AuthorPageRoutingModule } from './author-routing.module';
-
-import { AuthorPage } from './author.page';
-import { ApplicationPipesModuleModule } from '../../application-pipes-module/application-pipes-module.module';
+import { AuthorPageRoutingModule } from 'src/app/pages/author/author-routing.module';
+import { ApplicationPipesModuleModule } from 'src/app/application-pipes-module/application-pipes-module.module';
 import { MaterialModule } from 'src/app/material/material.module';
+import { AuthorPage } from 'src/app/pages/author/author.page';
 
 @NgModule({
   imports: [
