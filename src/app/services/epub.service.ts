@@ -14,11 +14,11 @@ export class EpubService implements OnInit {
   private async getOpfNcxText(optOrNcx: string): Promise<string> {
     try {
       const entries = await this.file
-        .listDir(this.file.externalRootDirectory + 'ebook-library', 'epub');
+        .listDir(this.getRootPath() + 'ebook-library', 'epub');
       for (const entry of entries as Entry[]) {
         if (entry.isFile && entry.name.substring(entry.name.lastIndexOf('.') + 1) === optOrNcx) {
           return this.file.readAsText(
-            this.file.externalRootDirectory.slice(0, -1) +
+            this.getRootPath().slice(0, -1) +
             entry.fullPath.substring(0, entry.fullPath.lastIndexOf('/')),
             entry.name
           );
@@ -32,13 +32,14 @@ export class EpubService implements OnInit {
     }
   }
 
-  async unzipEpub(pathWhat: string): Promise<number> {
-    const rootPath = this.file.externalRootDirectory;
+  async unzipEpub(relativePath2EpubFile: string): Promise<number> {
+    const rootPath = this.getRootPath();
     const path = rootPath + 'ebook-library/';
     const folder = 'epub';
 
+    await this.prepareFolder();
     await this.file.createDir(path, folder, true);
-    return this.zip.unzip(rootPath + pathWhat, path + folder,
+    return this.zip.unzip(rootPath + relativePath2EpubFile, path + folder,
       (progress) => console.log('Unzipping, ' + Math.round((progress.loaded / progress.total) * 100) + '%')
     );
   }
@@ -62,7 +63,7 @@ export class EpubService implements OnInit {
             imgEl.getAttribute('media-type').match('^image/') &&
             imgEl.getAttribute('href')
           ) {
-            imgPath = this.file.externalRootDirectory + 'ebook-library/epub/' + imgEl.getAttribute('href');
+            imgPath = this.getRootPath() + 'ebook-library/epub/' + imgEl.getAttribute('href');
           }
 
           const annotation = xml.getElementsByTagName('dc:description')
@@ -115,12 +116,23 @@ export class EpubService implements OnInit {
     const opfText = await this.getOpfNcxText('opf');
     const parser = new DOMParser();
     const xml = parser.parseFromString(opfText, 'text/xml');
-    const _list = xml.getElementsByTagName('itemref');
+    const _list = xml.getElementsByTagName('manifest')[0].children;
+    console.log(_list);
     const chapters:CHAPTER[] = [];
     for (let i = 0; i < _list.length; i++) {
-      const id = _list[i].attributes['idref'].value;
-      const src = xml.getElementById(id).attributes['href'].value;
-      chapters.push({ id, src });
+      if (_list[i].attributes['media-type'].value.includes('application/xhtml')) {
+        let id: string;
+        if (_list[i].attributes['idref']) {
+
+          id = _list[i].attributes['idref'].value;
+        } else if (_list[i].attributes['id']) {
+          id = _list[i].attributes['id'].value;
+        }
+        if (id) {
+          const src = xml.getElementById(id).attributes['href'].value;
+          chapters.push({ id, src });
+        }
+      }
     }
     return chapters;
   }
@@ -144,18 +156,16 @@ export class EpubService implements OnInit {
     });
   }
 
-  async getTextFromEpub(path2Epub: string, path2Chapter: string): Promise<string[]> {
-    path2Epub = this.file.externalRootDirectory + path2Epub;
+  async getTextFromEpub(relativePath2Chapter: string): Promise<string[]> {
     const xml = await this.file
-      .readAsText(this.file.externalRootDirectory + 'ebook-library/' + 'epub', path2Chapter);
+      .readAsText(this.getRootPath() + 'ebook-library/' + 'epub', relativePath2Chapter);
     const outputText = await this.getTextFromChapter(xml);
     return outputText;
   }
 
-  getEpubMetadata(path: string): Promise<METADATA> {
+  getEpubMetadata(relativePath2Epub: string): Promise<METADATA> {
     return new Promise((resolve, reject) => {
-      this.prepareFolder().then(() => {
-        this.unzipEpub(path)
+        this.unzipEpub(relativePath2Epub)
           .then((num) => {
             if (num === 0) {
               this.getMetadata()
@@ -176,16 +186,15 @@ export class EpubService implements OnInit {
             reject(e);
           });
       });
-    });
   }
 
   private prepareFolder(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.file
-        .checkDir(this.file.externalRootDirectory + 'ebook-library', 'epub')
+        .checkDir(this.getRootPath() + 'ebook-library', 'epub')
         .then(() => {
           this.file
-            .removeRecursively(this.file.externalRootDirectory + 'ebook-library', 'epub')
+            .removeRecursively(this.getRootPath() + 'ebook-library', 'epub')
             .then(() => {
               resolve();
             });
@@ -198,5 +207,9 @@ export class EpubService implements OnInit {
           }
         });
     });
+  }
+
+  getRootPath(): string {
+    return this.file.externalRootDirectory;
   }
 }

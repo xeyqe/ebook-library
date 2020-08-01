@@ -151,7 +151,8 @@ export class BookPage implements OnInit, OnDestroy {
     });
   }
 
-  getBookData(index: string) {
+  getBookData(index: any) {
+    console.log(index)
     let jsonBook = this.jsonServ.getBook(index);
     if (jsonBook) {
       this.fillData(jsonBook);
@@ -278,7 +279,7 @@ export class BookPage implements OnInit, OnDestroy {
         if (metadata.imgPath) {
           const path = metadata.imgPath.substring(0, metadata.imgPath.lastIndexOf('/'));
           const filename = metadata.imgPath.substring(metadata.imgPath.lastIndexOf('/') + 1);
-          const newPath = this.file.externalRootDirectory.slice(0, -1) +
+          const newPath = this.epub.getRootPath().slice(0, -1) +
             this.book.path.substring(0, this.book.path.lastIndexOf('/') + 1);
           const newFilename = this.book.title + metadata.imgPath.substring(metadata.imgPath.lastIndexOf('.'));
           if (!this.book.img) {
