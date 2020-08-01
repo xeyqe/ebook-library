@@ -69,7 +69,7 @@
                                     [ngClass]="ready2editing ? 'white' : 'gray'" />
                                 <mat-autocomplete #auto="matAutocomplete"
                                     (optionSelected)="getPosts($event.option.value.index)"
-                                    [displayWith]="displayFn">
+                                    [displayWith]="displayFn" [panelWidth]="'auto'">
                                     <mat-option *ngFor="let option of filteredOptions | async"
                                         [value]="option">
                                         {{ option.name }}

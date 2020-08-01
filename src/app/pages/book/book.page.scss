@@ -20,3 +20,31 @@ ion-label {
     left: 50%;
     top: 50%;
 }
+
+div.popover-content.sc-ion-popover-md {
+    width: 100%;
+}
+
+ion-select {
+    width: 100%;
+  
+    justify-content: center;
+  }
+
+  ion-select-popover {
+      width: 95%;
+  }
+
+  mat-select {
+      background: black;
+  }
+
+  mat-option {
+      background: black;
+      color: white;
+  }
+
+  mat-option:hover {
+    background: rgb(56, 54, 54);
+    color: white;
+}

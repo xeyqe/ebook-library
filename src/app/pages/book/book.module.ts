@@ -8,6 +8,7 @@ import { BookPageRoutingModule } from './book-routing.module';
 
 import { BookPage } from './book.page';
 import { ApplicationPipesModuleModule } from 'src/app/application-pipes-module/application-pipes-module.module';
+import { MaterialModule } from 'src/app/material/material.module';
 
 @NgModule({
   imports: [
@@ -15,7 +16,8 @@ import { ApplicationPipesModuleModule } from 'src/app/application-pipes-module/a
     FormsModule,
     IonicModule,
     BookPageRoutingModule,
-    ApplicationPipesModuleModule
+    ApplicationPipesModuleModule,
+    MaterialModule
   ],
   declarations: [BookPage]
 })

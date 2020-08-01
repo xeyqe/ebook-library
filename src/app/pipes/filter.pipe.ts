@@ -8,13 +8,22 @@ export class FilterPipe implements PipeTransform {
   transform(value: any, filterString: string, character: string, what2search: string): AUTHORSIMPLIFIED | BOOKSIMPLIFIED {
     if (what2search === 'book') {
       if (filterString && filterString.length) {
-        return value
-          .filter((item) => {
-            if (item.title.toLowerCase().includes(filterString.toLocaleLowerCase())) {
+        if (filterString.length < 3) {
+          return value
+          .filter((item: BOOKSIMPLIFIED) => {
+            if (item.title.substring(0, filterString.length).toLowerCase() === filterString.toLocaleLowerCase()) {
               return item;
             }
           })
-          .sort((a, b) => a.title.localeCompare(b.title, 'cs'));
+        } else {
+          return value
+            .filter((item: BOOKSIMPLIFIED) => {
+              if (item.title.toLowerCase().includes(filterString.toLocaleLowerCase())) {
+                return item;
+              }
+            })
+            .sort((a: BOOKSIMPLIFIED, b: BOOKSIMPLIFIED) => a.title.localeCompare(b.title, 'cs'));
+        }
       } else {
         if (character === 'started') {
           return value.filter((item: BOOKSIMPLIFIED) => {
@@ -55,7 +64,7 @@ export class FilterPipe implements PipeTransform {
       }
       if (filterString === '') {
         return value
-          .filter((item) => {
+          .filter((item: AUTHORSIMPLIFIED) => {
             if (
               item.surname &&
               (item.surname[0].toUpperCase() === character ||
@@ -66,6 +75,15 @@ export class FilterPipe implements PipeTransform {
             }
           })
           .sort((a, b) => a.surname.localeCompare(b.surname, 'cs'));
+      } else if (filterString.length < 3) {
+        return value.filter((item: AUTHORSIMPLIFIED) => {
+          if (
+            // item.name.toLowerCase().includes(filterString.toLowerCase()) ||
+            item.surname.substring(0, filterString.length).toLowerCase() === filterString.toLowerCase()
+          ) {
+            return item;
+          }
+        });
       } else {
         return value.filter((item: AUTHORSIMPLIFIED) => {
           if (

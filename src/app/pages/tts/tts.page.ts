@@ -11,6 +11,19 @@ import { EpubService } from 'src/app/services/epub.service';
 import { CHAPTER } from 'src/app/services/interfaces.service';
 import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
 
+// interface IOptions {
+//   /** text to speak */
+//   text: string;
+//   /** a string like 'en-US', 'zh-CN', etc */
+//   locale?: string;
+//   /** speed rate, 0 ~ 1 */
+//   rate?: number;
+//   /** ambient(iOS) */
+//   category?: string;
+// }
+
+
+// declare var cordova: any;
 @Component({
   selector: 'app-tts',
   templateUrl: './tts.page.html',
@@ -73,6 +86,21 @@ export class TtsPage implements OnInit, OnDestroy {
       this.db.saveValue('as', bookId);
       if (bookId[bookId.length - 1] === '0') {
         this.spritzBoolean = false;
+        this.strg
+        .get('speed')
+        .then((val) => {
+          if (val) {
+            this.speed = val;
+          } else {
+            this.speed = 30;
+          }
+          // cordova.plugins.TextToSpeech.speak('hovno');
+        })
+        .catch((e) => {
+          console.log('storage failed: ');
+          console.log(e);
+          this.speed = 300;
+        });
       } else {
         this.spritzBoolean = true;
         this.strg
@@ -83,6 +111,7 @@ export class TtsPage implements OnInit, OnDestroy {
             } else {
               this.speed = 300;
             }
+            // cordova.plugins.TextToSpeech.speak('hovno');
           })
           .catch((e) => {
             console.log('storage failed: ');
@@ -193,7 +222,7 @@ export class TtsPage implements OnInit, OnDestroy {
 
   private async getTextsFromEpub(): Promise<string[]> {
     const outputTexts: string[] = [];
-    return this.epubService.unzipEpub(this.path).then( async num => {
+    return this.epubService.unzipEpub(this.path).then(async num => {
       if (num === 0) {
 
         await this.epubService.getChapters().then(async (chapters) => {
@@ -236,6 +265,7 @@ export class TtsPage implements OnInit, OnDestroy {
         text2Speak.length + this.texts[this.progress + add2Progress].length < this.speakingLengthLimit
       );
 
+      console.log(text2Speak.length);
       this.tts.speak({
         text: text2Speak,
         locale: this.language,
@@ -464,7 +494,7 @@ export class TtsPage implements OnInit, OnDestroy {
         }
       } else {
         if (speed > 5) {
-          this.speed = speed;
+          this.speed = speed - 1;
         }
       }
     } else {
@@ -474,7 +504,7 @@ export class TtsPage implements OnInit, OnDestroy {
         }
       } else {
         if (speed < 40) {
-          this.speed = speed;
+          this.speed = speed + 1;
         }
       }
     }
@@ -487,7 +517,19 @@ export class TtsPage implements OnInit, OnDestroy {
   }
 
   private getTextFromChapter(chapter: CHAPTER): Promise<string[]> {
-    return this.epubService.getTextFromEpub(this.path, chapter.src);
+    return this.epubService.getTextFromEpub(chapter.src);
+  }
+
+  test() {
+    console.log('ruined')
+    const pr = this.tts.checkLanguage().then(a => {
+      console.log('a')
+      console.log(a)
+    }).catch(b => {
+      console.log('b')
+      console.log(b)
+    })
+    setTimeout(()=>console.log(pr),3000)
   }
 
   ngOnDestroy() {

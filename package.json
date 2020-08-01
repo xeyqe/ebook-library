@@ -34,7 +34,7 @@
     "@ionic-native/sqlite": "^5.26.0",
     "@ionic-native/sqlite-porter": "^5.26.0",
     "@ionic-native/status-bar": "^5.26.0",
-    "@ionic-native/text-to-speech": "^5.26.0",
+    "@ionic-native/text-to-speech": "^5.27.0",
     "@ionic-native/zip": "^5.26.0",
     "@ionic/angular": "^5.2.2",
     "@ionic/storage": "^2.2.0",
@@ -50,6 +50,7 @@
     "cordova-res": "^0.14.0",
     "cordova-sqlite-storage": "^5.0.0",
     "core-js": "^3.6.5",
+    "gulp": "^4.0.2",
     "hammerjs": "^2.0.8",
     "integrator-cordova-plugin-downloader": "^1.1.0",
     "rxjs": "~6.5.5",
@@ -106,7 +107,6 @@
       "cordova-plugin-ionic-keyboard": {},
       "cordova-plugin-file": {},
       "cordova-plugin-filepath": {},
-      "cordova-plugin-tts": {},
       "cordova-plugin-advanced-http": {
         "OKHTTP_VERSION": "3.10.0"
       },
@@ -114,7 +114,8 @@
       "cordova-plugin-background-mode": {},
       "cordova-custom-config": {},
       "integrator-cordova-plugin-downloader": {},
-      "cordova-plugin-zip": {}
+      "cordova-plugin-zip": {},
+      "cordova-plugin-tts": {}
     },
     "platforms": [
       "android"

@@ -58,13 +58,20 @@
                 <ion-textarea disabled="{{!ready2editing}}" (change)="bookChanged = true"
                     [(ngModel)]="book.title"></ion-textarea>
             </ion-item>
-            <ion-select *ngIf="jsonBooks && ready2editing" interface="popover"
-                (ionChange)="getBookData($event.detail.value)">
-                <ion-select-option *ngFor="let book of jsonBooks" [value]="book.index"
-                    style="width: 100vw;">
-                    <p class="ion-text-wrap">{{ book.title }}</p>
-                </ion-select-option>
-            </ion-select>
+            <!-- <div style="width: 100vw;">
+                <select *ngIf="jsonBooks && ready2editing" interface="popover"
+                    (ionChange)="getBookData($event.detail.value)" style="width: 100vw;">
+                    <ion-select-option *ngFor="let book of jsonBooks" [value]="book.index" class="select-full-width" style="width: 100vw;">
+                        <p class="ion-text-wrap">{{ book.title }}</p>
+                    </ion-select-option>
+                </select>
+            </div> -->
+            <mat-form-field *ngIf="jsonBooks && ready2editing">
+                <mat-label style="color: red">Choose an option</mat-label>
+                <mat-select (selectionChange)="getBookData($event.value)">
+                  <mat-option *ngFor="let book of jsonBooks" [value]="book.index">{{ book.title }}</mat-option>
+                </mat-select>
+            </mat-form-field>
             <ion-item *ngIf="book.originalTitle || ready2editing">
                 <ion-label position="floating">Original title</ion-label>
                 <ion-textarea disabled="{{!ready2editing}}" (change)="bookChanged = true"
