@@ -146,6 +146,7 @@
         "check-type",
         "check-typecast"
       ]
-    }
+    },
+    "no-string-literal": false
 }
 }
