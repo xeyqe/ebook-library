@@ -39,7 +39,7 @@
               {
                 "input": "src/global.scss"
               }
-            ],
+            ]
           },
           "configurations": {
             "production": {
@@ -112,7 +112,7 @@
                 "input": "src/assets",
                 "output": "/assets"
               }
-            ],
+            ]
           },
           "configurations": {
             "ci": {

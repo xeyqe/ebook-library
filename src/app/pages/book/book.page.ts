@@ -152,7 +152,7 @@ export class BookPage implements OnInit, OnDestroy {
   }
 
   getBookData(index: any) {
-    console.log(index)
+    console.log(index);
     let jsonBook = this.jsonServ.getBook(index);
     if (jsonBook) {
       this.fillData(jsonBook);
@@ -242,39 +242,37 @@ export class BookPage implements OnInit, OnDestroy {
   }
 
   getMetadataFromEpub() {
-    this.epub.getEpubMetadata(this.book.path).then((metadata) => {
-      console.log('metadata');
-      console.log(metadata);
+    this.epub.getMetadataFromEpub(this.book.path).then((metadata) => {
       if (metadata) {
         if (metadata.annotation) {
-          if (!this.book.annotation) {
+          // if (!this.book.annotation) {
             this.book.annotation = metadata.annotation.replace(/<[^>]*>/g, '');
             this.bookChanged = true;
-          }
+          // }
         }
         if (metadata.isbn) {
-          if (!this.book.ISBN) {
+          // if (!this.book.ISBN) {
             this.book.ISBN = metadata.isbn;
             this.bookChanged = true;
-          }
+          // }
         }
         if (metadata.title) {
-          if (!this.book.title) {
+          // if (!this.book.title) {
             this.book.title = metadata.title;
             this.bookChanged = true;
-          }
+          // }
         }
         if (metadata.published) {
-          if (!this.book.published) {
+          // if (!this.book.published) {
             this.book.published = metadata.published;
             this.bookChanged = true;
-          }
+          // }
         }
         if (metadata.publisher) {
-          if (!this.book.publisher) {
+          // if (!this.book.publisher) {
             this.book.publisher = metadata.publisher;
             this.bookChanged = true;
-          }
+          // }
         }
         if (metadata.imgPath) {
           const path = metadata.imgPath.substring(0, metadata.imgPath.lastIndexOf('/'));
@@ -286,11 +284,11 @@ export class BookPage implements OnInit, OnDestroy {
             this.file.copyFile(path, filename, newPath, newFilename).then(() => {
               this.book.img = this.webView.convertFileSrc(newPath + newFilename);
               this.bookChanged = true;
-            })
+            });
           }
         }
       }
-    })
+    });
   }
 
   private scrollElement() {

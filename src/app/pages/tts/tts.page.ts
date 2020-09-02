@@ -2,14 +2,14 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
 import { Storage } from '@ionic/storage';
+import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
 
 import { Subscription } from 'rxjs';
 
-import { FileReaderService } from 'src/app/services/file-reader.service';
-import { DatabaseService } from 'src/app/services/database.service';
 import { EpubService } from 'src/app/services/epub.service';
 import { CHAPTER } from 'src/app/services/interfaces.service';
-import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
+import { DatabaseService } from 'src/app/services/database.service';
+import { FileReaderService } from 'src/app/services/file-reader.service';
 
 // interface IOptions {
 //   /** text to speak */
@@ -157,9 +157,11 @@ export class TtsPage implements OnInit, OnDestroy {
             this.getTexts().then(texts => {
               this.texts = texts;
               this.textsLength = texts.length;
-              if (!this.progress) this.progress = 0;
+              if (!this.progress) {
+                this.progress = 0;
+              }
               this.isWorking = false;
-            })
+            });
 
             this.db.getAuthor(book.creatorId).then((author) => {
               this.authorName = author.name + ' ' + author.surname;
@@ -177,9 +179,9 @@ export class TtsPage implements OnInit, OnDestroy {
   private getTexts(): Promise<string[]> {
     this.isWorking = true;
     if (this.path.substring(this.path.lastIndexOf('.') + 1) === 'txt') {
-      return this.getTextsFromString()
+      return this.getTextsFromString();
     } else if (this.path.substring(this.path.lastIndexOf('.') + 1) === 'epub') {
-      return this.getTextsFromEpub()
+      return this.getTextsFromEpub();
     }
   }
 
@@ -221,31 +223,30 @@ export class TtsPage implements OnInit, OnDestroy {
   }
 
   private async getTextsFromEpub(): Promise<string[]> {
-    const outputTexts: string[] = [];
-    return this.epubService.unzipEpub(this.path).then(async num => {
-      if (num === 0) {
+    // const outputTexts: string[] = [];
+    // return this.epubService.unzipEpub(this.path).then(async num => {
+    //   if (num === 0) {
 
-        await this.epubService.getChapters().then(async (chapters) => {
-          for (const chapter of chapters) {
-            await new Promise((next) => {
-              this.getTextFromChapter(chapter).then((texts) => {
-                if (texts && (texts as string[]).length) {
-                  for (const text of texts as string[]) {
-                    if (text) {
-                      outputTexts.push(text);
-                    }
-                  }
-                }
-                next();
-              });
-            });
-          }
-        });
-        console.log(outputTexts);
-        return outputTexts;
-      }
-
-    })
+    //     await this.epubService.getChapters().then(async (chapters) => {
+    //       for (const chapter of chapters) {
+    //         await new Promise((next) => {
+    //           this.getTextFromChapter(chapter).then((texts) => {
+    //             if (texts && (texts as string[]).length) {
+    //               for (const text of texts as string[]) {
+    //                 if (text) {
+    //                   outputTexts.push(text);
+    //                 }
+    //               }
+    //             }
+    //             next();
+    //           });
+    //         });
+    //       }
+    //     });
+    //     return outputTexts;
+    //   }
+    // });
+    return this.epubService.getText(this.path);
   }
 
   speak() {
@@ -516,21 +517,10 @@ export class TtsPage implements OnInit, OnDestroy {
     }
   }
 
-  private getTextFromChapter(chapter: CHAPTER): Promise<string[]> {
-    return this.epubService.getTextFromEpub(chapter.src);
-  }
+  // private getTextFromChapter(chapter: CHAPTER): Promise<string[]> {
+  //   return this.epubService.getTextsFromEpub(chapter.src);
+  // }
 
-  test() {
-    console.log('ruined')
-    const pr = this.tts.checkLanguage().then(a => {
-      console.log('a')
-      console.log(a)
-    }).catch(b => {
-      console.log('b')
-      console.log(b)
-    })
-    setTimeout(()=>console.log(pr),3000)
-  }
 
   ngOnDestroy() {
     if (this.subs1) {
