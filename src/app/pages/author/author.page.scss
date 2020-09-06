@@ -41,3 +41,15 @@ mat-option {
     left: 50%;
     top: 50%;
 }
+
+.my-item {
+    display: inline-block;
+    width: 50%;
+}
+
+.my-item--smaller {
+    display: inline-block;
+    width: 25%;
+    position: relative;
+    top: -29px;
+}
