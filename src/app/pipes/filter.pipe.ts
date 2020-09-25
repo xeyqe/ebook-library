@@ -14,7 +14,7 @@ export class FilterPipe implements PipeTransform {
             if (item.title.substring(0, filterString.length).toLowerCase() === filterString.toLocaleLowerCase()) {
               return item;
             }
-          })
+          });
         } else {
           return value
             .filter((item: BOOKSIMPLIFIED) => {
@@ -79,6 +79,7 @@ export class FilterPipe implements PipeTransform {
         return value.filter((item: AUTHORSIMPLIFIED) => {
           if (
             // item.name.toLowerCase().includes(filterString.toLowerCase()) ||
+            item.surname &&
             item.surname.substring(0, filterString.length).toLowerCase() === filterString.toLowerCase()
           ) {
             return item;
@@ -87,8 +88,8 @@ export class FilterPipe implements PipeTransform {
       } else {
         return value.filter((item: AUTHORSIMPLIFIED) => {
           if (
-            item.name.toLowerCase().includes(filterString.toLowerCase()) ||
-            item.surname.toLowerCase().includes(filterString.toLowerCase())
+            (item.name && item.name.toLowerCase().includes(filterString.toLowerCase())) ||
+            (item.surname && item.surname.toLowerCase().includes(filterString.toLowerCase()))
           ) {
             return item;
           }
