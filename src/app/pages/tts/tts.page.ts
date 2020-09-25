@@ -266,7 +266,6 @@ export class TtsPage implements OnInit, OnDestroy {
         text2Speak.length + this.texts[this.progress + add2Progress].length < this.speakingLengthLimit
       );
 
-      console.log(text2Speak.length);
       this.tts.speak({
         text: text2Speak,
         locale: this.language,
