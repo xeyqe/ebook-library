@@ -420,7 +420,7 @@ export class TtsPage implements OnInit, OnDestroy {
             if (!this.isSpeaking) {
               break;
             }
-            await new Promise((resolve) => {
+            await new Promise<void>((resolve) => {
               setTimeout(() => {
                 resolve();
               }, timeout);
@@ -429,7 +429,7 @@ export class TtsPage implements OnInit, OnDestroy {
             if (slowRegex.test(slovo)) {
               this.printWord(' ', 1);
               addedMs = Math.floor(timeout / 2);
-              await new Promise((resolve) => {
+              await new Promise<void>((resolve) => {
                 setTimeout(() => {
                   resolve();
                 }, addedMs);
@@ -457,7 +457,7 @@ export class TtsPage implements OnInit, OnDestroy {
 
   private async waitFn() {
     const ms = 60000 / this.speed;
-    await new Promise((resolve) => {
+    await new Promise<void>((resolve) => {
       setTimeout(() => {
         resolve();
       }, ms);
