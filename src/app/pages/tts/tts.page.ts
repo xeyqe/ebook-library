@@ -94,7 +94,6 @@ export class TtsPage implements OnInit, OnDestroy {
           } else {
             this.speed = 30;
           }
-          // cordova.plugins.TextToSpeech.speak('hovno');
         })
         .catch((e) => {
           console.log('storage failed: ');
@@ -111,7 +110,6 @@ export class TtsPage implements OnInit, OnDestroy {
             } else {
               this.speed = 300;
             }
-            // cordova.plugins.TextToSpeech.speak('hovno');
           })
           .catch((e) => {
             console.log('storage failed: ');

@@ -108,9 +108,12 @@
             </ion-textarea>
         </ion-item>
         <ion-item *ngIf="author.biography && !ready2editing" (click)="fullHeight = !fullHeight">
-            <ion-label class="red" style="padding-bottom: 20px;" position="stacked">Biography
+            <ion-label class="red" style="padding-bottom: 20px;" position="stacked">
+                Biography
             </ion-label>
-            <span [ngClass]="{'height100' : !fullHeight}" class="gray">{{ author.biography }}</span>
+            <span [ngClass]="{'height100' : !fullHeight}" class="gray">
+                {{ author.biography }}
+            </span>
         </ion-item>
         <ion-list *ngIf="!wikiOutputBoolean">
             <ion-item button *ngFor="let book of books" [routerLink]="['/book', book.id]">
@@ -122,7 +125,8 @@
                         <h2>{{ book.title }}</h2>
                     </div>
                     <ion-progress-bar *ngIf="book.progress"
-                        [value]="(book.progress | percent2:book.progress) / 100"></ion-progress-bar>
+                        [value]="(book.progress | percent2:book.progress) / 100">
+                    </ion-progress-bar>
                 </ion-label>
             </ion-item>
         </ion-list>
