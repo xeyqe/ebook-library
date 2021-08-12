@@ -116,25 +116,25 @@ export class EpubService implements OnInit {
   private async getChapters(): Promise<CHAPTER[]> {
     const opfText = await this.getOpfNcxText(this.getRootPath() + 'ebook-library/epub', 'opf');
     const parser = new DOMParser();
-    const xml = parser.parseFromString(opfText, 'text/xml');
+    const xml = parser.parseFromString(opfText.replace(/\s*/, ''), 'text/xml');
     const list = xml.getElementsByTagName('manifest')[0].children;
-    const chapters: CHAPTER[] = [];
-    for (let i = 0; i < list.length; i++) {
-      if (list[i].attributes['media-type'].value.includes('application/xhtml')) {
-        let id: string;
-        if (list[i].attributes['idref']) {
 
-          id = list[i].attributes['idref'].value;
-        } else if (list[i].attributes['id']) {
-          id = list[i].attributes['id'].value;
+    const chapters: CHAPTER[] = [];
+    Array.from(list).forEach(item => {
+        if (item.attributes['media-type'].value.includes('application/xhtml')) {
+          let id: string;
+          if (item.attributes['idref']) {
+            id = item.attributes['idref'].value;
+          } else if (item.attributes['id']) {
+            id = item.attributes['id'].value;
+          }
+          if (id) {
+            let src = xml.getElementById(id).attributes['href'].value;
+            src = this.path2ChaptersDir ? this.path2ChaptersDir + '/' + src : src;
+            chapters.push({ id, src });
+          }
         }
-        if (id) {
-          let src = xml.getElementById(id).attributes['href'].value;
-          src = this.path2ChaptersDir ? this.path2ChaptersDir + '/' + src : src;
-          chapters.push({ id, src });
-        }
-      }
-    }
+    });
     return chapters;
   }
 
