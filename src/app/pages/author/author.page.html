@@ -14,7 +14,10 @@
                     </ion-icon>
                     <ion-icon *ngIf="ready2editing" slot="icon-only" name="close"></ion-icon>
                 </ion-button>
-                <ion-button *ngIf="ready2editing" (click)="getFromWikipedia()">
+                <!-- <ion-button *ngIf="ready2editing" (click)="getFromWikipedia()">
+                    W
+                </ion-button> -->
+                <ion-button *ngIf="ready2editing" (click)="_htmlFunLaunchWebView()">
                     W
                 </ion-button>
                 <ion-button *ngIf="ready2editing && showAble" (click)="getAuthor()">
