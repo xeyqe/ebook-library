@@ -77,54 +77,54 @@ export interface ONLINEAUTHORLINK {
 }
 
 export interface ONLINEBOOKLINK {
-  link: string,
-  img: string,
-  title: string,
-  comment: string
+  link: string;
+  img: string;
+  title: string;
+  comment: string;
 }
 
 export interface ONLINEBOOK {
-  annotation: string,
-  genre: string[],
-  published: number,
-  publisher: string,
-  originalTitle: string,
-  title: string,
-  img: string
+  annotation: string;
+  genre: string[];
+  published: number;
+  publisher: string;
+  originalTitle: string;
+  title: string;
+  img: string;
 }
 
 export interface ONLINEAUTHOR {
-  name: string,
-  surname: string,
-  nationality: string,
-  birth: number,
-  death: number,
-  biography: string,
-  img: string,
+  name: string;
+  surname: string;
+  nationality: string;
+  birth: number;
+  death: number;
+  biography: string;
+  img: string;
 }
 
 export interface INDEXOFAUTHOR {
-  index: string,
-  name: string,
+  index: string;
+  name: string;
 }
 
 export interface INDEXOFBOOK {
-  index: string,
-  title: string,
+  index: string;
+  title: string;
 }
 
 export interface BOOKJSON {
-  annotation: string,
-  genre: string,
-  img: string,
-  isbn: string,
-  language: string,
-  originalTitle: string,
-  pages: number,
-  published: number,
-  publisher: string,
-  title: string,
-  translator: string,
+  annotation: string;
+  genre: string;
+  img: string;
+  BOOKJSON: string;
+  language: string;
+  originalTitle: string;
+  pages: number;
+  published: number;
+  publisher: string;
+  title: string;
+  translator: string;
 }
 
 export interface AUTHORJSON {

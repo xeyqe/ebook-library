@@ -12,7 +12,6 @@ import { FileReaderService } from 'src/app/services/file-reader.service';
 import { JsonDataParserService } from 'src/app/services/json-data-parser.service';
 import { WebScraperService } from 'src/app/services/web-scraper.service';
 import { AUTHOR, WIKIPEDIADATA, BOOKSIMPLIFIED, ONLINEAUTHORLINK } from 'src/app/services/interfaces.service';
-import { InAppBrowser } from '@ionic-native/in-app-browser/ngx';
 
 
 @Component({
@@ -58,7 +57,6 @@ export class AuthorPage implements OnInit, OnDestroy {
     private router: Router,
     private jsonServ: JsonDataParserService,
     private webScraper: WebScraperService,
-    private iab: InAppBrowser
   ) { }
 
   ngOnInit() {
@@ -409,24 +407,6 @@ export class AuthorPage implements OnInit, OnDestroy {
   private scrollElement(target: ElementRef) {
     this.content.scrollToPoint(0, target.nativeElement.offsetTop, 500);
   }
-
-  _htmlFunLaunchWebView() {
-    const browser = this.iab.create('https://www.databazeknih.cz/zivotopis/stephen-king-181');
-
-    browser.on('loadstop').subscribe(event => {
-      browser.executeScript({
-        code: `
-          const biography = document.querySelector('#tabcontent .new2').textContent;
-          webkit.messageHandlers.cordova_iab.postMessage(biography);"
-        `
-      }).then(a => {
-        console.log(a);
-        browser.close();
-      });
-    });
-
-  }
-
 
   ngOnDestroy() {
     if (this.subs1) {
