@@ -1,17 +1,20 @@
 import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Dialogs } from '@ionic-native/dialogs/ngx';
 import { IonContent } from '@ionic/angular';
-import { File } from '@ionic-native/file/ngx';
-import { WebView } from '@ionic-native/ionic-webview/ngx';
 
+import { Subscription } from 'rxjs';
+
+import { File } from '@ionic-native/file/ngx';
+import { Dialogs } from '@ionic-native/dialogs/ngx';
+import { WebView } from '@ionic-native/ionic-webview/ngx';
+import { InAppBrowser } from '@ionic-native/in-app-browser/ngx';
+
+import { EpubService } from 'src/app/services/epub.service';
 import { DatabaseService } from 'src/app/services/database.service';
-import { JsonDataParserService } from 'src/app/services/json-data-parser.service';
 import { FileReaderService } from 'src/app/services/file-reader.service';
 import { WebScraperService } from 'src/app/services/web-scraper.service';
-import { EpubService } from 'src/app/services/epub.service';
+import { JsonDataParserService } from 'src/app/services/json-data-parser.service';
 import { BOOK, ONLINEBOOKLINK, INDEXOFBOOK } from 'src/app/services/interfaces.service';
-import { Subscription } from 'rxjs';
 
 
 @Component({
@@ -51,7 +54,8 @@ export class BookPage implements OnInit, OnDestroy {
     private webScrapper: WebScraperService,
     private epub: EpubService,
     private file: File,
-    private webView: WebView
+    private webView: WebView,
+    private iab: InAppBrowser,
   ) { }
 
   ngOnInit() {
@@ -224,20 +228,86 @@ export class BookPage implements OnInit, OnDestroy {
 
   downloadBookInfo(link: string) {
     this.isWorking = true;
-    this.webScrapper.getBook(link).then((data) => {
-      this.isWorking = false;
-      if (data) {
-        this.book.img = this.book.img || data.img;
-        this.book.title = this.book.title || data.title;
-        this.book.originalTitle = this.book.originalTitle || data.originalTitle;
-        this.book.genre = this.book.genre || data.genre.toString(); // TODO
-        this.book.publisher = this.book.publisher || data.publisher;
-        this.book.published = this.book.published || data.published;
-        this.book.annotation = this.book.annotation || data.annotation;
+    // this.getBook2(link).then((data) => {
+    //   this.isWorking = false;
+    //   if (data) {
+    //     this.book.img = this.book.img || data.img;
+    //     this.book.title = this.book.title || data.title;
+    //     this.book.originalTitle = this.book.originalTitle || data.originalTitle;
+    //     this.book.genre = this.book.genre || data.genre.toString(); // TODO
+    //     this.book.publisher = this.book.publisher || data.publisher;
+    //     this.book.published = this.book.published || data.published;
+    //     this.book.annotation = this.book.annotation || data.annotation;
+    //     this.book.language = this.book.language || data.language;
+    //     this.book.translator = this.book.translator || data.translator;
+    //     this.book.ISBN = this.book.ISBN || data.isbn;
 
+    //     this.bookChanged = true;
+    //     this.content.scrollToTop();
+    //   }
+    // });
+    this.getBook2(link).then((data) => {
+      console.log(this.book)
+      console.log(data)
+      if (data) {
+        this.book.img = data?.img;
+        this.book.title = data?.title;
+        this.book.originalTitle = data?.originalTitle;
+        this.book.genre = data?.genre?.toString(); // TODO
+        this.book.publisher = data?.publisher;
+        this.book.published = data?.published;
+        this.book.annotation = data?.annotation;
+        this.book.language = data?.language === 'česky' ? 'cs-CZ' : null;
+        this.book.translator = data?.translator;
+        this.book.ISBN = data?.isbn;
+        this.book.length = data?.pages;
+        
         this.bookChanged = true;
         this.content.scrollToTop();
       }
+    }).finally(() => this.isWorking = false);
+  }
+
+  async getBook2(url: string): Promise<{
+    annotation: string;
+    genre: string;
+    img: string;
+    language: string;
+    originalTitle: string;
+    pages: number;
+    published: number;
+    publisher: string;
+    title: string;
+    translator: string;
+    isbn: string;
+  }> {
+    return new Promise((resolve, reject) => {
+      console.log(url)
+      const target = '_blank';
+      const options = 'location=yes,hidden=false,beforeload=yes';
+      const browser = this.iab.create(url, target, options);
+
+      browser.on('message').subscribe(e => {
+        console.log(e);
+        if (e.data.pages) {
+          e.data.pages = +e.data.pages;
+        }
+        if (e.data.genre) {
+          e.data.genre = e.data.genre.split(',');
+        }
+
+        resolve(e.data as any);
+        browser.close();
+      });
+
+      browser.on('loadstop').subscribe(event => {
+        browser.executeScript({
+          code: `function a(el, i){if(el){if (i == 'click'){el.click()}else{return el[i]}}else{return null}};a(document.querySelector('#abinfo > a'),'click');setTimeout(()=>{var o={annotation:a(document.querySelector('#bdetdesc'),'textContent'),genre:a(document.querySelector('[itemprop=genre]'),'textContent'),img:a(document.querySelector('.kniha_img'),'src'),language:a(document.querySelector('[itemprop=language]'),'innerText'),originalTitle:a(document.querySelector('#bdetail_rest>div.detail_description>h4'),'textContent'),pages:a(document.querySelector('[itemprop=numberOfPages]'),'innerText'),published:a(document.querySelector('[itemprop=datePublished]'),'textContent'),publisher:a(document.querySelector('[itemprop=publisher]'),'innerText'),title:a(document.querySelector('[itemprop=name]'),'innerText'),translator:a(document.querySelector('[itemprop=translator]'),'textContent'),isbn:a(document.querySelector('[itemprop=isbn]'),'innerText')};webkit.messageHandlers.cordova_iab.postMessage(JSON.stringify(o))},1000)`
+        }).catch(e => {
+          browser.close();
+          reject(e);
+        });
+      });
     });
   }
 

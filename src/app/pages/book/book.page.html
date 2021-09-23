@@ -24,6 +24,9 @@
                 <ion-button *ngIf="ready2editing && showAble" (click)="getBooksList()">
                     <ion-icon slot="icon-only" name="add-circle-sharp"></ion-icon>
                 </ion-button>
+                <!-- <ion-button *ngIf="ready2editing && showAble" (click)="getBook2('')">
+                    <ion-icon slot="icon-only" name="add-circle-sharp"></ion-icon>
+                </ion-button> -->
                 <ion-button
                     *ngIf="ready2editing && book.path.substring(book.path.length - 4) === 'epub'"
                     (click)="getMetadataFromEpub()">

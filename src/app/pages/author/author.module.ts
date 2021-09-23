@@ -9,6 +9,7 @@ import { ApplicationPipesModuleModule } from 'src/app/application-pipes-module/a
 import { MaterialModule } from 'src/app/material/material.module';
 import { AuthorPage } from 'src/app/pages/author/author.page';
 
+
 @NgModule({
   imports: [
     CommonModule,
