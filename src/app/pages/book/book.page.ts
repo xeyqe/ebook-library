@@ -80,7 +80,7 @@ export class BookPage implements OnInit, OnDestroy {
             });
         }
       });
-      this.showAble = this.webScrapper.showable;
+      this.showAble = this.webScrapper.showAble;
     });
   }
 
@@ -156,7 +156,6 @@ export class BookPage implements OnInit, OnDestroy {
   }
 
   getBookData(index: any) {
-    console.log(index);
     let jsonBook = this.jsonServ.getBook(index);
     if (jsonBook) {
       this.fillData(jsonBook);
@@ -190,10 +189,10 @@ export class BookPage implements OnInit, OnDestroy {
   downloadPicture() {
     this.db.getAuthor(this.book.creatorId).then((author) => {
       const uri = this.book.img;
-      const path = '/ebook-library';
+      const path = this.book.path.substring(0, this.book.path.lastIndexOf('/') + 1);
       const index = this.book.img.lastIndexOf('.');
       const extension = this.book.img.substring(index);
-      const filename = author.path.substring(14) + this.book.title + extension;
+      const filename = this.book.title + extension;
 
       this.isWorking = true;
       this.fs
@@ -247,21 +246,20 @@ export class BookPage implements OnInit, OnDestroy {
     //   }
     // });
     this.getBook2(link).then((data) => {
-      console.log(this.book)
-      console.log(data)
       if (data) {
+        const noise = '...celý text';
         this.book.img = data?.img;
         this.book.title = data?.title;
         this.book.originalTitle = data?.originalTitle;
         this.book.genre = data?.genre?.toString(); // TODO
         this.book.publisher = data?.publisher;
         this.book.published = data?.published;
-        this.book.annotation = data?.annotation;
-        this.book.language = data?.language === 'česky' ? 'cs-CZ' : null;
+        this.book.annotation = data?.annotation?.endsWith(noise) ? data?.annotation?.slice(0, -noise.length) : data?.annotation;
+        this.book.language = data?.language && data.language !== 'český' ? null : 'cs-CZ';
         this.book.translator = data?.translator;
         this.book.ISBN = data?.isbn;
         this.book.length = data?.pages;
-        
+
         this.bookChanged = true;
         this.content.scrollToTop();
       }
@@ -282,13 +280,11 @@ export class BookPage implements OnInit, OnDestroy {
     isbn: string;
   }> {
     return new Promise((resolve, reject) => {
-      console.log(url)
       const target = '_blank';
       const options = 'location=yes,hidden=false,beforeload=yes';
       const browser = this.iab.create(url, target, options);
 
       browser.on('message').subscribe(e => {
-        console.log(e);
         if (e.data.pages) {
           e.data.pages = +e.data.pages;
         }
@@ -316,32 +312,32 @@ export class BookPage implements OnInit, OnDestroy {
       if (metadata) {
         if (metadata.annotation) {
           // if (!this.book.annotation) {
-            this.book.annotation = metadata.annotation.replace(/<[^>]*>/g, '');
-            this.bookChanged = true;
+          this.book.annotation = metadata.annotation.replace(/<[^>]*>/g, '');
+          this.bookChanged = true;
           // }
         }
         if (metadata.isbn) {
           // if (!this.book.ISBN) {
-            this.book.ISBN = metadata.isbn;
-            this.bookChanged = true;
+          this.book.ISBN = metadata.isbn;
+          this.bookChanged = true;
           // }
         }
         if (metadata.title) {
           // if (!this.book.title) {
-            this.book.title = metadata.title;
-            this.bookChanged = true;
+          this.book.title = metadata.title;
+          this.bookChanged = true;
           // }
         }
         if (metadata.published) {
           // if (!this.book.published) {
-            this.book.published = metadata.published;
-            this.bookChanged = true;
+          this.book.published = metadata.published;
+          this.bookChanged = true;
           // }
         }
         if (metadata.publisher) {
           // if (!this.book.publisher) {
-            this.book.publisher = metadata.publisher;
-            this.bookChanged = true;
+          this.book.publisher = metadata.publisher;
+          this.bookChanged = true;
           // }
         }
         if (metadata.imgPath) {
@@ -365,9 +361,21 @@ export class BookPage implements OnInit, OnDestroy {
     this.content.scrollToPoint(0, this.target.nativeElement.offsetTop, 500);
   }
 
-  ngOnDestroy() {
-    if (this.databaseSubscribtion) {
-      this.databaseSubscribtion.unsubscribe();
+  onRemovePic() {
+    if (this.book.img.startsWith('http://localhost/')) {
+      this.fs.removeFile(this.book.img.split('ebook-library')[1]).then(() => {
+        this.book.img = null;
+        this.bookChanged = true;
+      }).catch(e => {
+        this.dialog.alert('Deleting of pic file failed!', 'Warning', 'OK');
+      });
+    } else {
+      this.book.img = null;
+      this.bookChanged = true;
     }
+  }
+
+  ngOnDestroy() {
+    this.databaseSubscribtion?.unsubscribe();
   }
 }

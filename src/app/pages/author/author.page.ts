@@ -107,7 +107,7 @@ export class AuthorPage implements OnInit, OnDestroy {
           console.log(e);
         });
     });
-    this.showAble = this.webScraper.showable;
+    this.showAble = this.webScraper.showAble;
   }
 
   getPosts(index: string) {
@@ -406,6 +406,20 @@ export class AuthorPage implements OnInit, OnDestroy {
 
   private scrollElement(target: ElementRef) {
     this.content.scrollToPoint(0, target.nativeElement.offsetTop, 500);
+  }
+
+  onRemovePic() {
+    if (this.author.img.startsWith('http://localhost/')) {
+      this.fs.removeFile(this.author.img.split('ebook-library')[1]).then(() => {
+        this.author.img = null;
+        this.authorChanged = true;
+      }).catch(e => {
+        this.dialog.alert('Deleting of pic file failed!', 'Warning', 'OK');
+      });
+    } else {
+      this.author.img = null;
+      this.authorChanged = true;
+    }
   }
 
   ngOnDestroy() {

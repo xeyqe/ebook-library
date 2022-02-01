@@ -317,4 +317,35 @@ export class FileReaderService implements OnInit {
     });
   }
 
+  /**
+   * removes a file
+   * @param path path after ebook-library
+   */
+  removeFile(path: string) {
+    path = this.file.externalRootDirectory + 'ebook-library' + path;
+
+    const fileName = path.substring(path.lastIndexOf('/') + 1);
+    path = path.substring(0, path.lastIndexOf('/') + 1);
+
+    return new Promise<void>((resolve, reject) => {
+      (window as any).resolveLocalFileSystemURL(path, (dir) => {
+        (dir as any).getFile(
+          fileName,
+          { create: false },
+          (fileEntry) => {
+            fileEntry.remove(
+              () => {
+                resolve();
+              },
+              (e) => {
+                reject(e);
+              },
+              (e) => {
+                reject(e);
+              });
+          });
+      });
+    });
+  }
+
 }

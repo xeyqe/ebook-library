@@ -46,7 +46,8 @@
                         (click)="downloadPicture()">
                         <ion-icon slot="icon-only" name="download-sharp"></ion-icon>
                     </ion-button>
-                    <ion-button (click)="book.img = null; bookChanged = true">
+                    <ion-button
+                        (click)="onRemovePic()">
                         <ion-icon slot="icon-only" name="remove"></ion-icon>
                     </ion-button>
                 </div>
