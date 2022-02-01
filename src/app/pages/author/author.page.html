@@ -36,7 +36,9 @@
                 <ion-button *ngIf="imArray.length" (click)="changePicture()">
                     <ion-icon slot="icon-only" name="arrow-forward-circle"></ion-icon>
                 </ion-button>
-                <ion-button (click)="author.img = null; authorChanged = true">
+                <ion-button
+                    *ngIf="author.img"
+                    (click)="onRemovePic()">
                     <ion-icon slot="icon-only" name="remove"></ion-icon>
                 </ion-button>
             </div>
