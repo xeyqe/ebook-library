@@ -1,11 +1,14 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Platform } from '@ionic/angular';
 
+import { SplashScreen } from '@ionic-native/splash-screen/ngx';
+
+import { Subscription } from 'rxjs';
+
 import { DatabaseService } from './../../services/database.service';
 import { FileReaderService } from './../../services/file-reader.service';
-import { SplashScreen } from '@ionic-native/splash-screen/ngx';
-import { Subscription } from 'rxjs';
 import { BOOKSIMPLIFIED, AUTHORSIMPLIFIED } from 'src/app/services/interfaces.service';
+
 
 @Component({
   selector: 'app-authors',
@@ -28,40 +31,35 @@ export class AuthorsPage implements OnInit, OnDestroy {
   ];
   selectedCharacter: string;
 
-  subs1: Subscription;
-  subs2: Subscription;
-  subs3: Subscription;
+  private subs: Subscription[] = [];
 
 
   constructor(
     private db: DatabaseService,
     private fr: FileReaderService,
     private platform: Platform,
-    private splashScreen: SplashScreen
+    private splashScreen: SplashScreen,
   ) { }
 
   ngOnInit() {
-    this.subs1 = this.db.getDatabaseState().subscribe((ready) => {
+    this.subs.push(this.db.getDatabaseState().subscribe((ready) => {
       if (ready) {
-        this.subs2 = this.db.getAuthors().subscribe((authors) => {
+        this.subs.push(this.db.getAuthors().subscribe((authors) => {
           this.authors = authors;
-        });
-        this.subs3 = this.db.getAllBooks().subscribe((books) => {
+        }));
+        this.subs.push(this.db.getAllBooks().subscribe((books) => {
           this.books = books;
+        }));
+        this.platform.ready().then(() => {
+          this.fr.createApplicationFolder();
+          this.fr.listOfAuthors();
+          this.splashScreen.hide();
+        }).catch((e) => {
+          console.error('plt.ready failed: ');
+          console.error(e);
         });
-        this.platform
-          .ready()
-          .then(() => {
-            this.fr.createApplicationFolder();
-            this.fr.listOfAuthors();
-            this.splashScreen.hide();
-          })
-          .catch((e) => {
-            console.log('plt.ready failed: ');
-            console.log(e);
-          });
       }
-    });
+    }));
   }
 
   ionViewWillEnter() {
@@ -93,15 +91,15 @@ export class AuthorsPage implements OnInit, OnDestroy {
     this.db.saveValue('where2Search', this.where2Search);
   }
 
+  onDBExport() {
+    this.db.exportDB().then(json => {
+      this.fr.write2File(JSON.stringify(json)).catch(e => {
+        console.error(e)
+      })
+    });
+  }
+
   ngOnDestroy() {
-    if (this.subs1) {
-      this.subs1.unsubscribe();
-    }
-    if (this.subs2) {
-      this.subs2.unsubscribe();
-    }
-    if (this.subs3) {
-      this.subs3.unsubscribe();
-    }
+    this.subs?.forEach(sub => sub?.unsubscribe());
   }
 }

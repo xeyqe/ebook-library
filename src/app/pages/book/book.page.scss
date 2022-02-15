@@ -3,6 +3,10 @@ ion-label {
     opacity: 1 !important;
 }
 
+.red {
+    color: #ff3d3d !important;
+}
+
 .ng-invalid {
     color: red;
 }
@@ -27,24 +31,72 @@ div.popover-content.sc-ion-popover-md {
 
 ion-select {
     width: 100%;
-  
+
     justify-content: center;
-  }
+}
 
-  ion-select-popover {
-      width: 95%;
-  }
+ion-select-popover {
+    width: 95%;
+}
 
-  mat-select {
-      background: black;
-  }
+mat-select {
+    background: black;
+}
 
-  mat-option {
-      background: black;
-      color: white;
-  }
+.mat-select-value {
+    color: white !important;
+}
 
-  mat-option:hover {
+mat-option {
+    background: black;
+    color: white;
+}
+
+mat-option:hover {
     background: rgb(56, 54, 54);
     color: white;
+}
+
+.white {
+    color: white;
+}
+
+.gray {
+    color: #545454;
+}
+
+.contenteditable {
+    text-align: justify;
+    outline-color: #ff3d3d;
+    overflow: hidden;
+}
+
+mat-form-field, .marged {
+    margin: .5rem;
+    max-width: 95vw;
+}
+
+.flexed {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+
+    & > * {
+        flex-basis: content;
+    }
+}
+
+.reduced {
+    max-height: 10rem;
+}
+
+mat-select {
+    width: 5rem;
+}
+
+.pic-container {
+    img {
+        display: flex;
+        margin: 1rem auto;
+    }
 }

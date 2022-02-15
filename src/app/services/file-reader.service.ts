@@ -6,6 +6,7 @@ import { WebView } from '@ionic-native/ionic-webview/ngx';
 
 import { DatabaseService } from 'src/app/services/database.service';
 import { BOOK } from 'src/app/services/interfaces.service';
+import { Zip } from '@ionic-native/zip/ngx';
 
 
 @Injectable({
@@ -20,11 +21,13 @@ export class FileReaderService implements OnInit {
     private db: DatabaseService,
     private downloader: Downloader,
     private webView: WebView,
+    private zip: Zip,
   ) { }
 
   ngOnInit() { }
 
   createApplicationFolder() {
+    this.file.dataDirectory
     const path = this.file.externalRootDirectory;
     const ebl = 'ebook-library';
     const ow = 'Wilde, Oscar';
@@ -46,12 +49,11 @@ export class FileReaderService implements OnInit {
                 this.listOfAuthors();
               })
               .catch((e) => {
-                console.log('copyFile failed: ');
-                console.log(e);
+                console.error('copyFile failed: ');
+                console.error(e);
               });
           })
           .catch((e) => {
-            console.log(e.message);
             if (e.message === 'NOT_FOUND_ERR') {
               this.file
                 .createDir(path + ebl, ow, false)
@@ -59,14 +61,13 @@ export class FileReaderService implements OnInit {
                   this.createApplicationFolder();
                 })
                 .catch((er) => {
-                  console.log('createDir failed: ');
-                  console.log(er);
+                  console.error('createDir failed: ');
+                  console.error(er);
                 });
             }
           });
       })
       .catch((e) => {
-        console.log(e.message);
         if (e.message === 'NOT_FOUND_ERR') {
           this.file
             .createDir(path, ebl, false)
@@ -74,8 +75,8 @@ export class FileReaderService implements OnInit {
               this.createApplicationFolder();
             })
             .catch((er) => {
-              console.log('cannot create library folder');
-              console.log(er);
+              console.error('cannot create library folder');
+              console.error(er);
             });
         }
       });
@@ -92,8 +93,8 @@ export class FileReaderService implements OnInit {
       return true;
     }
     catch (e) {
-      console.log('createDir failed: ');
-      console.log(e);
+      console.error('createDir failed: ');
+      console.error(e);
       return false;
     }
   }
@@ -110,8 +111,8 @@ export class FileReaderService implements OnInit {
         return true;
       })
       .catch((e) => {
-        console.log('copyDorian failed: ');
-        console.log(e);
+        console.error('copyDorian failed: ');
+        console.error(e);
         return false;
       });
   }
@@ -119,77 +120,63 @@ export class FileReaderService implements OnInit {
   listOfAuthors() {
     const path = this.file.externalRootDirectory;
     this.db.loadAuthors().then(() => {
-      this.db
-        .loadAllBooks()
-        .then(() => {
-          if (this.ready2addAuthors) {
-            this.ready2addAuthors = false;
-            this.db
-              .allAuthorsPaths()
-              .then((data) => {
-                this.file
-                  .checkDir(path, 'ebook-library')
-                  .then(() => {
-                    this.file
-                      .listDir(path, 'ebook-library')
-                      .then((output) => {
-                        for (const authorFolder of output) {
-                          if (authorFolder.isDirectory) {
-                            if (!data.includes(authorFolder.fullPath)) {
-                              const name = authorFolder.name.split(',');
-                              const surname = name[0].trim();
-                              let firstName = '';
-                              if (name[1]) {
-                                firstName = name[1].trim();
-                              }
-                              const pth = authorFolder.fullPath;
-                              this.db
-                                .addAuthor({
-                                  id: null,
-                                  name: firstName,
-                                  surname,
-                                  nationality: null,
-                                  birth: null,
-                                  death: null,
-                                  biography: null,
-                                  img: null,
-                                  rating: null,
-                                  path: pth,
-                                  idInJson: null,
-                                })
-                                .then((authorID) => {
-                                  this.db.authorsBooksPaths(authorID).then((paths) => {
-                                    this._booksOfAuthor(pth, authorID, paths);
-                                  });
-                                });
-                            }
-                          }
-                        }
-                        this.ready2addAuthors = true;
-                      })
-                      .catch((e) => {
-                        this.ready2addAuthors = true;
-                        console.log('listDir in listOfAuthors failed');
-                        console.log(e);
+      this.db.loadAllBooks().then(() => {
+        if (this.ready2addAuthors) {
+          this.ready2addAuthors = false;
+          this.db.allAuthorsPaths().then((data) => {
+            this.file.checkDir(path, 'ebook-library').then(() => {
+              this.file.listDir(path, 'ebook-library').then((output) => {
+                for (const authorFolder of output) {
+                  if (authorFolder.isDirectory) {
+                    if (!data.includes(authorFolder.fullPath)) {
+                      const name = authorFolder.name.split(',');
+                      const surname = name[0].trim();
+                      let firstName = '';
+                      if (name[1]) {
+                        firstName = name[1].trim();
+                      }
+                      const pth = authorFolder.fullPath;
+                      this.db.addAuthor({
+                        id: null,
+                        name: firstName,
+                        surname,
+                        nationality: null,
+                        birth: null,
+                        death: null,
+                        biography: null,
+                        img: null,
+                        rating: null,
+                        path: pth,
+                        idInJson: null,
+                      }).then((authorID) => {
+                        this.db.authorsBooksPaths(authorID).then((paths) => {
+                          this._booksOfAuthor(pth, authorID, paths);
+                        });
                       });
-                  })
-                  .catch((e) => {
-                    this.ready2addAuthors = true;
-                    console.log('checkDir in listOfAuthors failed: ');
-                    console.log(e);
-                  });
-              })
-              .catch((data) => {
+                    }
+                  }
+                }
                 this.ready2addAuthors = true;
-                console.log('data');
-                console.log(data);
+              }).catch((e) => {
+                this.ready2addAuthors = true;
+                console.error('listDir in listOfAuthors failed');
+                console.error(e);
               });
-          }
-        })
-        .catch((err) => {
-          console.log('loadAllBooks failed:');
-          console.log(err);
-        });
+            }).catch((e) => {
+              this.ready2addAuthors = true;
+              console.error('checkDir in listOfAuthors failed: ');
+              console.error(e);
+            });
+          }).catch((data) => {
+            this.ready2addAuthors = true;
+            console.error('data');
+            console.error(data);
+          });
+        }
+      }).catch((err) => {
+        console.error('loadAllBooks failed:');
+        console.error(err);
+      });
     });
   }
 
@@ -207,59 +194,53 @@ export class FileReaderService implements OnInit {
     const path = this.file.externalRootDirectory + folder.substring(0, folder.lastIndexOf('/') + 1);
 
     folder = folder.substring(folder.lastIndexOf('/') + 1);
-    console.log('_booksOfAuthor');
-    console.log('path: ' + path);
-    console.log('folder: ' + folder);
-    this.file
-      .listDir(path, folder)
-      .then((output) => {
-        for (const item of output) {
-          if (item.isFile) {
-            // const regex = new RegExp('.+.txt');
-            const extension = item.name.substring(item.name.lastIndexOf('.') + 1);
-            if (extension === 'txt' || extension === 'epub') {
-              const bookPath = item.fullPath;
-              if (!paths.includes(bookPath)) {
-                let book: BOOK;
-                const id = authorId;
-                const name = item.name.substring(0, item.name.lastIndexOf('.'));
-                book = {
-                  id: null,
-                  title: name,
-                  creatorId: id,
-                  originalTitle: null,
-                  annotation: null,
-                  publisher: null,
-                  published: null,
-                  genre: null,
-                  length: null,
-                  language: 'cs-CZ',
-                  translator: null,
-                  ISBN: null,
-                  path: bookPath,
-                  progress: null,
-                  rating: null,
-                  img: null,
-                };
-                this.db.addBook(book);
-              }
+    this.file.listDir(path, folder).then((output) => {
+      for (const item of output) {
+        if (item.isFile) {
+          // const regex = new RegExp('.+.txt');
+          const extension = item.name.substring(item.name.lastIndexOf('.') + 1);
+          if (extension === 'txt' || extension === 'epub') {
+            const bookPath = item.fullPath;
+            if (!paths.includes(bookPath)) {
+              let book: BOOK;
+              const id = authorId;
+              const name = item.name.substring(0, item.name.lastIndexOf('.'));
+              book = {
+                id: null,
+                title: name,
+                creatorId: id,
+                originalTitle: null,
+                annotation: null,
+                publisher: null,
+                published: null,
+                genre: null,
+                length: null,
+                language: 'cs-CZ',
+                translator: null,
+                ISBN: null,
+                path: bookPath,
+                progress: null,
+                rating: null,
+                img: null,
+              };
+              this.db.addBook(book);
             }
-            // if (extension === 'epub') {
-            //   this.file.listDir(this.file.externalRootDirectory + 'ebook-library', 'epub').then((entries) => {
-            //     console.log(entries);
-            //   });
-            // }
-          } else if (item.isDirectory) {
-            this._booksOfAuthor(item.fullPath, authorId, paths);
           }
+          // if (extension === 'epub') {
+          //   this.file.listDir(this.file.externalRootDirectory + 'ebook-library', 'epub').then((entries) => {
+          //     console.log(entries);
+          //   });
+          // }
+        } else if (item.isDirectory) {
+          this._booksOfAuthor(item.fullPath, authorId, paths);
         }
-        this.ready2addBooks = true;
-      })
-      .catch((e) => {
-        this.ready2addBooks = true;
-        console.log('listDir failed: ');
-        console.log(e);
-      });
+      }
+      this.ready2addBooks = true;
+    }).catch((e) => {
+      this.ready2addBooks = true;
+      console.error('listDir failed: ');
+      console.error(e);
+    });
   }
 
   _getPathAndFilename(fullPath: string): string[] {
@@ -288,7 +269,6 @@ export class FileReaderService implements OnInit {
         subPath: fileName,
       },
     };
-    console.log(path + fileName);
 
     if (path[0] === '/') {
       path = path.substring(1);
@@ -298,22 +278,16 @@ export class FileReaderService implements OnInit {
     a = this.webView.convertFileSrc(externalPath + path + fileName);
 
     return new Promise((resolve) => {
-      this.file
-        .checkFile(externalPath + path, fileName)
-        .then((_) => {
+      this.file.checkFile(externalPath + path, fileName).then((_) => {
+        resolve(a);
+      }).catch((e) => {
+        console.error(e);
+        this.downloader.download(request).then((location) => {
           resolve(a);
-        })
-        .catch((e) => {
-          console.log(e);
-          this.downloader
-            .download(request)
-            .then((location) => {
-              resolve(a);
-            })
-            .catch((er) => {
-              console.log(er);
-            });
+        }).catch((er) => {
+          console.error(er);
         });
+      });
     });
   }
 
@@ -321,7 +295,7 @@ export class FileReaderService implements OnInit {
    * removes a file
    * @param path path after ebook-library
    */
-  removeFile(path: string) {
+  public removeFile(path: string) {
     path = this.file.externalRootDirectory + 'ebook-library' + path;
 
     const fileName = path.substring(path.lastIndexOf('/') + 1);
@@ -347,5 +321,13 @@ export class FileReaderService implements OnInit {
       });
     });
   }
+
+  public write2File(text: string) {
+    return this.file.writeFile(this.file.externalRootDirectory + 'ebook-library', 'db.json', text);
+  }
+
+  // public makeAZip(path2Folder: string) {
+  //   this.zip.
+  // }
 
 }

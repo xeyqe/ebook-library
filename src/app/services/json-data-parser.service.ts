@@ -18,13 +18,17 @@ export class JsonDataParserService {
   async jsonAuthorsIndexesData(): Promise<boolean> {
     const path = this.file.externalRootDirectory + 'ebook-library/';
     try {
-      const data = await this.file
-        .readAsText(path, 'authorsIndexes.json');
-      this.authorsIndexes = JSON.parse(data);
-      return true;
-    }
-    catch (e) {
-      console.log(e);
+      return this.file.checkFile(path, 'authorsIndexes.json').then(async (exists) => {
+        if (exists) {
+          const data = await this.file.readAsText(path, 'authorsIndexes.json');
+          this.authorsIndexes = JSON.parse(data);
+          return true;
+        }
+        return false;
+      });
+    } catch (e) {
+      console.error('jsonAuthorsIndexesData failed');
+      console.error(e);
     }
   }
 

@@ -42,11 +42,6 @@ mat-option {
     top: 50%;
 }
 
-.my-item {
-    display: inline-block;
-    width: 50%;
-}
-
 .my-item--smaller {
     display: inline-block;
     width: 25%;
@@ -56,4 +51,35 @@ mat-option {
 
 .book-title {
     margin-left: 1rem;
+}
+
+.contenteditable {
+    text-align: justify;
+    outline-color: #ff3d3d;
+    overflow: hidden;
+}
+
+mat-form-field, .marged {
+    margin: .5rem;
+}
+
+.flexed {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    & > * {
+        flex-basis: content;
+        max-width: 45%;
+    }
+}
+
+.reduced {
+    max-height: 10rem;
+}
+
+.pic-container {
+    img {
+        display: flex;
+        margin: 1rem auto;
+    }
 }

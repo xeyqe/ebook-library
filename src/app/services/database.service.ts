@@ -42,13 +42,13 @@ export class DatabaseService {
             this.seedDatabase();
           })
           .catch((e) => {
-            console.log('sqlite.create failed: ');
-            console.log(e);
+            console.error('sqlite.create failed: ');
+            console.error(e);
           });
       })
       .catch((e) => {
-        console.log('db service plt.ready failed: ');
-        console.log(e);
+        console.error('db service plt.ready failed: ');
+        console.error(e);
       });
   }
 
@@ -62,6 +62,10 @@ export class DatabaseService {
         })
         .catch((e) => console.error(e));
     });
+  }
+
+  public exportDB(): Promise<any> {
+    return this.sqlitePorter.exportDbToJson(this.database);
   }
 
   getDatabaseState(): Observable<boolean> {
@@ -99,8 +103,8 @@ export class DatabaseService {
       this.authors.next(authors);
     }
     catch (e) {
-      console.log('loadAuthors failed: ');
-      console.log(e);
+      console.error('loadAuthors failed: ');
+      console.error(e);
     }
   }
 
@@ -328,8 +332,8 @@ export class DatabaseService {
       this.books.next(books);
     }
     catch (e) {
-      console.log('cannot add a book');
-      console.log(e);
+      console.error('cannot add a book');
+      console.error(e);
     }
   }
 
