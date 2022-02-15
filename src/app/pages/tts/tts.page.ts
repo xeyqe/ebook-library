@@ -96,8 +96,8 @@ export class TtsPage implements OnInit, OnDestroy {
           }
         })
         .catch((e) => {
-          console.log('storage failed: ');
-          console.log(e);
+          console.error('storage failed: ');
+          console.error(e);
           this.speed = 300;
         });
       } else {
@@ -112,8 +112,8 @@ export class TtsPage implements OnInit, OnDestroy {
             }
           })
           .catch((e) => {
-            console.log('storage failed: ');
-            console.log(e);
+            console.error('storage failed: ');
+            console.error(e);
             this.speed = 300;
           });
 
@@ -167,8 +167,8 @@ export class TtsPage implements OnInit, OnDestroy {
             this.initialized = true;
           })
           .catch((e) => {
-            console.log('getBook failed: ');
-            console.log(e);
+            console.error('getBook failed: ');
+            console.error(e);
           });
       }
     });
@@ -280,8 +280,8 @@ export class TtsPage implements OnInit, OnDestroy {
       }).catch((reason) => {
         this.isSpeaking = false;
         this.saveAuthorTitle();
-        console.log('tts speak failed: ');
-        console.log(reason);
+        console.error('tts speak failed: ');
+        console.error(reason);
       });
     }
   }
@@ -407,6 +407,7 @@ export class TtsPage implements OnInit, OnDestroy {
     let addedMs = 0;
     const timeout = Math.floor(60000 / this.speed);
     for (let i = this.progress; i < this.texts.length; i++) {
+      if (!this.texts[i]) continue;
       const words = this.texts[i].split(/[\s]+/);
       this.sentense = this.texts[i];
       for (const word of words) {

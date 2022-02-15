@@ -6,10 +6,10 @@
                 <ion-button (click)="deleteAuthor()">delete</ion-button>
             </ion-col>
             <div class="col text-right">
-                <ion-button *ngIf="authorChanged" (click)="updateAuthor()">
+                <ion-button *ngIf="authorChanged && ready2editing" (click)="onUpdateAuthor()">
                     <ion-icon slot="icon-only" name="save"></ion-icon>
                 </ion-button>
-                <ion-button (click)="editable()">
+                <ion-button (click)="onEditable()">
                     <ion-icon *ngIf="!ready2editing" slot="icon-only" name="create-sharp">
                     </ion-icon>
                     <ion-icon *ngIf="ready2editing" slot="icon-only" name="close"></ion-icon>
@@ -17,7 +17,7 @@
                 <ion-button *ngIf="ready2editing" (click)="getFromWikipedia()">
                     W
                 </ion-button>
-                <ion-button *ngIf="ready2editing && showAble" (click)="getAuthor()">
+                <ion-button *ngIf="ready2editing && showAble" (click)="onGetAuthor()">
                     <ion-icon slot="icon-only" name="add-circle-sharp"></ion-icon>
                 </ion-button>
             </div>
@@ -26,121 +26,129 @@
 </ion-header>
 
 <ion-content>
-    <div *ngIf="author !== null">
-        <ion-item>
+    <form [formGroup]="authorForm" *ngIf="author && authorForm">
+        <div class="pic-container">
             <div class="bu-change-pic" *ngIf="ready2editing">
-                <ion-button *ngIf="author.img && !author.img.startsWith('http://localhost/')"
-                    (click)="downloadPicture()">
+                <ion-button
+                    *ngIf="authorForm.get('img').value && !authorForm.get('img').value.startsWith('http://localhost/')"
+                    (click)="onDownloadPicture()">
                     <ion-icon slot="icon-only" name="download-sharp"></ion-icon>
                 </ion-button>
-                <ion-button *ngIf="imArray.length" (click)="changePicture()">
+                <ion-button *ngIf="listsOfValues.img.length > 1" (click)="onChangePicture()">
                     <ion-icon slot="icon-only" name="arrow-forward-circle"></ion-icon>
                 </ion-button>
-                <ion-button
-                    *ngIf="author.img"
-                    (click)="onRemovePic()">
+                <ion-button *ngIf="authorForm.get('img').value" (click)="onRemovePic()">
                     <ion-icon slot="icon-only" name="remove"></ion-icon>
                 </ion-button>
             </div>
-            <ion-img *ngIf="author.img" [src]="author.img"></ion-img>
-            <ion-img *ngIf="!author.img && ready2editing" style="background-color: #413d3d;"
+            <img *ngIf="authorForm.get('img').value" [src]="authorForm.get('img').value" height="auto" width="auto">
+            <img *ngIf="!authorForm.get('img').value && ready2editing" style="background-color: #413d3d;"
                 src="https://upload.wikimedia.org/wikipedia/commons/7/7c/User_font_awesome.svg">
-            </ion-img>
-        </ion-item>
+        </div>
+        <div class="flexed">
+            <mat-form-field *ngIf="authorForm.get('name').value || ready2editing">
+                <mat-label class="red" position="floating">Name</mat-label>
+                <input type="text" matInput [matAutocomplete]="autoName" formControlName="name"
+                    [ngClass]="ready2editing ? 'white' : 'gray'"
+                    [ngStyle]="onGetWidth('name', 'Name')">
+                <mat-autocomplete #autoName="matAutocomplete" [panelWidth]="'auto'">
+                    <ng-container *ngFor="let name of listsOfValues.name">
+                        <mat-option *ngIf="authorForm.get('name').value !== name" [value]="name">
+                            {{ name }}
+                        </mat-option>
+                    </ng-container>
+                </mat-autocomplete>
+            </mat-form-field>
 
-        <div class="my-item" *ngIf="author.name || ready2editing">
-            <ion-item>
-                <ion-label class="red" position="floating">Name</ion-label>
-                <ion-textarea class="intp" disabled="{{!ready2editing}}"
-                    (change)="authorChanged = true" [(ngModel)]="author.name">
-                </ion-textarea>
-            </ion-item>
+            <mat-form-field *ngIf="authorForm.get('surname').value || ready2editing">
+                <mat-label class="red">Surname</mat-label>
+                <input type="text" matInput [matAutocomplete]="auto" formControlName="surname"
+                    [ngClass]="ready2editing ? 'white' : 'gray'"
+                    [ngStyle]="onGetWidth('surname', 'Surname')">
+                <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onGetPosts($event.option.value.index)"
+                    [displayWith]="displayFn" [panelWidth]="'auto'">
+                    <mat-option *ngFor="let option of filteredOptions | async" [value]="option">
+                        {{ option.name }}
+                    </mat-option>
+                </mat-autocomplete>
+            </mat-form-field>
+
+            <mat-form-field *ngIf="authorForm.get('nationality').value || ready2editing">
+                <mat-label class="red" position="floating">Nationality</mat-label>
+                <input type="text" matInput [matAutocomplete]="autoNationality" formControlName="nationality"
+                    [ngClass]="ready2editing ? 'white' : 'gray'"
+                    [ngStyle]="onGetWidth('nationality', 'Nationality')">
+                <mat-autocomplete #autoNationality="matAutocomplete" [panelWidth]="'auto'">
+                    <ng-container *ngFor="let nationality of listsOfValues.nationality">
+                        <mat-option *ngIf="authorForm.get('nationality').value !== nationality" [value]="nationality">
+                            {{ nationality }}
+                        </mat-option>
+                    </ng-container>
+                </mat-autocomplete>
+            </mat-form-field>
+
+            <mat-form-field *ngIf="authorForm.get('birth').value || ready2editing">
+                <mat-label class="red" position="floating">Birth</mat-label>
+                <input type="number" matInput [matAutocomplete]="autoBirth" formControlName="birth"
+                    [ngClass]="ready2editing ? 'white' : 'gray'"
+                    [ngStyle]="onGetWidth('birth', 'Birth')">
+                <mat-autocomplete #autoBirth="matAutocomplete" [panelWidth]="'auto'">
+                    <ng-container *ngFor="let birth of listsOfValues.birth">
+                        <mat-option *ngIf="authorForm.get('birth').value !== birth" [value]="birth">
+                            {{ birth }}
+                        </mat-option>
+                    </ng-container>
+                </mat-autocomplete>
+            </mat-form-field>
+
+            <mat-form-field *ngIf="authorForm.get('death').value || ready2editing">
+                <mat-label class="red" position="floating">Death</mat-label>
+                <input type="number" matInput [matAutocomplete]="autoDeath" formControlName="death"
+                    [ngClass]="ready2editing ? 'white' : 'gray'"
+                    [ngStyle]="onGetWidth('death', 'Death')">
+                <mat-autocomplete #autoDeath="matAutocomplete" [panelWidth]="'auto'">
+                    <ng-container *ngFor="let death of listsOfValues.death">
+                        <mat-option *ngIf="authorForm.get('death').value !== death" [value]="death">
+                            {{ death }}
+                        </mat-option>
+                    </ng-container>
+                </mat-autocomplete>
+            </mat-form-field>
+
+        </div>
+        <div class="marged" *ngIf="authorForm.get('biography').value || ready2editing">
+            <mat-label class="red">Biography</mat-label>
+            <div (click)="onReduceHeight()">
+                <p class="contenteditable" [contenteditable]="ready2editing" formControlName="biography" matInput
+                    [class]="ready2editing ? 'white' : 'gray'"
+                    [ngClass]="{'reduced': authorForm.get('biography').disabled && _textAreaReduced}">
+                </p>
+            </div>
         </div>
 
-        <div class="my-item" *ngIf="author.surname || ready2editing">
-            <ion-item>
-                <form>
-                    <mat-form-field>
-                        <mat-label class="red">Surname</mat-label>
-                        <input type="text" matInput [matAutocomplete]="auto"
-                            [formControl]="myControl" [(ngModel)]="author.surname"
-                            (change)="authorChanged = true" aria-label="author.surname"
-                            [disabled]="!ready2editing"
-                            [ngClass]="ready2editing ? 'white' : 'gray'" />
-                        <mat-autocomplete #auto="matAutocomplete"
-                            (optionSelected)="getPosts($event.option.value.index)"
-                            [displayWith]="displayFn" [panelWidth]="'auto'">
-                            <mat-option *ngFor="let option of filteredOptions | async"
-                                [value]="option">
-                                {{ option.name }}
-                            </mat-option>
-                        </mat-autocomplete>
-                    </mat-form-field>
-                </form>
-            </ion-item>
-        </div>
-
-        <div class="my-item" *ngIf="author.nationality || ready2editing">
-            <ion-item>
-                <ion-label class="red" position="floating">Nationality</ion-label>
-                <ion-textarea auto-grow disabled="{{!ready2editing}}"
-                    (change)="authorChanged = true" [(ngModel)]="author.nationality">
-                </ion-textarea>
-            </ion-item>
-        </div>
-        <div class="my-item--smaller" *ngIf="author.birth || ready2editing">
-            <ion-item>
-                <ion-label class="red" position="floating">Birth</ion-label>
-                <ion-input disabled="{{!ready2editing}}" type="number"
-                    (change)="authorChanged = true" [(ngModel)]="author.birth"></ion-input>
-            </ion-item>
-        </div>
-        <div class="my-item--smaller" *ngIf="author.death || ready2editing">
-            <ion-item>
-                <ion-label class="red" position="floating">Death</ion-label>
-                <ion-input disabled="{{!ready2editing}}" type="number"
-                    (change)="authorChanged = true" [(ngModel)]="author.death"></ion-input>
-            </ion-item>
-        </div>
-
-        <ion-item *ngIf="ready2editing">
-            <ion-label class="red" position="floating">Biography</ion-label>
-            <ion-textarea disabled="{{!ready2editing}}" autoGrow="true"
-                (change)="authorChanged = true" [(ngModel)]="author.biography">
-            </ion-textarea>
-        </ion-item>
-        <ion-item *ngIf="author.biography && !ready2editing" (click)="fullHeight = !fullHeight">
-            <ion-label class="red" style="padding-bottom: 20px;" position="stacked">
-                Biography
-            </ion-label>
-            <span [ngClass]="{'height100' : !fullHeight}" class="gray">
-                {{ author.biography }}
-            </span>
-        </ion-item>
         <ion-list *ngIf="!wikiOutputBoolean">
             <ion-item button *ngFor="let book of books" [routerLink]="['/book', book.id]">
                 <ion-avatar *ngIf="book.img">
                     <img [src]="book.img" />
                 </ion-avatar>
-                <ion-label class="book-title">
+                <mat-label class="book-title">
                     <div class="ion-text-wrap">
                         <h2>{{ book.title }}</h2>
                     </div>
-                    <ion-progress-bar *ngIf="book.progress"
-                        [value]="(book.progress | percent2:book.progress) / 100">
+                    <ion-progress-bar *ngIf="book.progress" [value]="(book.progress | percent2:book.progress) / 100">
                     </ion-progress-bar>
-                </ion-label>
+                </mat-label>
             </ion-item>
         </ion-list>
 
         <div #target1 *ngIf="wikiOutputBoolean">
             <ion-list>
-                <ion-item button *ngFor="let output of fromWiki" (click)="log(output)">
+                <ion-item button *ngFor="let output of fromWiki" (click)="onSetWikipediaData(output)">
                     <ion-grid>
                         <ion-row><span>{{ output.title }}</span></ion-row>
                         <ion-row>
                             <p>
-                                <small> {{ unhtml(output.snippet) }}...</small>
+                                <small> {{ onUnhtml(output.snippet) }}...</small>
                             </p>
                         </ion-row>
                     </ion-grid>
@@ -150,15 +158,15 @@
 
         <div #target2 *ngIf="ready2editing">
             <ion-item *ngFor="let item of onlineAuthorsList">
-                <div (click)="downloadAuthorInfo(item.link)">
+                <div (click)="onDownloadAuthorInfo(item.link)">
                     <ion-avatar>
                         <img [src]="item.img" />
                     </ion-avatar>
-                    <ion-label>{{ item.name }}</ion-label>
-                    <ion-label>{{ item.year }}</ion-label>
+                    <mat-label>{{ item.name }}</mat-label>
+                    <mat-label>{{ item.year }}</mat-label>
                 </div>
             </ion-item>
         </div>
-    </div>
+    </form>
     <ion-spinner class="spinner" name="bubbles" *ngIf="isWorking"></ion-spinner>
 </ion-content>

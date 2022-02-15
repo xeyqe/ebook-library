@@ -171,10 +171,9 @@ export class EpubService implements OnInit {
       this.file
         .removeRecursively(this.getRootPath() + 'ebook-library', 'epub')
         .then(() => {
-          console.log('removed');
           resolve();
         }).catch(e => {
-          console.log(e);
+          console.error(e);
           e.code === 1 ? resolve() : reject();
         });
     });

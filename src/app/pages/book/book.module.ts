@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { IonicModule } from '@ionic/angular';
 
@@ -11,6 +11,10 @@ import { MaterialModule } from 'src/app/material/material.module';
 import { ApplicationPipesModuleModule } from 'src/app/application-pipes-module/application-pipes-module.module';
 
 import { BookPage } from './book.page';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+
+import { ContenteditableModule } from '@ng-stack/contenteditable';
 
 @NgModule({
   imports: [
@@ -19,7 +23,11 @@ import { BookPage } from './book.page';
     IonicModule,
     BookPageRoutingModule,
     ApplicationPipesModuleModule,
-    MaterialModule
+    MaterialModule,
+    ReactiveFormsModule,
+    MatInputModule,
+    ContenteditableModule,
+    MatSelectModule,
   ],
   providers: [InAppBrowser],
   declarations: [BookPage]

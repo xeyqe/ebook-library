@@ -1,0 +1,15 @@
+.white {
+    .mat-select-value, .mat-select-value-text {
+        color: white;
+    }
+}
+
+.gray {
+    .mat-select-value, .mat-select-value-text {
+        color: #545454;
+    }
+}
+
+.mat-form-field-infix {
+    width: unset !important;
+}

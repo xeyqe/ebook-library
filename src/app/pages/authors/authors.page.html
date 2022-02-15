@@ -70,8 +70,11 @@
         </div>
     </ion-list>
 
-    <ion-button *ngIf="lastListenedBookId !== null" class="playBu" expand="block"
+    <ion-button *ngIf="lastListenedBookId !== null" class="sp-bu__play" 
         [routerLink]="['/tts', lastListenedBookId]">
         <ion-icon slot="icon-only" name="play-sharp"></ion-icon>
+    </ion-button>
+    <ion-button *ngIf="lastListenedBookId !== null" (click)="onDBExport()" class="sp-bu__share" >
+        <ion-icon slot="icon-only" name="share"></ion-icon>
     </ion-button>
 </ion-content>

@@ -86,7 +86,7 @@ export class AppComponent {
       const bookId = url.substring(url.lastIndexOf('/') + 1, url.length - 1);
       this.router.navigate(['/book', bookId]);
     } else {
-      console.log('else ?');
+      console.error('else ?');
     }
   }
 

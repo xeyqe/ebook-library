@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { IonContent } from '@ionic/angular';
+import { FormControl, FormGroup } from '@angular/forms';
 
 import { Subscription } from 'rxjs';
 
@@ -39,7 +40,24 @@ export class BookPage implements OnInit, OnDestroy {
   dontworryiwillnameyoulater: string;
   dontworryiwillnameyoulater2: string;
 
-  databaseSubscribtion: Subscription;
+  private subs: Subscription[] = [];
+  bookForm: FormGroup;
+  listsOfValues: {
+    img: any[],
+    title: any[],
+    originalTitle: any[],
+    genre: any[],
+    ISBN: any[],
+    publisher: any[],
+    published: any[],
+    language: any[],
+    translator: any[],
+    length: any[],
+    progress: any[],
+    rating: any[],
+    annotation: any[],
+  };
+  _textAreaReduced = true;
 
   @ViewChild(IonContent) content: IonContent;
   @ViewChild('target') target: ElementRef;
@@ -63,76 +81,142 @@ export class BookPage implements OnInit, OnDestroy {
       const bookId = params.get('id');
       const id = parseInt(bookId, 10);
       this.bookId = id;
-      this.databaseSubscribtion = this.db.getDatabaseState().subscribe((ready) => {
+      this.subs.push(this.db.getDatabaseState().subscribe((ready) => {
         if (ready) {
-          this.db
-            .getBook(id)
-            .then((data) => {
-              this.fileName = data.title;
-              this.book = data;
-              this.getAuthorsBooks();
-              this.dontworryiwillnameyoulater = this.book.id + '0';
-              this.dontworryiwillnameyoulater2 = this.book.id + '1';
-            })
-            .catch((e) => {
-              console.log('getBook failed: ');
-              console.log(e);
-            });
+          this.db.getBook(id).then((data) => {
+            this.fileName = data.title;
+            this.book = data;
+            this.initializeBookForm(data);
+            this.initializeSubs();
+            this.getAuthorsBooks();
+            this.dontworryiwillnameyoulater = this.book.id + '0';
+            this.dontworryiwillnameyoulater2 = this.book.id + '1';
+          }).catch((e) => {
+            console.error('getBook failed: ');
+            console.error(e);
+          });
         }
-      });
+      }));
       this.showAble = this.webScrapper.showAble;
     });
   }
 
-  updateBook() {
-    const bookRating = this.book.rating;
-    if (bookRating) {
-      this.book.rating = Math.floor(bookRating * 10) / 10;
-    }
-    if (bookRating > 5) {
-      this.book.rating = 5;
-    } else if (bookRating < 0) {
-      this.book.rating = 0;
-    }
-    this.db
-      .updateBook(this.book)
-      .then(() => {
-        this.bookChanged = false;
-        this.ready2editing = !this.ready2editing;
-      })
-      .catch((e) => {
-        console.log('updateBook failed: ');
-        console.log(e);
+  private initializeBookForm(book: BOOK) {
+    this.bookForm = new FormGroup({
+      img: new FormControl({ value: null, disabled: true }),
+      title: new FormControl({ value: null, disabled: true }),
+      originalTitle: new FormControl({ value: null, disabled: true }),
+      genre: new FormControl({ value: null, disabled: true }),
+      ISBN: new FormControl({ value: null, disabled: true }),
+      publisher: new FormControl({ value: null, disabled: true }),
+      published: new FormControl({ value: null, disabled: true }),
+      language: new FormControl({ value: null, disabled: true }),
+      translator: new FormControl({ value: null, disabled: true }),
+      length: new FormControl({ value: null, disabled: true }),
+      progress: new FormControl({ value: null, disabled: true }),
+      rating: new FormControl({ value: null, disabled: true }),
+      annotation: new FormControl({ value: null, disabled: true }),
+    });
+    this.listsOfValues = {} as any;
+    Object.entries(this.bookForm.controls).forEach(ent => {
+      const key = ent[0];
+      const fc = ent[1];
+      this.listsOfValues[key] = book[key] ? [book[key]] : [];
+      fc.setValue(book[key] || null);
+    });
+    this.removeNotWorkingImg(book.img);
+  }
+
+  private removeNotWorkingImg(bookImg: string) {
+    if (bookImg && bookImg.startsWith('http://localhost/')) {
+      const img = bookImg.split('ebook-library')[1];
+      const index = img.lastIndexOf('/') + 1;
+      const path = this.file.externalRootDirectory + 'ebook-library';
+      this.file.checkFile(path + img.substring(0, index), img.substring(index)).catch((e) => {
+        if (e.code === 1) {
+          this.bookForm.get('img').setValue(null);
+          this.listsOfValues.img = this.listsOfValues.img.filter(img => img !== bookImg);
+          this.book.img = null;
+          this.db.updateBook(this.book);
+        }
       });
+    }
+  }
+
+  private initializeSubs() {
+    this.subs.push(this.bookForm.valueChanges.subscribe(() => {
+      this.bookChanged = true;
+    }));
+
+  }
+
+  async updateBook() {
+    if (this.book.img !== this.bookForm.get('img').value && this.book.img?.startsWith('http://localhost/')) {
+      await this.onRemovePic(this.book.img);
+    }
+    Object.keys(this.bookForm.controls).forEach(key => {
+      this.book[key] = this.bookForm.get(key).value;
+    });
+    this.db.updateBook(this.book).then(() => {
+      this.bookChanged = false;
+      this.ready2editing = !this.ready2editing;
+      Object.entries(this.bookForm.controls).forEach(ent => {
+        this.ready2editing ? ent[1].enable({ emitEvent: false }) : ent[1].disable({ emitEvent: false });
+      });
+    }).catch((e) => {
+      console.error('updateBook failed: ');
+      console.error(e);
+    });
   }
 
   editable() {
-    if (this.ready2editing) {
-      this.db.getBook(this.bookId).then((book) => {
-        this.book = book;
-      });
-    }
+    Object.entries(this.bookForm.controls).forEach(ent => {
+      const key = ent[0];
+      ent[1].setValue(this.book[key])
+    });
     this.ready2editing = !this.ready2editing;
+    Object.entries(this.bookForm.controls).forEach(ent => {
+      this.ready2editing ? ent[1].enable({ emitEvent: false }) : ent[1].disable({ emitEvent: false });
+    });
     this.bookChanged = false;
   }
 
-  changeLanguage(lang: string) {
-    this.book.language = lang;
-    this.bookChanged = true;
+  async deleteBook() {
+    const res = await this.dialog.confirm(
+      'Do you really want to delete this book?',
+      null,
+      ['Ok', 'Cancel']
+    );
+    if (res === 1) {
+      const bookId = this.book.id;
+      const authorId = this.book.creatorId;
+      await this.onRemovePic(this.book.img);
+      await this.removeBookFile();
+      this.db.deleteBook(bookId, authorId).then(() => {
+        this.router.navigate(['/author', authorId]);
+      });
+    }
   }
 
-  deleteBook() {
-    this.dialog
-      .confirm('Do you really want to delete this book?\n(A file won\'t be deleted.)', null, ['Ok', 'Cancel'])
-      .then((res) => {
-        if (res === 1) {
-          const bookId = this.book.id;
-          const authorId = this.book.creatorId;
-          this.db.deleteBook(bookId, authorId).then((_) => {
-            this.router.navigate(['/author', authorId]);
-          });
-        }
+  onRemovePic(img: string) {
+    if (img?.startsWith('http://localhost/')) {
+      this.fs.removeFile(img.split('ebook-library')[1]).then(() => {
+        this.bookForm.get('img').setValue(null);
+        this.bookChanged = true;
+      }).catch(e => {
+        console.error(e)
+        this.dialog.alert('Deleting of pic file failed!', 'Warning', 'OK');
       });
+    } else {
+      this.bookForm.get('img').setValue(null);
+      this.bookChanged = true;
+    }
+  }
+
+  private async removeBookFile() {
+    await this.fs.removeFile(this.book.path.split('ebook-library')[1]).catch(e => {
+      this.dialog.alert('Deleting of book file failed!', 'Warning', 'OK');
+    });
   }
 
   getAuthorsBooks() {
@@ -144,7 +228,7 @@ export class BookPage implements OnInit, OnDestroy {
         if (jsonAuthor) {
           this.jsonBooks = jsonAuthor.books;
         } else {
-          this.jsonServ.jsonAuthorsData().then((_) => {
+          this.jsonServ.jsonAuthorsData().then(() => {
             jsonAuthor = this.jsonServ.getAuthor(authorsIdInJson);
             if (jsonAuthor) {
               this.jsonBooks = jsonAuthor.books;
@@ -158,107 +242,92 @@ export class BookPage implements OnInit, OnDestroy {
   getBookData(index: any) {
     let jsonBook = this.jsonServ.getBook(index);
     if (jsonBook) {
+      jsonBook[`length`] = jsonBook.pages;
       this.fillData(jsonBook);
     } else {
       this.isWorking = true;
       this.jsonServ.jsonBooksData().then(() => {
         this.isWorking = false;
         jsonBook = this.jsonServ.getBook(index);
+        jsonBook[`length`] = jsonBook.pages;
         this.fillData(jsonBook);
       });
     }
   }
 
   fillData(jsonBook) {
-    this.book.img = this.book.img || jsonBook.img;
-    // this.book.title = this.book.title || jsonBook.title;
-    this.book.title = jsonBook.title;
-    this.book.originalTitle = this.book.originalTitle || jsonBook.originalTitle;
-    this.book.genre = this.book.genre || jsonBook.genre;
-    this.book.publisher = this.book.publisher || jsonBook.publisher;
-    this.book.published = this.book.published || jsonBook.published;
-    this.book.annotation = this.book.annotation || jsonBook.annotation;
-    this.book.ISBN = this.book.ISBN || jsonBook.isbn;
-    this.book.language = this.book.language || jsonBook.language;
-    this.book.translator = this.book.translator || jsonBook.translator;
-    this.book.length = this.book.length || jsonBook.pages;
-
+    Object.keys(jsonBook).forEach(key => {
+      const val = jsonBook[key];
+      const fc = this.bookForm.get(key);
+      if (fc) {
+        fc.setValue(val || null);
+        if (val && !this.listsOfValues[key].includes(val)) {
+          this.listsOfValues[key].push(val);
+        }
+      }
+    });
     this.bookChanged = true;
   }
 
   downloadPicture() {
-    this.db.getAuthor(this.book.creatorId).then((author) => {
-      const uri = this.book.img;
-      const path = this.book.path.substring(0, this.book.path.lastIndexOf('/') + 1);
-      const index = this.book.img.lastIndexOf('.');
-      const extension = this.book.img.substring(index);
-      const filename = this.book.title + extension;
+    const uri = this.bookForm.get('img').value;
+    const path = this.book.path.substring(0, this.book.path.lastIndexOf('/') + 1);
+    const index = this.bookForm.get('img').value.lastIndexOf('.');
+    const extension = this.bookForm.get('img').value.substring(index);
+    const filename = this.book.title + extension;
 
-      this.isWorking = true;
-      this.fs
-        .downloadPicture(uri, path, filename)
-        .then((src) => {
-          this.isWorking = false;
-          this.book.img = src;
-          this.bookChanged = true;
-        })
-        .catch((e) => {
-          alert(e);
-        });
+    this.isWorking = true;
+    this.fs.downloadPicture(uri, path, filename).then((src) => {
+      this.isWorking = false;
+      this.bookForm.get('img').setValue(src);
+      this.bookChanged = true;
+    }).catch((e) => {
+      alert(e);
     });
   }
 
-  getBooksList() {
-    this.db.getAuthor(this.book.creatorId).then((author) => {
-      let authorsName = author.name + ' ' + author.surname;
-      if (authorsName[0] === ' ') {
-        authorsName = authorsName.replace(' ', '');
+  async getBooksList() {
+    const author = await this.db.getAuthor(this.book.creatorId);
+    let authorsName = author.name + ' ' + author.surname;
+    if (authorsName[0] === ' ') {
+      authorsName = authorsName.replace(' ', '');
+    }
+    if (authorsName.length) {
+      this.isWorking = true;
+      const data = await this.webScrapper.getBooksListOfAnyAuthor(this.bookForm.get('title').value);
+      this.onlineBookList = data.filter(dt => dt.comment.includes(author.surname));
+      if (!this.onlineBookList.length) {
+        this.onlineBookList = await this.webScrapper.getBooksList(authorsName);
       }
-      if (authorsName.length) {
-        this.isWorking = true;
-        this.webScrapper.getBooksList(authorsName).then((data) => {
-          this.isWorking = false;
-          this.onlineBookList = data;
-          this.scrollElement();
-        });
-      }
-    });
+      this.isWorking = false;
+      this.scrollElement();
+    }
   }
 
   downloadBookInfo(link: string) {
     this.isWorking = true;
-    // this.getBook2(link).then((data) => {
-    //   this.isWorking = false;
-    //   if (data) {
-    //     this.book.img = this.book.img || data.img;
-    //     this.book.title = this.book.title || data.title;
-    //     this.book.originalTitle = this.book.originalTitle || data.originalTitle;
-    //     this.book.genre = this.book.genre || data.genre.toString(); // TODO
-    //     this.book.publisher = this.book.publisher || data.publisher;
-    //     this.book.published = this.book.published || data.published;
-    //     this.book.annotation = this.book.annotation || data.annotation;
-    //     this.book.language = this.book.language || data.language;
-    //     this.book.translator = this.book.translator || data.translator;
-    //     this.book.ISBN = this.book.ISBN || data.isbn;
 
-    //     this.bookChanged = true;
-    //     this.content.scrollToTop();
-    //   }
-    // });
     this.getBook2(link).then((data) => {
       if (data) {
         const noise = '...celý text';
-        this.book.img = data?.img;
-        this.book.title = data?.title;
-        this.book.originalTitle = data?.originalTitle;
-        this.book.genre = data?.genre?.toString(); // TODO
-        this.book.publisher = data?.publisher;
-        this.book.published = data?.published;
-        this.book.annotation = data?.annotation?.endsWith(noise) ? data?.annotation?.slice(0, -noise.length) : data?.annotation;
-        this.book.language = data?.language && data.language !== 'český' ? null : 'cs-CZ';
-        this.book.translator = data?.translator;
-        this.book.ISBN = data?.isbn;
-        this.book.length = data?.pages;
+        data.annotation = data.annotation?.endsWith(noise) ?
+          data.annotation.slice(0, -noise.length) :
+          data.annotation;
+        data.language = data.language && data.language !== 'český' ?
+          null :
+          'cs-CZ';
+        data.genre = data.genre?.toString();
+        [
+          'img', 'title', 'originalTitle', 'genre',
+          'publisher', 'published', 'annotation', 'language',
+          'translator', 'ISBN', 'length'
+        ].forEach(key => {
+          if (data[key]) {
+            this.bookForm.get(key).setValue(data[key]);
+            if (!this.listsOfValues[key].includes(data[key]))
+              this.listsOfValues[key].push(data[key]);
+          }
+        });
 
         this.bookChanged = true;
         this.content.scrollToTop();
@@ -272,12 +341,12 @@ export class BookPage implements OnInit, OnDestroy {
     img: string;
     language: string;
     originalTitle: string;
-    pages: number;
+    length: number;
     published: number;
     publisher: string;
     title: string;
     translator: string;
-    isbn: string;
+    ISBN: string;
   }> {
     return new Promise((resolve, reject) => {
       const target = '_blank';
@@ -285,8 +354,8 @@ export class BookPage implements OnInit, OnDestroy {
       const browser = this.iab.create(url, target, options);
 
       browser.on('message').subscribe(e => {
-        if (e.data.pages) {
-          e.data.pages = +e.data.pages;
+        if (e.data.length) {
+          e.data.length = +e.data.length;
         }
         if (e.data.genre) {
           e.data.genre = e.data.genre.split(',');
@@ -298,7 +367,7 @@ export class BookPage implements OnInit, OnDestroy {
 
       browser.on('loadstop').subscribe(event => {
         browser.executeScript({
-          code: `function a(el, i){if(el){if (i == 'click'){el.click()}else{return el[i]}}else{return null}};a(document.querySelector('#abinfo > a'),'click');setTimeout(()=>{var o={annotation:a(document.querySelector('#bdetdesc'),'textContent'),genre:a(document.querySelector('[itemprop=genre]'),'textContent'),img:a(document.querySelector('.kniha_img'),'src'),language:a(document.querySelector('[itemprop=language]'),'innerText'),originalTitle:a(document.querySelector('#bdetail_rest>div.detail_description>h4'),'textContent'),pages:a(document.querySelector('[itemprop=numberOfPages]'),'innerText'),published:a(document.querySelector('[itemprop=datePublished]'),'textContent'),publisher:a(document.querySelector('[itemprop=publisher]'),'innerText'),title:a(document.querySelector('[itemprop=name]'),'innerText'),translator:a(document.querySelector('[itemprop=translator]'),'textContent'),isbn:a(document.querySelector('[itemprop=isbn]'),'innerText')};webkit.messageHandlers.cordova_iab.postMessage(JSON.stringify(o))},1000)`
+          code: `function a(el, i){if(el){if (i == 'click'){el.click()}else{return el[i]}}else{return null}};a(document.querySelector('#abinfo > a'),'click');setTimeout(()=>{var o={annotation:a(document.querySelector('#bdetdesc'),'textContent'),genre:a(document.querySelector('[itemprop=genre]'),'textContent'),img:a(document.querySelector('.kniha_img'),'src'),language:a(document.querySelector('[itemprop=language]'),'innerText'),originalTitle:a(document.querySelector('#bdetail_rest>div.detail_description>h4'),'textContent'),length:a(document.querySelector('[itemprop=numberOfPages]'),'innerText'),published:a(document.querySelector('[itemprop=datePublished]'),'textContent'),publisher:a(document.querySelector('[itemprop=publisher]'),'innerText'),title:a(document.querySelector('[itemprop=name]'),'innerText'),translator:a(document.querySelector('[itemprop=translator]'),'textContent'),ISBN:a(document.querySelector('[itemprop=isbn]'),'innerText')};webkit.messageHandlers.cordova_iab.postMessage(JSON.stringify(o))},1000)`
         }).catch(e => {
           browser.close();
           reject(e);
@@ -310,48 +379,34 @@ export class BookPage implements OnInit, OnDestroy {
   getMetadataFromEpub() {
     this.epub.getMetadataFromEpub(this.book.path).then((metadata) => {
       if (metadata) {
-        if (metadata.annotation) {
-          // if (!this.book.annotation) {
-          this.book.annotation = metadata.annotation.replace(/<[^>]*>/g, '');
-          this.bookChanged = true;
-          // }
-        }
-        if (metadata.isbn) {
-          // if (!this.book.ISBN) {
-          this.book.ISBN = metadata.isbn;
-          this.bookChanged = true;
-          // }
-        }
-        if (metadata.title) {
-          // if (!this.book.title) {
-          this.book.title = metadata.title;
-          this.bookChanged = true;
-          // }
-        }
-        if (metadata.published) {
-          // if (!this.book.published) {
-          this.book.published = metadata.published;
-          this.bookChanged = true;
-          // }
-        }
-        if (metadata.publisher) {
-          // if (!this.book.publisher) {
-          this.book.publisher = metadata.publisher;
-          this.bookChanged = true;
-          // }
-        }
+        metadata.annotation = metadata.annotation?.replace(/<[^>]*>/g, '') || null;
+        ['annotation', 'isbn', 'title', 'published', 'publisher'].forEach(key => {
+          if (metadata[key]) {
+            if (this.bookForm.get(key).value !== metadata[key]) {
+              this.bookForm.get(key).setValue(metadata[key]);
+              this.bookChanged = true;
+            }
+            if (!this.listsOfValues[key].includes(metadata[key]))
+              this.listsOfValues[key].push(metadata[key]);
+          }
+
+        });
+
         if (metadata.imgPath) {
           const path = metadata.imgPath.substring(0, metadata.imgPath.lastIndexOf('/'));
           const filename = metadata.imgPath.substring(metadata.imgPath.lastIndexOf('/') + 1);
           const newPath = this.epub.getRootPath().slice(0, -1) +
             this.book.path.substring(0, this.book.path.lastIndexOf('/') + 1);
-          const newFilename = this.book.title + metadata.imgPath.substring(metadata.imgPath.lastIndexOf('.'));
-          if (!this.book.img) {
-            this.file.copyFile(path, filename, newPath, newFilename).then(() => {
-              this.book.img = this.webView.convertFileSrc(newPath + newFilename);
+          const newFilename = this.bookForm.get('title').value + metadata.imgPath.substring(metadata.imgPath.lastIndexOf('.'));
+          this.file.copyFile(path, filename, newPath, newFilename).then(() => {
+            const img = this.webView.convertFileSrc(newPath + newFilename);
+            if (this.bookForm.get('img').value !== img) {
+              this.bookForm.get('img').setValue(img);
+              if (!this.listsOfValues.img.includes(img))
+                this.listsOfValues.img.push(img);
               this.bookChanged = true;
-            });
-          }
+            }
+          });
         }
       }
     });
@@ -361,21 +416,28 @@ export class BookPage implements OnInit, OnDestroy {
     this.content.scrollToPoint(0, this.target.nativeElement.offsetTop, 500);
   }
 
-  onRemovePic() {
-    if (this.book.img.startsWith('http://localhost/')) {
-      this.fs.removeFile(this.book.img.split('ebook-library')[1]).then(() => {
-        this.book.img = null;
-        this.bookChanged = true;
-      }).catch(e => {
-        this.dialog.alert('Deleting of pic file failed!', 'Warning', 'OK');
-      });
-    } else {
-      this.book.img = null;
-      this.bookChanged = true;
-    }
+  onSwitchPic() {
+    if (this.listsOfValues.img.length < 2) return;
+    let index = this.listsOfValues.img.indexOf(this.bookForm.get('img').value);
+    index = index === -1 ? 0 : (index + 1) % this.listsOfValues.img.length;
+    const img = this.listsOfValues.img[index];
+    this.bookForm.get('img').setValue(img);
+  }
+
+  onReduceHeight() {
+    if (this.bookForm.get('annotation').disabled)
+      this._textAreaReduced = !this._textAreaReduced;
+  }
+
+  onGetWidth(fcName: string, title: string) {
+    return {
+      width: (String(this.bookForm.get(fcName).value).length * 7 + 2) + 'px',
+      'min-width': (title.length * 9.5) + 'px'
+    };
   }
 
   ngOnDestroy() {
-    this.databaseSubscribtion?.unsubscribe();
+    this.subs?.forEach(sub => sub?.unsubscribe());
   }
+
 }

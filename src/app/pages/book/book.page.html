@@ -6,12 +6,10 @@
                 <ion-button (click)="deleteBook()">delete</ion-button>
             </ion-col>
             <div *ngIf="dontworryiwillnameyoulater && dontworryiwillnameyoulater2 && book">
-                <ion-button *ngIf="!ready2editing"
-                    [routerLink]="['/', 'tts', dontworryiwillnameyoulater]">
+                <ion-button *ngIf="!ready2editing" [routerLink]="['/', 'tts', dontworryiwillnameyoulater]">
                     <ion-icon slot="icon-only" name="megaphone"></ion-icon>
                 </ion-button>
-                <ion-button *ngIf="!ready2editing"
-                    [routerLink]="['/', 'tts', dontworryiwillnameyoulater2]">
+                <ion-button *ngIf="!ready2editing" [routerLink]="['/', 'tts', dontworryiwillnameyoulater2]">
                     <ion-icon slot="icon-only" name="book"></ion-icon>
                 </ion-button>
                 <ion-button *ngIf="bookChanged" (click)="updateBook()">
@@ -24,11 +22,8 @@
                 <ion-button *ngIf="ready2editing && showAble" (click)="getBooksList()">
                     <ion-icon slot="icon-only" name="add-circle-sharp"></ion-icon>
                 </ion-button>
-                <!-- <ion-button *ngIf="ready2editing && showAble" (click)="getBook2('')">
-                    <ion-icon slot="icon-only" name="add-circle-sharp"></ion-icon>
-                </ion-button> -->
-                <ion-button
-                    *ngIf="ready2editing && book.path.substring(book.path.length - 4) === 'epub'"
+
+                <ion-button *ngIf="ready2editing && book.path.substring(book.path.length - 4) === 'epub'"
                     (click)="getMetadataFromEpub()">
                     EPUB
                 </ion-button>
@@ -38,161 +33,202 @@
 </ion-header>
 
 <ion-content>
-    <div *ngIf="book">
-        <ion-grid>
-            <ion-item *ngIf="ready2editing || book.img">
-                <div class="bu-change-pic" *ngIf="book.img && ready2editing">
-                    <ion-button *ngIf="!book.img.startsWith('http://localhost/')"
-                        (click)="downloadPicture()">
-                        <ion-icon slot="icon-only" name="download-sharp"></ion-icon>
-                    </ion-button>
-                    <ion-button
-                        (click)="onRemovePic()">
-                        <ion-icon slot="icon-only" name="remove"></ion-icon>
-                    </ion-button>
-                </div>
+    <form [formGroup]="bookForm" *ngIf="book && bookForm">
+        <div *ngIf="ready2editing || bookForm.get('img').value" class="pic-container">
+            <div class="bu-change-pic" *ngIf="bookForm.get('img').value && ready2editing">
+                <ion-button *ngIf="!bookForm.get('img').value.startsWith('http://localhost/')"
+                    (click)="downloadPicture()">
+                    <ion-icon slot="icon-only" name="download-sharp"></ion-icon>
+                </ion-button>
+                <ion-button (click)="onRemovePic(bookForm.get('img').value)">
+                    <ion-icon slot="icon-only" name="remove"></ion-icon>
+                </ion-button>
+                <ion-button *ngIf="listsOfValues.img.length > 1" (click)="onSwitchPic()">
+                    <ion-icon slot="icon-only" name="arrow-forward"></ion-icon>
+                </ion-button>
+            </div>
 
-                <ion-img *ngIf="book.img" [src]="book.img"></ion-img>
-                <ion-img *ngIf="!book.img && ready2editing" style="background-color: #413d3d;"
-                    src="https://upload.wikimedia.org/wikipedia/commons/7/7c/User_font_awesome.svg">
-                </ion-img>
-            </ion-item>
-            <ion-item *ngIf="book.title || ready2editing">
-                <ion-label position="floating">Title</ion-label>
-                <ion-textarea disabled="{{!ready2editing}}" (change)="bookChanged = true"
-                    [(ngModel)]="book.title"></ion-textarea>
-            </ion-item>
-            <!-- <div style="width: 100vw;">
-                <select *ngIf="jsonBooks && ready2editing" interface="popover"
-                    (ionChange)="getBookData($event.detail.value)" style="width: 100vw;">
-                    <ion-select-option *ngFor="let book of jsonBooks" [value]="book.index" class="select-full-width" style="width: 100vw;">
-                        <p class="ion-text-wrap">{{ book.title }}</p>
-                    </ion-select-option>
-                </select>
-            </div> -->
+            <img *ngIf="bookForm.get('img').value" [src]="bookForm.get('img').value">
+            <img *ngIf="!bookForm.get('img').value && ready2editing" style="background-color: #413d3d;"
+                src="https://upload.wikimedia.org/wikipedia/commons/7/7c/User_font_awesome.svg">
+        </div>
+
+        <div class="flexed">
+            <mat-form-field *ngIf="bookForm.get('title').value || ready2editing">
+                <mat-label class="red">Title</mat-label>
+                <input type="text" formControlName="title" matInput [matAutocomplete]="autoTitle"
+                    [ngClass]="ready2editing ? 'white' : 'gray'"
+                    [ngStyle]="onGetWidth('title', 'Title')">
+                <mat-autocomplete #autoTitle="matAutocomplete" [panelWidth]="'auto'">
+                    <ng-container *ngFor="let title of listsOfValues.title">
+                        <mat-option *ngIf="bookForm.get('title').value !== title" [value]="title">
+                            {{ title }}
+                        </mat-option>
+                    </ng-container>
+                </mat-autocomplete>
+            </mat-form-field>
+
             <mat-form-field *ngIf="jsonBooks && ready2editing">
-                <mat-label style="color: red">Choose an option</mat-label>
+                <mat-label class="red">Choose an option</mat-label>
                 <mat-select (selectionChange)="getBookData($event.value)">
-                  <mat-option *ngFor="let book of jsonBooks" [value]="book.index">{{ book.title }}</mat-option>
+                    <mat-option *ngFor="let book of jsonBooks" [value]="book.index">
+                        {{ book.title }}
+                    </mat-option>
                 </mat-select>
             </mat-form-field>
-            <ion-item *ngIf="book.originalTitle || ready2editing">
-                <ion-label position="floating">Original title</ion-label>
-                <ion-textarea disabled="{{!ready2editing}}" (change)="bookChanged = true"
-                    [(ngModel)]="book.originalTitle"></ion-textarea>
-            </ion-item>
 
-            <ion-row>
-                <ion-col *ngIf="book.genre || ready2editing">
-                    <ion-item>
-                        <ion-label position="floating">Genre</ion-label>
-                        <ion-textarea disabled="{{!ready2editing}}" (change)="bookChanged = true"
-                            [(ngModel)]="book.genre"></ion-textarea>
-                    </ion-item>
-                </ion-col>
-                <ion-col *ngIf="book.ISBN || ready2editing">
-                    <ion-item>
-                        <ion-label position="floating">ISBN</ion-label>
-                        <ion-input disabled="{{!ready2editing}}" (change)="bookChanged = true"
-                            [(ngModel)]="book.ISBN"></ion-input>
-                    </ion-item>
-                </ion-col>
-            </ion-row>
+            <mat-form-field *ngIf="bookForm.get('originalTitle').value || ready2editing">
+                <mat-label class="red">Original title</mat-label>
+                <input type="text" formControlName="originalTitle" matInput [matAutocomplete]="autoOriginalTitle"
+                    [ngClass]="ready2editing ? 'white' : 'gray'"
+                    [ngStyle]="onGetWidth('originalTitle', 'Original title')">
+                <mat-autocomplete #autoOriginalTitle="matAutocomplete" [panelWidth]="'auto'">
+                    <ng-container *ngFor="let originalTitle of listsOfValues.originalTitle">
+                        <mat-option *ngIf="bookForm.get('originalTitle').value !== originalTitle"
+                            [value]="originalTitle">
+                            {{ originalTitle }}
+                        </mat-option>
+                    </ng-container>
+                </mat-autocomplete>
+            </mat-form-field>
 
-            <ion-row>
-                <ion-col *ngIf="book.publisher || ready2editing">
-                    <ion-item>
-                        <ion-label position="floating">Publisher</ion-label>
-                        <ion-textarea disabled="{{!ready2editing}}" (change)="bookChanged = true"
-                            [(ngModel)]="book.publisher"></ion-textarea>
-                    </ion-item>
-                </ion-col>
-                <ion-col *ngIf="book.published || ready2editing">
-                    <ion-item>
-                        <ion-label position="floating">Published</ion-label>
-                        <ion-textarea disabled="{{!ready2editing}}" type="number"
-                            [(ngModel)]="book.published">
-                        </ion-textarea>
-                    </ion-item>
-                </ion-col>
-            </ion-row>
+            <mat-form-field *ngIf="bookForm.get('genre').value || ready2editing">
+                <mat-label class="red">Genre</mat-label>
+                <input type="text" formControlName="genre" matInput [matAutocomplete]="autoGenre"
+                    [ngClass]="ready2editing ? 'white' : 'gray'"
+                    [ngStyle]="onGetWidth('genre', 'Genre_')">
+                <mat-autocomplete #autoGenre="matAutocomplete" [panelWidth]="'auto'">
+                    <ng-container *ngFor="let genre of listsOfValues.genre">
+                        <mat-option *ngIf="bookForm.get('genre').value !== genre" [value]="genre">
+                            {{ genre }}
+                        </mat-option>
+                    </ng-container>
+                </mat-autocomplete>
+            </mat-form-field>
 
-            <ion-row>
-                <ion-col *ngIf="book.language || ready2editing">
-                    <ion-item>
-                        <ion-label position="floating">Language</ion-label>
-                        <ion-select interface="popover" disabled="{{!ready2editing}}"
-                            value="{{book.language}}"
-                            (ionChange)="changeLanguage($event.detail.value)">
-                            <ion-select-option value="cs-CZ">Česky</ion-select-option>
-                            <ion-select-option value="en-US">English</ion-select-option>
-                            <ion-select-option value="de-DE">Deutsch</ion-select-option>
-                            <ion-select-option value="ru-RU">русский</ion-select-option>
-                        </ion-select>
-                    </ion-item>
-                </ion-col>
-                <ion-col *ngIf="book.translator || ready2editing">
-                    <ion-item>
-                        <ion-label position="floating">Tranlator</ion-label>
-                        <ion-textarea disabled="{{!ready2editing}}" (change)="bookChanged = true"
-                            [(ngModel)]="book.translator"></ion-textarea>
-                    </ion-item>
-                </ion-col>
-            </ion-row>
+            <mat-form-field *ngIf="bookForm.get('ISBN').value || ready2editing">
+                <mat-label class="red">ISBN</mat-label>
+                <input type="text" formControlName="ISBN" matInput [matAutocomplete]="autoISBN"
+                    [ngClass]="ready2editing ? 'white' : 'gray'"
+                    [ngStyle]="onGetWidth('ISBN', 'ISBN_')">
+                <mat-autocomplete #autoISBN="matAutocomplete" [panelWidth]="'auto'">
+                    <ng-container *ngFor="let ISBN of listsOfValues.ISBN">
+                        <mat-option *ngIf="bookForm.get('ISBN').value !== ISBN" [value]="ISBN">
+                            {{ ISBN }}
+                        </mat-option>
+                    </ng-container>
+                </mat-autocomplete>
+            </mat-form-field>
 
-            <ion-row>
-                <ion-col *ngIf="book.length || ready2editing">
-                    <ion-item>
-                        <ion-label position="floating">Pages</ion-label>
-                        <ion-textarea disabled="{{!ready2editing}}" (change)="bookChanged = true"
-                            type="number" [(ngModel)]="book.length"></ion-textarea>
-                    </ion-item>
-                </ion-col>
-                <ion-col *ngIf="book.progress || ready2editing">
-                    <ion-item>
-                        <ion-label position="stacked">Progress</ion-label>
-                        <ion-input disabled="true">{{ book.progress | percent2:book.progress }} %
-                        </ion-input>
-                    </ion-item>
-                </ion-col>
-                <ion-col *ngIf="book.rating || ready2editing">
-                    <ion-item>
-                        <ion-label position="floating">Rating</ion-label>
+            <mat-form-field *ngIf="bookForm.get('publisher').value || ready2editing">
+                <mat-label class="red">Publisher</mat-label>
+                <input type="text" formControlName="publisher" matInput [matAutocomplete]="autoPublisher"
+                    [ngClass]="ready2editing ? 'white' : 'gray'"
+                    [ngStyle]="onGetWidth('publisher', 'Publisher')">
+                <mat-autocomplete #autoPublisher="matAutocomplete" [panelWidth]="'auto'">
+                    <ng-container *ngFor="let publisher of listsOfValues.publisher">
+                        <mat-option *ngIf="bookForm.get('publisher').value !== publisher" [value]="publisher">
+                            {{ publisher }}
+                        </mat-option>
+                    </ng-container>
+                </mat-autocomplete>
+            </mat-form-field>
 
-                        <ion-input disabled="{{!ready2editing}}" (change)="bookChanged = true"
-                            pattern="^$|^[0-5]$|^[0-4]\.[0-9]$" type="number"
-                            [(ngModel)]="book.rating">
-                        </ion-input>
-                    </ion-item>
-                </ion-col>
-            </ion-row>
-        </ion-grid>
-        <ion-item *ngIf="book.annotation || ready2editing">
-            <ion-label position="stacked">Annotation</ion-label>
-            <ion-textarea disabled="{{!ready2editing}}" autoGrow="true"
-                [(ngModel)]="book.annotation">
-            </ion-textarea>
-        </ion-item>
+            <mat-form-field *ngIf="bookForm.get('published').value || ready2editing">
+                <mat-label class="red">Published</mat-label>
+                <input type="number" formControlName="published" matInput [matAutocomplete]="autoPublished"
+                    [ngClass]="ready2editing ? 'white' : 'gray'"
+                    [ngStyle]="onGetWidth('published', 'Published')">
+                <mat-autocomplete #autoPublished="matAutocomplete" [panelWidth]="'auto'">
+                    <ng-container *ngFor="let published of listsOfValues.published">
+                        <mat-option *ngIf="bookForm.get('published').value !== +published" [value]="+published">
+                            {{ published }}
+                        </mat-option>
+                    </ng-container>
+                </mat-autocomplete>
+            </mat-form-field>
+
+            <mat-form-field *ngIf="bookForm.get('language').value || ready2editing">
+                <mat-label class="red">Language</mat-label>
+                <mat-select interface="popover" formControlName="language" [ngClass]="ready2editing ? 'white' : 'gray'">
+                    <mat-option value="cs-CZ">Česky</mat-option>
+                    <mat-option value="en-US">English</mat-option>
+                    <mat-option value="de-DE">Deutsch</mat-option>
+                    <mat-option value="ru-RU">русский</mat-option>
+                </mat-select>
+            </mat-form-field>
+
+            <mat-form-field *ngIf="bookForm.get('translator').value || ready2editing">
+                <mat-label class="red">Tranlator</mat-label>
+                <input type="text" formControlName="translator" matInput [matAutocomplete]="autoTranslator"
+                    [ngClass]="ready2editing ? 'white' : 'gray'"
+                    [ngStyle]="onGetWidth('translator', 'Tranlator')">
+                <mat-autocomplete #autoTranslator="matAutocomplete" [panelWidth]="'auto'">
+                    <ng-container *ngFor="let translator of listsOfValues.translator">
+                        <mat-option *ngIf="bookForm.get('translator').value !== translator" [value]="translator">
+                            {{ translator }}
+                        </mat-option>
+                    </ng-container>
+                </mat-autocomplete>
+            </mat-form-field>
+
+            <mat-form-field *ngIf="bookForm.get('length').value || ready2editing">
+                <mat-label class="red">Pages</mat-label>
+                <input type="number" formControlName="length" matInput [matAutocomplete]="autoPages"
+                    [ngClass]="ready2editing ? 'white' : 'gray'"
+                    [ngStyle]="onGetWidth('length', 'Pages')">
+                <mat-autocomplete #autoPages="matAutocomplete" [panelWidth]="'auto'">
+                    <ng-container *ngFor="let pages of listsOfValues.length">
+                        <mat-option *ngIf="bookForm.get('length').value !== pages" [value]="pages">
+                            {{ pages }}
+                        </mat-option>
+                    </ng-container>
+                </mat-autocomplete>
+            </mat-form-field>
+
+            <mat-form-field *ngIf="bookForm.get('progress').value || ready2editing">
+                <mat-label class="red">Progress</mat-label>
+                <input class="gray" disabled [value]="bookForm.get('progress').value * 100 + '%'" matInput>
+            </mat-form-field>
+
+            <mat-form-field *ngIf="bookForm.get('rating').value || ready2editing">
+                <mat-label class="red">Rating</mat-label>
+                <mat-select interface="popover" formControlName="rating" [ngClass]="ready2editing ? 'white' : 'gray'">
+                    <mat-option [value]="0">0</mat-option>
+                    <mat-option [value]="1">1</mat-option>
+                    <mat-option [value]="2">2</mat-option>
+                    <mat-option [value]="3">3</mat-option>
+                    <mat-option [value]="4">4</mat-option>
+                    <mat-option [value]="5">5</mat-option>
+                </mat-select>
+            </mat-form-field>
+        </div>
+
+        <div class="marged biogr" *ngIf="bookForm.get('annotation').value || ready2editing">
+            <mat-label class="red">Annotation</mat-label>
+            <div (click)="onReduceHeight()">
+                <p class="contenteditable" [contenteditable]="ready2editing" formControlName="annotation" matInput
+                    [class]="ready2editing ? 'white' : 'gray'"
+                    [ngClass]="{'reduced': bookForm.get('annotation').disabled && _textAreaReduced}">
+                </p>
+            </div>
+        </div>
 
         <div #target *ngIf="ready2editing">
-            <ion-item *ngFor="let item of onlineBookList">
+            <ng-container *ngFor="let item of onlineBookList">
                 <div (click)="downloadBookInfo(item.link)">
-                    <!-- <ion-col size="2"> -->
                     <ion-avatar>
                         <img [src]="item.img" />
                     </ion-avatar>
-                    <!-- </ion-col>
-                    <ion-col size="6"> -->
-                    <ion-label>
+                    <mat-label>
                         <div class="ion-text-wrap">
                             <h2>{{ item.title }}</h2>
                             <p>{{ item.comment }}</p>
                         </div>
-                    </ion-label>
-                    <!-- </ion-col> -->
+                    </mat-label>
                 </div>
-            </ion-item>
+            </ng-container>
         </div>
-    </div>
+    </form>
     <ion-spinner class="spinner" name="bubbles" *ngIf="isWorking"></ion-spinner>
 </ion-content>

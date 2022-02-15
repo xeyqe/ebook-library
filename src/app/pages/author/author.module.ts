@@ -4,11 +4,13 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { IonicModule } from '@ionic/angular';
 
+import { MaterialModule } from 'src/app/material/material.module';
 import { AuthorPageRoutingModule } from 'src/app/pages/author/author-routing.module';
 import { ApplicationPipesModuleModule } from 'src/app/application-pipes-module/application-pipes-module.module';
-import { MaterialModule } from 'src/app/material/material.module';
+
 import { AuthorPage } from 'src/app/pages/author/author.page';
 
+import { ContenteditableModule } from '@ng-stack/contenteditable';
 
 @NgModule({
   imports: [
@@ -19,6 +21,7 @@ import { AuthorPage } from 'src/app/pages/author/author.page';
     AuthorPageRoutingModule,
     ApplicationPipesModuleModule,
     MaterialModule,
+    ContenteditableModule
   ],
   declarations: [AuthorPage],
 })
