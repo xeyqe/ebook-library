@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS authors(
     path TEXT,
     idInJson TEXT
 );
+
 INSERT or IGNORE INTO authors VALUES (
     1,
     'Oscar',
@@ -24,7 +25,6 @@ INSERT or IGNORE INTO authors VALUES (
     '/ebook-library/Wilde, Oscar/',
     null
 );
-
 
 CREATE TABLE IF NOT EXISTS books(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,21 +44,30 @@ CREATE TABLE IF NOT EXISTS books(
     rating INTEGER,
     img TEXT
 );
+
 INSERT or IGNORE INTO books VALUES(
     1,
     1,
-    'Obraz Doriana Graye',
+    'The Picture of Dorian Gray',
     'The Picture of Dorian Gray, 1891',
-    'Příběh s fantastickými prvky se odehrává v 19. století v Londýně. Krásného Doriana Graye portrétuje malíř Basil Hallward, který je Dorianovým vzhledem uchvácen a naivně si myslí, že sličný mladík je a vždy bude ztělesněním dobra. Uzavřený malíř se přátelí s lordem Henrym, ten je povahově zcela jiný. V každé společnosti je Henry ozdobou, oslňuje hlubokomyslnými úvahami, nemá žádné morální zábrany. Na bohatého sirotka Doriana, původně stydlivého a nezkaženého mladíka, má Henry zničující vliv. Také před nadaným malířem rozpřádá neuctivé teorie o zbytečnosti portrétování. Portrétovaný člověk stárne, kdežto obraz zůstává nepříjemným svědectvím o ztraceném mládí. Doriana ta představa poleká natolik, že si přeje, aby místo něho zestárl jeho obraz. Tím, jak se ocitá plně pod Henryho vlivem a mění se jeho povaha, mění se portrét ve stvůru, která odráží ošklivost Dorianovy duše, avšak sám Dorian Gray nadále září půvabem a pelem mládí. Chová se už jako lord Henry. Pohrdne svou romantickou láskou, nezastaví se ani před zločinem. Nakonec zaútočí na podobiznu ohyzdného starce, ve kterou se původní portrét proměnil…',
-    'Mladá fronta',
-    1999,
-    'Romány',
-    248,
-    'cs-CZ',
-    'Jiří Zdeněk Novák',
-    '80-204-0605-0',
-    '/ebook-library/Wilde, Oscar/Obraz Doriana Graye.txt',
+    'The Picture of Dorian Gray is a philosophical novel by Oscar Wilde. A shorter novella-length version was published in the July 1890 issue of the American periodical Lippincott''s Monthly Magazine. A revised and extended edition was published in April 1891. Revisions include changes in character dialogue as well as the addition of the preface, more scenes and chapters, and Sibyl Vane’s brother, James Vane. The story revolves around a portrait of Dorian Gray painted by Basil Hallward, a friend of Dorian''s and an artist infatuated with Dorian''s beauty. Through Basil, Dorian meets Lord Henry Wotton and is soon enthralled by the aristocrat''s hedonistic worldview: that beauty and sensual fulfillment are the only things worth pursuing in life. Newly understanding that his beauty will fade, Dorian expresses the desire to sell his soul, to ensure that the picture, rather than he, will age and fade. The wish is granted, and Dorian pursues a libertine life of varied amoral experiences while staying young and beautiful; all the while, his portrait ages and visually records every one of Dorian''s sins. Wilde''s only novel, it was subject to much controversy and criticism in its time but has come to be recognized as a classic of gothic literature',
+    'THE PROJECT GUTENBERG',
+    1994,
+    'Philosophical fiction, decadent literature',
+    272,
+    'en-US',
+    null,
+    null,
+    '/ebook-library/Wilde, Oscar/The Picture of Dorian Gray.epub',
     null,
     null,
     'https://upload.wikimedia.org/wikipedia/commons/0/00/The_title_card_of_an_1891_print_of_The_Picture_of_Dorian_Gray%2C_by_Oscar_Wilde.png'
-)
+);
+
+CREATE TABLE IF NOT EXISTS dbInfo(
+    version INTEGER PRIMARY KEY
+);
+
+INSERT or IGNORE INTO dbInfo VALUES(
+    1
+);

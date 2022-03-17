@@ -1,13 +1,16 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Platform } from '@ionic/angular';
 
-import { SplashScreen } from '@ionic-native/splash-screen/ngx';
-
 import { Subscription } from 'rxjs';
+
+import { SplashScreen } from '@capacitor/splash-screen';
 
 import { DatabaseService } from './../../services/database.service';
 import { FileReaderService } from './../../services/file-reader.service';
 import { BOOKSIMPLIFIED, AUTHORSIMPLIFIED } from 'src/app/services/interfaces.service';
+import { DirectoryService } from 'src/app/services/directory.service';
+import { Encoding, Filesystem } from '@capacitor/filesystem';
+import { Capacitor } from '@capacitor/core';
 
 
 @Component({
@@ -32,28 +35,30 @@ export class AuthorsPage implements OnInit, OnDestroy {
   selectedCharacter: string;
 
   private subs: Subscription[] = [];
+  imgPreLink: string;
 
 
   constructor(
     private db: DatabaseService,
+    private dir: DirectoryService,
     private fr: FileReaderService,
     private platform: Platform,
-    private splashScreen: SplashScreen,
   ) { }
 
   ngOnInit() {
-    this.subs.push(this.db.getDatabaseState().subscribe((ready) => {
+    this.subs.push(this.db.getDatabaseState().subscribe(async (ready) => {
       if (ready) {
+        this.imgPreLink = this.dir.imgPreLink;
         this.subs.push(this.db.getAuthors().subscribe((authors) => {
           this.authors = authors;
         }));
         this.subs.push(this.db.getAllBooks().subscribe((books) => {
           this.books = books;
         }));
-        this.platform.ready().then(() => {
-          this.fr.createApplicationFolder();
+        await this.platform.ready().then(async () => {
+          await this.fr.createApplicationFolder();
           this.fr.listOfAuthors();
-          this.splashScreen.hide();
+          SplashScreen.hide();
         }).catch((e) => {
           console.error('plt.ready failed: ');
           console.error(e);
@@ -70,7 +75,7 @@ export class AuthorsPage implements OnInit, OnDestroy {
       data ? (this.where2Search = data) : (this.where2Search = 'A');
     });
     this.db.getValue('character').then((data) => {
-      data ? (this.selectedCharacter = data) : (this.selectedCharacter = 'A');
+      data ? (this.selectedCharacter = data) : (this.selectedCharacter = 'W');
     });
   }
 
@@ -94,9 +99,26 @@ export class AuthorsPage implements OnInit, OnDestroy {
   onDBExport() {
     this.db.exportDB().then(json => {
       this.fr.write2File(JSON.stringify(json)).catch(e => {
-        console.error(e)
-      })
+        console.error(e);
+      });
     });
+  }
+
+  async onJSONImport() {
+    const json = await Filesystem.readFile({
+      directory: this.dir.dir,
+      path: 'ebook-library/db.json',
+      encoding: Encoding.UTF8
+    });
+    this.db.importDB(json.data);
+  }
+
+  onImgIsLocal(path: string) {
+    return path.startsWith('/');
+  }
+
+  onGetImgSrc(img: string) {
+    return img?.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink + img) : img;
   }
 
   ngOnDestroy() {

@@ -10,7 +10,7 @@ import { ApplicationPipesModuleModule } from 'src/app/application-pipes-module/a
 
 import { AuthorPage } from 'src/app/pages/author/author.page';
 
-import { ContenteditableModule } from '@ng-stack/contenteditable';
+import { NgsContenteditableModule } from '@ng-stack/contenteditable';
 
 @NgModule({
   imports: [
@@ -21,7 +21,7 @@ import { ContenteditableModule } from '@ng-stack/contenteditable';
     AuthorPageRoutingModule,
     ApplicationPipesModuleModule,
     MaterialModule,
-    ContenteditableModule
+    NgsContenteditableModule
   ],
   declarations: [AuthorPage],
 })

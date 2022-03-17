@@ -1,6 +1,9 @@
 import { Injectable } from '@angular/core';
-import { File } from '@ionic-native/file/ngx';
+import { Encoding, Filesystem } from '@capacitor/filesystem';
+
+import { DirectoryService } from './directory.service';
 import { BOOKJSON, INDEXOFAUTHOR, AUTHORJSON } from './interfaces.service';
+
 
 @Injectable({
   providedIn: 'root',
@@ -12,31 +15,33 @@ export class JsonDataParserService {
   // booksIndexes;
 
   constructor(
-    private file: File
+    private dir: DirectoryService,
   ) { }
 
-  async jsonAuthorsIndexesData(): Promise<boolean> {
-    const path = this.file.externalRootDirectory + 'ebook-library/';
-    try {
-      return this.file.checkFile(path, 'authorsIndexes.json').then(async (exists) => {
-        if (exists) {
-          const data = await this.file.readAsText(path, 'authorsIndexes.json');
-          this.authorsIndexes = JSON.parse(data);
-          return true;
-        }
-        return false;
-      });
-    } catch (e) {
-      console.error('jsonAuthorsIndexesData failed');
-      console.error(e);
-    }
+  public async jsonAuthorsIndexesData(): Promise<boolean> {
+    return Filesystem.readFile({
+      path: 'ebook-library/authorsIndexes.json',
+      directory: this.dir.dir,
+      encoding: Encoding.UTF8,
+    }).then((data) => {
+      this.authorsIndexes = JSON.parse(data.data);
+      return true;
+    }).catch(() => {
+      return false;
+    });
   }
 
-  async jsonAuthorsData(): Promise<boolean> {
-    const path = this.file.externalRootDirectory + 'ebook-library/';
-    const data = await this.file.readAsText(path, 'authors.json');
-    this.author = JSON.parse(data);
-    return true;
+  public async jsonAuthorsData(): Promise<boolean> {
+    return Filesystem.readFile({
+      path: 'ebook-library/authors.json',
+      directory: this.dir.dir,
+      encoding: Encoding.UTF8,
+    }).then(data => {
+      this.author = JSON.parse(data.data);
+      return true;
+    }).catch(e => {
+      return false;
+    });
   }
 
   // async jsonBooksIndexesData(): Promise<boolean> {
@@ -46,14 +51,20 @@ export class JsonDataParserService {
   //   return true;
   // }
 
-  async jsonBooksData(): Promise<boolean> {
-    const path = this.file.externalRootDirectory + 'ebook-library/';
-    const data = await this.file.readAsText(path, 'books.json');
-    this.book = JSON.parse(data);
-    return true;
+  public async jsonBooksData(): Promise<boolean> {
+    return Filesystem.readFile({
+      path: 'ebook-library/books.json',
+      directory: this.dir.dir,
+      encoding: Encoding.UTF8,
+    }).then(data => {
+      this.book = JSON.parse(data.data);
+      return true;
+    }).catch(e => {
+      return false;
+    });
   }
 
-  getListOfAuthors(): INDEXOFAUTHOR[] {
+  public getListOfAuthors(): INDEXOFAUTHOR[] {
     if (this.authorsIndexes) {
       return this.authorsIndexes;
     }
@@ -71,13 +82,13 @@ export class JsonDataParserService {
   //   }
   // }
 
-  getAuthor(index: string): AUTHORJSON {
+  public getAuthor(index: string): AUTHORJSON {
     if (this.author) {
       return this.author[index];
     }
   }
 
-  getBook(index: string): BOOKJSON {
+  public getBook(index: string): BOOKJSON {
     if (this.book) {
       return this.book[index];
     }

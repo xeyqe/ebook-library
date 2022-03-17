@@ -1,17 +1,22 @@
 import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { FormControl, FormGroup } from '@angular/forms';
 import { IonContent } from '@ionic/angular';
 import { HTTP } from '@ionic-native/http/ngx';
 import { Dialogs } from '@ionic-native/dialogs/ngx';
+import { FormControl, FormGroup } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+
 import { Observable, Subscription } from 'rxjs';
 import { map, startWith } from 'rxjs/operators';
+
+import { DomSanitizer } from '@angular/platform-browser';
 
 import { DatabaseService } from 'src/app/services/database.service';
 import { FileReaderService } from 'src/app/services/file-reader.service';
 import { JsonDataParserService } from 'src/app/services/json-data-parser.service';
 import { WebScraperService } from 'src/app/services/web-scraper.service';
-import { AUTHOR, WIKIPEDIADATA, BOOKSIMPLIFIED, ONLINEAUTHORLINK } from 'src/app/services/interfaces.service';
+import { AUTHOR, WIKIPEDIADATA, BOOKSIMPLIFIED, ONLINEAUTHORLINK, BOOK } from 'src/app/services/interfaces.service';
+import { DirectoryService } from 'src/app/services/directory.service';
+import { Capacitor } from '@capacitor/core';
 
 
 @Component({
@@ -49,6 +54,7 @@ export class AuthorPage implements OnInit, OnDestroy {
     biography: any[],
   };
   _textAreaReduced = true;
+  imgPreLink: string;
 
   private subs: Subscription[] = [];
 
@@ -57,13 +63,14 @@ export class AuthorPage implements OnInit, OnDestroy {
   @ViewChild('target2') target2: ElementRef;
 
   constructor(
-    private route: ActivatedRoute,
     private db: DatabaseService,
+    private dialog: Dialogs,
+    private directoryServ: DirectoryService,
     private fs: FileReaderService,
     private http: HTTP,
-    private dialog: Dialogs,
-    private router: Router,
     private jsonServ: JsonDataParserService,
+    private route: ActivatedRoute,
+    private router: Router,
     private webScraper: WebScraperService,
   ) { }
 
@@ -73,25 +80,32 @@ export class AuthorPage implements OnInit, OnDestroy {
       const id = parseInt(autId, 10);
       this.authorId = id;
 
-      this.subs.push(this.db.getDatabaseState().subscribe((ready) => {
-        if (ready) {
-          this.db.getAuthor(id).then((data) => {
-            this.author = data;
-            this.initializeForm(data);
-            this.fs.addBooksOfAuthor(id, data.path);
+      this.subs.push(this.db.getDatabaseState().subscribe({
+        next: (ready) => {
+          if (ready) {
+            this.db.getAuthor(id).then((data) => {
+              this.author = data;
+              this.imgPreLink = this.directoryServ.imgPreLink;
+              this.updateOldImgs(data.img);
+              this.initializeForm(this.author);
+              this.fs.addBooksOfAuthor(id, data.path);
 
-            this.db.getBooksOfAuthor(id).then((_) => {
-              this.subs.push(this.db.getBooks().subscribe((books) => {
-                this.books = books;
-              }));
+              this.db.getBooksOfAuthor(id).then(() => {
+                this.subs.push(this.db.getBooks().subscribe((books) => {
+                  this.books = books;
+                  this.updateOldBooksImgs(books);
+                }));
+              }).catch((e) => {
+                console.error('getBooksOfAuthor failed: ');
+                console.error(e);
+              });
             }).catch((e) => {
-              console.error('getBooksOfAuthor failed: ');
+              console.error('getAuthor failed: ');
               console.error(e);
             });
-          }).catch((e) => {
-            console.error('getAuthor failed: ');
-            console.error(e);
-          });
+          }
+        }, error: e => {
+          console.error(e)
         }
       }));
       this.jsonServ.jsonAuthorsIndexesData().then(() => {
@@ -102,6 +116,22 @@ export class AuthorPage implements OnInit, OnDestroy {
       });
     });
     this.showAble = this.webScraper.showAble;
+  }
+
+  private async updateOldImgs(img: string) {
+    if (img.startsWith('http://localhost/_app_file_/storage')) {
+      this.author.img = img?.replace(/.*\/ebook-library/, '/ebook-library') || null;
+      await this.db.updateAuthor(this.author);
+    }
+  }
+
+  private async updateOldBooksImgs(books: BOOK[]) {
+    for (const book of books) {
+      if (book.img?.startsWith('http://localhost/_app_file_/storage')) {
+        book.img = book.img?.replace(/.*\/ebook-library/, '/ebook-library') || null;
+        await this.db.updateBook(book);
+      }
+    }
   }
 
   private initializeForm(author: AUTHOR) {
@@ -319,7 +349,7 @@ export class AuthorPage implements OnInit, OnDestroy {
     const res = await this.dialog.confirm(
       'Do you really want to delete this author?\n(Files won\'t be deleted.)',
       null,
-      ['Ok', 'Cancel',]
+      ['Ok', 'Cancel']
     );
     if (res === 1) {
       this.db.deleteAuthor(this.author.id).then(() => {
@@ -435,7 +465,8 @@ export class AuthorPage implements OnInit, OnDestroy {
   }
 
   onRemovePic() {
-    if (this.authorForm.get('img').value.startsWith('http://localhost/')) {
+    if (this.authorForm.get('img').value.includes('_capacitor_file_')) {
+
       this.fs.removeFile(this.authorForm.get('img').value.split('ebook-library')[1]).then(() => {
         this.authorForm.get('img').setValue(null);
         this.authorChanged = true;
@@ -454,10 +485,18 @@ export class AuthorPage implements OnInit, OnDestroy {
   }
 
   onGetWidth(fcName: string, title: string) {
-    return  {
+    return {
       width: (String(this.authorForm.get(fcName).value).length * 7 + 4) + 'px',
       'min-width': (title.length * 9.5) + 'px'
     };
+  }
+
+  onIsImgLocal(path: string): boolean {
+    return path?.startsWith('/');
+  }
+
+  onGetImgSrc(img: string) {
+    return img?.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink + img) : img;
   }
 
   ngOnDestroy() {

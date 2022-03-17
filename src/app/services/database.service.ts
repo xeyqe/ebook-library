@@ -4,11 +4,12 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 
 import { Platform } from '@ionic/angular';
-import { Storage } from '@ionic/storage';
+import { Storage } from '@ionic/storage-angular';
 import { SQLitePorter } from '@ionic-native/sqlite-porter/ngx';
 import { SQLite, SQLiteObject } from '@ionic-native/sqlite/ngx';
 
 import { AUTHOR, BOOK, AUTHORSIMPLIFIED, BOOKSIMPLIFIED } from 'src/app/services/interfaces.service';
+import { FileReaderService } from './file-reader.service';
 
 
 @Injectable({
@@ -17,55 +18,114 @@ import { AUTHOR, BOOK, AUTHORSIMPLIFIED, BOOKSIMPLIFIED } from 'src/app/services
 export class DatabaseService {
   private database: SQLiteObject;
   private dbReady: BehaviorSubject<boolean> = new BehaviorSubject(false);
+  private version = 1;
 
   authors = new BehaviorSubject<AUTHORSIMPLIFIED[]>([]);
   books = new BehaviorSubject([]);
   allBooks = new BehaviorSubject<BOOKSIMPLIFIED[]>([]);
 
   constructor(
+    private fr: FileReaderService,
+    private http: HttpClient,
     private plt: Platform,
     private sqlitePorter: SQLitePorter,
     private sqlite: SQLite,
-    private http: HttpClient,
-    private storage: Storage
+    private storage: Storage,
   ) {
-    this.plt
-      .ready()
-      .then(() => {
-        this.sqlite
-          .create({
-            name: 'authors.db',
-            location: 'default',
-          })
-          .then((db: SQLiteObject) => {
-            this.database = db;
-            this.seedDatabase();
-          })
-          .catch((e) => {
-            console.error('sqlite.create failed: ');
-            console.error(e);
-          });
-      })
-      .catch((e) => {
-        console.error('db service plt.ready failed: ');
-        console.error(e);
+    this.plt.ready().then(() => {
+      this.storage.create().then(() => {
+        this.sqlite.create({
+          name: 'authors.db',
+          location: 'default',
+        }).then((db: SQLiteObject) => {
+          this.database = db;
+          this.seedDatabase();
+        }).catch((e) => {
+          console.error('sqlite.create failed: ');
+          console.error(e);
+        });
       });
+    }).catch((e) => {
+      console.error('db service plt.ready failed: ');
+      console.error(e);
+    });
   }
 
   seedDatabase() {
-    this.http.get('assets/seed.sql', { responseType: 'text' }).subscribe((sql) => {
-      this.sqlitePorter
-        .importSqlToDb(this.database, sql)
-        .then((_) => {
-          this.loadAuthors();
+    this.http.get('assets/seed.sql', { responseType: 'text' }).subscribe({
+      next: async (sql) => {
+        try {
+          await this.database.executeSql(
+            'SELECT id FROM authors LIMIT 1',
+            []
+          );
+          this.takeCareOfUpdateDB();
+        } catch (e) { }
+        this.sqlitePorter.importSqlToDb(this.database, sql).then(async () => {
+          await this.loadAuthors();
           this.dbReady.next(true);
-        })
-        .catch((e) => console.error(e));
+        }).catch((e) => console.error(e));
+      },
+      error: error => {
+        console.error(error);
+      }
     });
+  }
+
+  private async takeCareOfUpdateDB() {
+    try {
+      const data = await this.database.executeSql(
+        'SELECT verion FROM dbInfo',
+        []
+      );
+      if (data.rows.item(0).version !== this.version) {
+        await this.setVersion(this.version);
+      }
+    } catch (e) {
+      await this.setVersion(1);
+    }
+  }
+
+  private async setVersion(version: number) {
+    console.error('SETVERSION launched ' + version)
+    const json = await this.exportDB();
+    await this.fr.write2File(JSON.stringify(json));
+    if (version === 1) {
+      await this.database.executeSql(
+        'CREATE TABLE IF NOT EXISTS dbInfo (version INTEGER PRIMARY KEY)', []
+      );
+
+      await this.database.executeSql(
+        'INSERT INTO dbInfo (version) VALUES (1)', []
+      );
+      await this.updateDB0To1();
+    } else {
+      await this.database.executeSql(
+        'UPDATE dbInfo SET version = ?',
+        [version]
+      );
+    }
+  }
+
+  private async updateDB0To1() {
+    await this.database.executeSql(
+      `UPDATE authors SET img = SUBSTR(img, 47, LENGTH(img) - 46) WHERE img LIKE '%http://localhost/_app_file_/storage/emulated/0%'`, []
+    );
+
+    await this.database.executeSql(
+      `UPDATE books SET img = SUBSTR(img, 47, LENGTH(img) - 46) WHERE img LIKE '%http://localhost/_app_file_/storage/emulated/0%'`, []
+    );
   }
 
   public exportDB(): Promise<any> {
     return this.sqlitePorter.exportDbToJson(this.database);
+  }
+
+  public async importDB(json: string): Promise<any> {
+    await this.sqlitePorter.wipeDb(this.database);
+    await this.sqlitePorter.importJsonToDb(this.database, json);
+    await this.takeCareOfUpdateDB();
+    await this.loadAuthors();
   }
 
   getDatabaseState(): Observable<boolean> {
@@ -86,8 +146,10 @@ export class DatabaseService {
 
   async loadAuthors() {
     try {
-      const data = await this.database
-        .executeSql('SELECT * FROM authors ORDER BY surname COLLATE NOCASE ASC', []);
+      const data = await this.database.executeSql(
+        'SELECT * FROM authors ORDER BY surname COLLATE NOCASE ASC',
+        []
+      );
       const authors = [];
 
       if (data.rows.length > 0) {
@@ -108,7 +170,7 @@ export class DatabaseService {
     }
   }
 
-  async addAuthor(author: AUTHOR): Promise<number> {
+  public async addAuthor(author: AUTHOR): Promise<number> {
     const data = [
       author.name,
       author.surname,
@@ -120,13 +182,12 @@ export class DatabaseService {
       author.rating,
       author.path,
     ];
-    const output = await this.database
-      .executeSql(
-        `INSERT INTO authors
+    const output = await this.database.executeSql(
+      `INSERT INTO authors
           (name, surname, nationality, birth, death, biography, img, rating, path)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        data
-      );
+      data
+    );
     author.id = output.insertId;
     const athrs = this.authors.getValue();
     athrs.push({ name: author.name, surname: author.surname, img: author.img, id: author.id });
@@ -221,14 +282,14 @@ export class DatabaseService {
   }
 
   async deleteAuthor(id: number) {
-    const _ = await this.database.executeSql('DELETE FROM authors WHERE id = ?', [id]);
+    await this.database.executeSql('DELETE FROM authors WHERE id = ?', [id]);
     this.database.executeSql('DELETE FROM books WHERE creatorId = ?', [id]).then(() => {
       this.loadAuthors();
     });
   }
 
   async deleteBook(bookId: number, authorId: number) {
-    const _ = await this.database.executeSql('DELETE FROM books WHERE id = ?', [bookId]);
+    await this.database.executeSql('DELETE FROM books WHERE id = ?', [bookId]);
     this.loadBooks(authorId);
   }
 
@@ -246,13 +307,12 @@ export class DatabaseService {
       author.path,
       author.idInJson,
     ];
-    const _ = await this.database
-      .executeSql(
-        `UPDATE authors SET name = ?,
+    await this.database.executeSql(
+      `UPDATE authors SET name = ?,
           surname = ?, nationality = ?, birth = ?, death = ?,
           biography = ?, img = ?, rating = ?, path = ?, idInJson = ? WHERE id = ${author.id}`,
-        data
-      );
+      data
+    );
     this.loadAuthors();
   }
 
@@ -319,13 +379,12 @@ export class DatabaseService {
       book.img,
     ];
     try {
-      const output = await this.database
-        .executeSql(
-          `INSERT INTO books (title, creatorId, originalTitle, annotation, publisher, published, genre,
+      const output = await this.database.executeSql(
+        `INSERT INTO books (title, creatorId, originalTitle, annotation, publisher, published, genre,
         lenght, language, translator, ISBN, path, progress, rating, img)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          data
-        );
+        data
+      );
       const books = this.books.getValue();
       book.id = output.insertId;
       books.push(book);
@@ -338,8 +397,10 @@ export class DatabaseService {
   }
 
   async checkIfAuthorExists(name: string, surname: string): Promise<boolean> {
-    const data = await this.database
-      .executeSql('SELECT * FROM authors WHERE name = ? AND surname = ?', [name, surname]);
+    const data = await this.database.executeSql(
+      'SELECT * FROM authors WHERE name = ? AND surname = ?',
+      [name, surname]
+    );
     if (data.rows.length === 0) {
       return false;
     }
@@ -349,7 +410,10 @@ export class DatabaseService {
   }
 
   updateBookProgress(id: number, progress: string) {
-    this.database.executeSql('UPDATE books SET progress = ? WHERE id = ?', [progress, id]).then((_) => {
+    this.database.executeSql(
+      'UPDATE books SET progress = ? WHERE id = ?',
+      [progress, id]
+    ).then(() => {
       this.allBooks.getValue().map((item) => {
         if (item.id === id) {
           return this.getBook(id);
@@ -376,9 +440,8 @@ export class DatabaseService {
       book.rating,
       book.img,
     ];
-    const _ = await this.database
-      .executeSql(
-        `UPDATE books SET title = ?,
+    await this.database.executeSql(
+      `UPDATE books SET title = ?,
           originalTitle = ?,
           annotation = ?,
           publisher = ?,
@@ -393,8 +456,8 @@ export class DatabaseService {
           rating = ?,
           img = ?
           WHERE id = ${book.id}`,
-        data
-      );
+      data
+    );
   }
 
   async allAuthorsPaths(): Promise<string[]> {

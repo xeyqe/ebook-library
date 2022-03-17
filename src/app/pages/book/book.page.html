@@ -36,7 +36,7 @@
     <form [formGroup]="bookForm" *ngIf="book && bookForm">
         <div *ngIf="ready2editing || bookForm.get('img').value" class="pic-container">
             <div class="bu-change-pic" *ngIf="bookForm.get('img').value && ready2editing">
-                <ion-button *ngIf="!bookForm.get('img').value.startsWith('http://localhost/')"
+                <ion-button *ngIf="!bookForm.get('img').value?.includes('_capacitor_file_')"
                     (click)="downloadPicture()">
                     <ion-icon slot="icon-only" name="download-sharp"></ion-icon>
                 </ion-button>
@@ -48,7 +48,7 @@
                 </ion-button>
             </div>
 
-            <img *ngIf="bookForm.get('img').value" [src]="bookForm.get('img').value">
+            <img *ngIf="bookForm.get('img').value" [src]="onGetImgSrc(bookForm.get('img').value)">
             <img *ngIf="!bookForm.get('img').value && ready2editing" style="background-color: #413d3d;"
                 src="https://upload.wikimedia.org/wikipedia/commons/7/7c/User_font_awesome.svg">
         </div>
@@ -57,8 +57,7 @@
             <mat-form-field *ngIf="bookForm.get('title').value || ready2editing">
                 <mat-label class="red">Title</mat-label>
                 <input type="text" formControlName="title" matInput [matAutocomplete]="autoTitle"
-                    [ngClass]="ready2editing ? 'white' : 'gray'"
-                    [ngStyle]="onGetWidth('title', 'Title')">
+                    [ngClass]="ready2editing ? 'white' : 'gray'" [ngStyle]="onGetWidth('title', 'Title')">
                 <mat-autocomplete #autoTitle="matAutocomplete" [panelWidth]="'auto'">
                     <ng-container *ngFor="let title of listsOfValues.title">
                         <mat-option *ngIf="bookForm.get('title').value !== title" [value]="title">
@@ -95,8 +94,7 @@
             <mat-form-field *ngIf="bookForm.get('genre').value || ready2editing">
                 <mat-label class="red">Genre</mat-label>
                 <input type="text" formControlName="genre" matInput [matAutocomplete]="autoGenre"
-                    [ngClass]="ready2editing ? 'white' : 'gray'"
-                    [ngStyle]="onGetWidth('genre', 'Genre_')">
+                    [ngClass]="ready2editing ? 'white' : 'gray'" [ngStyle]="onGetWidth('genre', 'Genre_')">
                 <mat-autocomplete #autoGenre="matAutocomplete" [panelWidth]="'auto'">
                     <ng-container *ngFor="let genre of listsOfValues.genre">
                         <mat-option *ngIf="bookForm.get('genre').value !== genre" [value]="genre">
@@ -109,8 +107,7 @@
             <mat-form-field *ngIf="bookForm.get('ISBN').value || ready2editing">
                 <mat-label class="red">ISBN</mat-label>
                 <input type="text" formControlName="ISBN" matInput [matAutocomplete]="autoISBN"
-                    [ngClass]="ready2editing ? 'white' : 'gray'"
-                    [ngStyle]="onGetWidth('ISBN', 'ISBN_')">
+                    [ngClass]="ready2editing ? 'white' : 'gray'" [ngStyle]="onGetWidth('ISBN', 'ISBN_')">
                 <mat-autocomplete #autoISBN="matAutocomplete" [panelWidth]="'auto'">
                     <ng-container *ngFor="let ISBN of listsOfValues.ISBN">
                         <mat-option *ngIf="bookForm.get('ISBN').value !== ISBN" [value]="ISBN">
@@ -123,8 +120,7 @@
             <mat-form-field *ngIf="bookForm.get('publisher').value || ready2editing">
                 <mat-label class="red">Publisher</mat-label>
                 <input type="text" formControlName="publisher" matInput [matAutocomplete]="autoPublisher"
-                    [ngClass]="ready2editing ? 'white' : 'gray'"
-                    [ngStyle]="onGetWidth('publisher', 'Publisher')">
+                    [ngClass]="ready2editing ? 'white' : 'gray'" [ngStyle]="onGetWidth('publisher', 'Publisher')">
                 <mat-autocomplete #autoPublisher="matAutocomplete" [panelWidth]="'auto'">
                     <ng-container *ngFor="let publisher of listsOfValues.publisher">
                         <mat-option *ngIf="bookForm.get('publisher').value !== publisher" [value]="publisher">
@@ -137,8 +133,7 @@
             <mat-form-field *ngIf="bookForm.get('published').value || ready2editing">
                 <mat-label class="red">Published</mat-label>
                 <input type="number" formControlName="published" matInput [matAutocomplete]="autoPublished"
-                    [ngClass]="ready2editing ? 'white' : 'gray'"
-                    [ngStyle]="onGetWidth('published', 'Published')">
+                    [ngClass]="ready2editing ? 'white' : 'gray'" [ngStyle]="onGetWidth('published', 'Published')">
                 <mat-autocomplete #autoPublished="matAutocomplete" [panelWidth]="'auto'">
                     <ng-container *ngFor="let published of listsOfValues.published">
                         <mat-option *ngIf="bookForm.get('published').value !== +published" [value]="+published">
@@ -161,8 +156,7 @@
             <mat-form-field *ngIf="bookForm.get('translator').value || ready2editing">
                 <mat-label class="red">Tranlator</mat-label>
                 <input type="text" formControlName="translator" matInput [matAutocomplete]="autoTranslator"
-                    [ngClass]="ready2editing ? 'white' : 'gray'"
-                    [ngStyle]="onGetWidth('translator', 'Tranlator')">
+                    [ngClass]="ready2editing ? 'white' : 'gray'" [ngStyle]="onGetWidth('translator', 'Tranlator')">
                 <mat-autocomplete #autoTranslator="matAutocomplete" [panelWidth]="'auto'">
                     <ng-container *ngFor="let translator of listsOfValues.translator">
                         <mat-option *ngIf="bookForm.get('translator').value !== translator" [value]="translator">
@@ -175,8 +169,7 @@
             <mat-form-field *ngIf="bookForm.get('length').value || ready2editing">
                 <mat-label class="red">Pages</mat-label>
                 <input type="number" formControlName="length" matInput [matAutocomplete]="autoPages"
-                    [ngClass]="ready2editing ? 'white' : 'gray'"
-                    [ngStyle]="onGetWidth('length', 'Pages')">
+                    [ngClass]="ready2editing ? 'white' : 'gray'" [ngStyle]="onGetWidth('length', 'Pages')">
                 <mat-autocomplete #autoPages="matAutocomplete" [panelWidth]="'auto'">
                     <ng-container *ngFor="let pages of listsOfValues.length">
                         <mat-option *ngIf="bookForm.get('length').value !== pages" [value]="pages">
@@ -188,7 +181,7 @@
 
             <mat-form-field *ngIf="bookForm.get('progress').value || ready2editing">
                 <mat-label class="red">Progress</mat-label>
-                <input class="gray" disabled [value]="bookForm.get('progress').value * 100 + '%'" matInput>
+                <input class="gray" disabled [value]="(bookForm.get('progress').value * 100) || 0 + '%'" matInput>
             </mat-form-field>
 
             <mat-form-field *ngIf="bookForm.get('rating').value || ready2editing">
@@ -207,7 +200,7 @@
         <div class="marged biogr" *ngIf="bookForm.get('annotation').value || ready2editing">
             <mat-label class="red">Annotation</mat-label>
             <div (click)="onReduceHeight()">
-                <p class="contenteditable" [contenteditable]="ready2editing" formControlName="annotation" matInput
+                <p class="contenteditable" [editable]="ready2editing" formControlName="annotation" matInput
                     [class]="ready2editing ? 'white' : 'gray'"
                     [ngClass]="{'reduced': bookForm.get('annotation').disabled && _textAreaReduced}">
                 </p>

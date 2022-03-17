@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
-import { Platform, ToastController } from '@ionic/angular';
-import { Storage } from '@ionic/storage';
 import { Router } from '@angular/router';
+import { Storage } from '@ionic/storage-angular';
 import { StatusBar } from '@ionic-native/status-bar/ngx';
-import { BackgroundMode } from '@ionic-native/background-mode/ngx';
+import { Platform, ToastController } from '@ionic/angular';
+import { BackgroundMode } from 'capacitor-plugin-background-mode';
 
 import { DatabaseService } from 'src/app/services/database.service';
 
@@ -14,13 +14,12 @@ import { DatabaseService } from 'src/app/services/database.service';
 })
 export class AppComponent {
   constructor(
-    private platform: Platform,
-    private statusBar: StatusBar,
-    public storage: Storage,
-    private router: Router,
     private db: DatabaseService,
+    private platform: Platform,
+    private router: Router,
+    private statusBar: StatusBar,
     private toastCtrl: ToastController,
-    private bg: BackgroundMode,
+    public storage: Storage,
   ) {
     this.initializeApp();
   }
@@ -31,7 +30,7 @@ export class AppComponent {
     this.platform.ready().then(() => {
       this.statusBar.styleDefault();
 
-      this.bg.setDefaults({
+      BackgroundMode.setSettings({
         title: 'author',
         text: 'book',
         icon: 'ic_launcher',
@@ -45,20 +44,28 @@ export class AppComponent {
         this.hwBackButtonFunction();
       });
       this.platform.resume.subscribe(() => {
-        this.bg.disable();
+        BackgroundMode.disable();
       });
       this.platform.pause.subscribe(() => {
         this.db.getValue('isSpeaking').then(value => {
           if (value) {
-            this.bg.enable();
+            BackgroundMode.enable();
             this.db.getValue('author').then(author => {
               this.db.getValue('title').then(title => {
-                this.bg.configure({ title: author, text: title });
+                BackgroundMode.setSettings({
+                  title: author,
+                  text: title,
+                  icon: 'ic_launcher',
+                  color: 'F14F4D',
+                  resume: true,
+                  hidden: false,
+                  bigText: true
+                });
               });
             });
           }
         });
-      })
+      });
     });
   }
 

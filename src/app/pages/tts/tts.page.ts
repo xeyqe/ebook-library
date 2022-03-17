@@ -1,29 +1,16 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
-import { Storage } from '@ionic/storage';
-import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
+import { Storage } from '@ionic/storage-angular';
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
 
 import { Subscription } from 'rxjs';
 
 import { EpubService } from 'src/app/services/epub.service';
-import { CHAPTER } from 'src/app/services/interfaces.service';
 import { DatabaseService } from 'src/app/services/database.service';
 import { FileReaderService } from 'src/app/services/file-reader.service';
 
-// interface IOptions {
-//   /** text to speak */
-//   text: string;
-//   /** a string like 'en-US', 'zh-CN', etc */
-//   locale?: string;
-//   /** speed rate, 0 ~ 1 */
-//   rate?: number;
-//   /** ambient(iOS) */
-//   category?: string;
-// }
 
-
-// declare var cordova: any;
 @Component({
   selector: 'app-tts',
   templateUrl: './tts.page.html',
@@ -43,7 +30,6 @@ export class TtsPage implements OnInit, OnDestroy {
   texts: string[];
   progress: number;
   spritzBoolean = false;
-  // averageWordLength: number;
   spritzPreText: string;
   spritzRedText: string;
   spritzPostText: string;
@@ -52,14 +38,12 @@ export class TtsPage implements OnInit, OnDestroy {
 
   extension = 'txt';
 
-  language = 'en-US';
+  language = 'en_US';
 
   initialized = false;
   isWorking = false;
 
-  subs1: Subscription;
-  subs2: Subscription;
-  subs3: Subscription;
+  private subs: Subscription[] = [];
 
 
   constructor(
@@ -68,7 +52,6 @@ export class TtsPage implements OnInit, OnDestroy {
     private db: DatabaseService,
     private strg: Storage,
     private epubService: EpubService,
-    private tts: TextToSpeech
   ) { }
 
   ngOnInit() {
@@ -87,19 +70,19 @@ export class TtsPage implements OnInit, OnDestroy {
       if (bookId[bookId.length - 1] === '0') {
         this.spritzBoolean = false;
         this.strg
-        .get('speed')
-        .then((val) => {
-          if (val) {
-            this.speed = val;
-          } else {
-            this.speed = 30;
-          }
-        })
-        .catch((e) => {
-          console.error('storage failed: ');
-          console.error(e);
-          this.speed = 300;
-        });
+          .get('speed')
+          .then((val) => {
+            if (val) {
+              this.speed = val;
+            } else {
+              this.speed = 30;
+            }
+          })
+          .catch((e) => {
+            console.error('storage failed: ');
+            console.error(e);
+            this.speed = 300;
+          });
       } else {
         this.spritzBoolean = true;
         this.strg
@@ -133,91 +116,90 @@ export class TtsPage implements OnInit, OnDestroy {
   }
 
   private initVariablesFromDatabase() {
-    this.subs1 = this.db.getDatabaseState().subscribe((ready) => {
+    this.subs.push(this.db.getDatabaseState().subscribe((ready) => {
       if (ready) {
-        this.db
-          .getBook(this.id)
-          .then((book) => {
-            this.path = book.path;
-            this.title = book.title;
+        this.db.getBook(this.id).then((book) => {
+          this.path = book.path;
+          this.title = book.title;
 
-            if (book.language) {
-              this.language = book.language;
+          if (book.language) {
+            this.language = book.language;
+          }
+
+          this.extension = book.path.substring(book.path.lastIndexOf('.') + 1);
+
+          if (book.progress) {
+            const progressArray = book.progress.split('/');
+            this.progress = parseInt(progressArray[0], 10);
+          }
+
+          this.getTexts().then(texts => {
+            this.texts = texts;
+            this.textsLength = texts.length;
+            if (!this.progress) {
+              this.progress = 0;
             }
-
-            this.extension = book.path.substring(book.path.lastIndexOf('.') + 1);
-
-            if (book.progress) {
-              const progressArray = book.progress.split('/');
-              this.progress = parseInt(progressArray[0], 10);
-            }
-
-            this.getTexts().then(texts => {
-              this.texts = texts;
-              this.textsLength = texts.length;
-              if (!this.progress) {
-                this.progress = 0;
-              }
-              this.isWorking = false;
-            });
-
-            this.db.getAuthor(book.creatorId).then((author) => {
-              this.authorName = author.name + ' ' + author.surname;
-            });
-            this.initialized = true;
-          })
-          .catch((e) => {
-            console.error('getBook failed: ');
-            console.error(e);
+            this.isWorking = false;
           });
+
+          this.db.getAuthor(book.creatorId).then((author) => {
+            this.authorName = author.name + ' ' + author.surname;
+          });
+          this.initialized = true;
+        }).catch((e) => {
+          console.error('getBook failed: ');
+          console.error(e);
+        });
       }
-    });
+    }));
   }
 
   private getTexts(): Promise<string[]> {
     this.isWorking = true;
-    if (this.path.substring(this.path.lastIndexOf('.') + 1) === 'txt') {
+    const extension = this.path.substring(this.path.lastIndexOf('.') + 1);
+    if (extension === 'txt') {
       return this.getTextsFromString();
-    } else if (this.path.substring(this.path.lastIndexOf('.') + 1) === 'epub') {
+    } else if (extension === 'epub') {
       return this.getTextsFromEpub();
     }
   }
 
   private getTextsFromString(): Promise<string[]> {
-    return this.fs
-      .readTextFile(this.path)
-      .then((str) => {
-        const arrayOfParagraphs = str.split(/\n+/g);
-        const regex = RegExp('[A-Za-z0-9]+');
-        const newArray = [];
+    return this.fs.readTextFile(this.path).then((str) => {
+      const arrayOfParagraphs = str.split(/\n+/g);
+      const regex = RegExp('[A-Za-z0-9]+');
+      const newArray = [];
 
-        arrayOfParagraphs.forEach((element) => {
-          if (element && regex.test(element)) {
-            let length = element.length;
+      arrayOfParagraphs.forEach((element) => {
+        if (element && regex.test(element)) {
+          let length = element.length;
 
-            const arrayOfSentences = element.split(/\.\ /g);
+          const arrayOfSentences = element.split(/\.\ /g);
 
-            for (let i = 0; i < arrayOfSentences.length; i++) {
-              let sentence = arrayOfSentences[i];
-              length = arrayOfSentences[i].length;
-              if (sentence && length < 790 && regex.test(sentence)) {
-                i === arrayOfSentences.length - 1 ? (sentence = sentence) : (sentence += '.');
-                newArray.push(sentence);
-              } else {
-                const thousands = Math.floor(length / 790);
-                for (let j = 0; j < thousands; j++) {
-                  const partOfSentence = sentence.substring(j * 790, (j + 1) * 790);
-                  if (partOfSentence && regex.test(partOfSentence)) {
-                    newArray.push(partOfSentence);
-                  }
+          for (let i = 0; i < arrayOfSentences.length; i++) {
+            let sentence = arrayOfSentences[i];
+            length = arrayOfSentences[i].length;
+            if (sentence && length < 790 && regex.test(sentence)) {
+              i === arrayOfSentences.length - 1 ? (sentence = sentence) : (sentence += '.');
+              newArray.push(sentence);
+            } else {
+              const thousands = Math.floor(length / 790);
+              for (let j = 0; j < thousands; j++) {
+                const partOfSentence = sentence.substring(j * 790, (j + 1) * 790);
+                if (partOfSentence && regex.test(partOfSentence)) {
+                  newArray.push(partOfSentence);
                 }
               }
             }
           }
-        });
-
-        return newArray;
+        }
       });
+
+      return newArray;
+    }).catch(e => {
+      console.error(e);
+      return [];
+    });
   }
 
   private async getTextsFromEpub(): Promise<string[]> {
@@ -264,9 +246,9 @@ export class TtsPage implements OnInit, OnDestroy {
         text2Speak.length + this.texts[this.progress + add2Progress].length < this.speakingLengthLimit
       );
 
-      this.tts.speak({
+      TextToSpeech.speak({
         text: text2Speak,
-        locale: this.language,
+        lang: this.language,
         rate: this.speed / 10,
       }).then((_) => {
         if (this.progress < this.texts.length) {
@@ -377,7 +359,7 @@ export class TtsPage implements OnInit, OnDestroy {
   private stopSpeaking(): Promise<any> {
     this.isSpeaking = false;
     this.saveAuthorTitle();
-    return this.tts.speak('');
+    return TextToSpeech.stop();
   }
 
   private redIndexFinder(length: number): number[] {
@@ -521,15 +503,8 @@ export class TtsPage implements OnInit, OnDestroy {
 
 
   ngOnDestroy() {
-    if (this.subs1) {
-      this.subs1.unsubscribe();
-    }
-    if (this.subs2) {
-      this.subs2.unsubscribe();
-    }
-    if (this.subs3) {
-      this.subs3.unsubscribe();
-    }
+    this.subs?.forEach(sub => sub?.unsubscribe());
+
     if (this.texts) {
       let progress: string;
       if (this.progress === this.texts.length) {

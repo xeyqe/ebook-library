@@ -14,7 +14,7 @@ import { BookPage } from './book.page';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 
-import { ContenteditableModule } from '@ng-stack/contenteditable';
+import { NgsContenteditableModule } from '@ng-stack/contenteditable';
 
 @NgModule({
   imports: [
@@ -26,7 +26,7 @@ import { ContenteditableModule } from '@ng-stack/contenteditable';
     MaterialModule,
     ReactiveFormsModule,
     MatInputModule,
-    ContenteditableModule,
+    NgsContenteditableModule,
     MatSelectModule,
   ],
   providers: [InAppBrowser],
