@@ -62,7 +62,6 @@ export class DatabaseService {
           this.takeCareOfUpdateDB();
         } catch (e) { }
         this.sqlitePorter.importSqlToDb(this.database, sql).then(async () => {
-          await this.loadAuthors();
           this.dbReady.next(true);
         }).catch((e) => console.error(e));
       },
@@ -75,7 +74,7 @@ export class DatabaseService {
   private async takeCareOfUpdateDB() {
     try {
       const data = await this.database.executeSql(
-        'SELECT verion FROM dbInfo',
+        'SELECT version FROM dbInfo',
         []
       );
       if (data.rows.item(0).version !== this.version) {
@@ -125,7 +124,6 @@ export class DatabaseService {
     await this.sqlitePorter.wipeDb(this.database);
     await this.sqlitePorter.importJsonToDb(this.database, json);
     await this.takeCareOfUpdateDB();
-    await this.loadAuthors();
   }
 
   getDatabaseState(): Observable<boolean> {
@@ -144,10 +142,10 @@ export class DatabaseService {
     return this.allBooks.asObservable();
   }
 
-  async loadAuthors() {
+  public async loadAuthors(character: string) {
     try {
       const data = await this.database.executeSql(
-        'SELECT * FROM authors ORDER BY surname COLLATE NOCASE ASC',
+        `SELECT id, name, surname, img FROM authors WHERE surname LIKE "${character}%" ORDER BY surname COLLATE NOCASE ASC`,
         []
       );
       const authors = [];
@@ -162,9 +160,9 @@ export class DatabaseService {
           });
         }
       }
+      console.error(authors);
       this.authors.next(authors);
-    }
-    catch (e) {
+    } catch (e) {
       console.error('loadAuthors failed: ');
       console.error(e);
     }
@@ -283,14 +281,11 @@ export class DatabaseService {
 
   async deleteAuthor(id: number) {
     await this.database.executeSql('DELETE FROM authors WHERE id = ?', [id]);
-    this.database.executeSql('DELETE FROM books WHERE creatorId = ?', [id]).then(() => {
-      this.loadAuthors();
-    });
+    await this.database.executeSql('DELETE FROM books WHERE creatorId = ?', [id]);
   }
 
   async deleteBook(bookId: number, authorId: number) {
     await this.database.executeSql('DELETE FROM books WHERE id = ?', [bookId]);
-    this.loadBooks(authorId);
   }
 
   async updateAuthor(author: AUTHOR) {
@@ -313,34 +308,6 @@ export class DatabaseService {
           biography = ?, img = ?, rating = ?, path = ?, idInJson = ? WHERE id = ${author.id}`,
       data
     );
-    this.loadAuthors();
-  }
-
-  async loadBooks(id: number) {
-    const data = await this.database.executeSql('SELECT * FROM authors WHERE id = ?', [id]);
-    const books = [];
-    if (data.rows.length > 0) {
-      for (let i = 0; i < data.rows.length; i++) {
-        books.push({
-          title: data.rows.item(i).title,
-          creatorId: data.rows.item(i).creatorId,
-          originalTitle: data.rows.item(i).originalTitle,
-          annotation: data.rows.item(i).annotation,
-          publisher: data.rows.item(i).publisher,
-          published: data.rows.item(i).published,
-          genre: data.rows.item(i).genre,
-          lenght: data.rows.item(i).lenght,
-          language: data.rows.item(i).language,
-          translator: data.rows.item(i).translator,
-          ISBN: data.rows.item(i).ISBN,
-          path: data.rows.item(i).path,
-          progress: data.rows.item(i).progress,
-          rating: data.rows.item(i).rating,
-          img: data.rows.item(i).img,
-        });
-      }
-    }
-    this.books.next(books);
   }
 
   async loadAllBooks() {
@@ -361,6 +328,7 @@ export class DatabaseService {
   }
 
   async addBook(book: BOOK) {
+    console.log(book)
     const data = [
       book.title,
       book.creatorId,
@@ -482,14 +450,69 @@ export class DatabaseService {
     return paths;
   }
 
-  async getStartedBooks(): Promise<BOOK[]> {
-    const data = await this.database.executeSql('SELECT * FROM books WHERE progress LIKE "%/%"', []);
-    return data;
+  public async loadBooks(type: 'liked' | 'started' | 'finished'): Promise<void> {
+    let books = [];
+    if (type === 'liked') {
+      books = await this.getLikedBooks();
+    } else if (type === 'started') {
+      books = await this.getStartedBooks();
+    } else if (type === 'finished') {
+      books = await this.getFinishedBooks();
+    }
+    this.books.next(books);
   }
 
-  async getFinishedBooks(): Promise<BOOK[]> {
-    const data = await this.database.executeSql('SELECT * FROM books WHERE progress == "finished"', []);
-    return data;
+  public async getStartedBooks(): Promise<{
+    id: number,
+    title: string,
+    progress: string,
+    img: string,
+  }[]> {
+    const data = await this.database.executeSql('SELECT id, title, progress, img FROM books WHERE progress LIKE "%/%" ORDER BY title COLLATE NOCASE ASC', []);
+    const books = this.getReducedBooksFromSqlRows(data.rows);
+    return books;
+  }
+
+  public async getFinishedBooks(): Promise<{
+    id: number,
+    title: string,
+    progress: string,
+    img: string,
+  }[]> {
+    const data = await this.database.executeSql('SELECT id, title, progress, img FROM books WHERE progress == "finished" ORDER BY title COLLATE NOCASE ASC', []);
+    const books = this.getReducedBooksFromSqlRows(data.rows);
+    return books;
+  }
+
+  public async getLikedBooks(): Promise<{
+    id: number,
+    title: string,
+    progress: string,
+    img: string,
+  }[]> {
+    const data = await this.database.executeSql('SELECT id, title, progress, img FROM books WHERE rating > 2 ORDER BY title COLLATE NOCASE ASC', []);
+    const books = this.getReducedBooksFromSqlRows(data.rows);
+    return books;
+  }
+
+  private getReducedBooksFromSqlRows(rows: any): {
+    id: number,
+    title: string,
+    progress: string,
+    img: string,
+  }[] {
+    const books = [];
+    if (rows.length > 0) {
+      for (let i = 0; i < rows.length; i++) {
+        books.push({
+          id: rows.item(i).id,
+          title: rows.item(i).title,
+          progress: rows.item(i).progress,
+          img: rows.item(i).img,
+        });
+      }
+    }
+    return books;
   }
 
   saveValue(name: string, value: any) {

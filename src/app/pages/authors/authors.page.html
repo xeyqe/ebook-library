@@ -16,15 +16,15 @@
 
 <ion-content>
     <ion-segment scrollable *ngIf="!hideCharacters && where2Search === 'A'">
-        <ion-segment-button *ngFor="let character of alphabet" value="{{ character }}"
-            (click)="changeSelectedChar(character)">
+        <ion-segment-button *ngFor="let character of alphabet" [value]="character"
+            (click)="changeSelectedChar(character, 'authors')">
             <ion-label>{{ character }}</ion-label>
         </ion-segment-button>
     </ion-segment>
 
     <ion-segment scrollable *ngIf="!hideCharacters && where2Search === 'B'">
         <ion-segment-button *ngFor="let character of ['liked','started','finished']"
-            value="{{ character }}" (click)="changeSelectedChar(character)">
+            [value]="character" (click)="changeSelectedChar(character, 'books')">
             <ion-label>{{ character }}</ion-label>
         </ion-segment-button>
     </ion-segment>
@@ -50,7 +50,7 @@
             </ion-item>
         </div>
         <div *ngIf="where2Search === 'B'">
-            <ion-item *ngFor="let book of books | filter:filterStatus:selectedCharacter:'book'"
+            <ion-item *ngFor="let book of books"
                 [routerLink]="['/book', book.id]">
                 <div *ngIf="book.img">
                     <ion-avatar>

@@ -67,21 +67,22 @@ export class AuthorsPage implements OnInit, OnDestroy {
     }));
   }
 
-  ionViewWillEnter() {
-    this.db.getValue('as').then((data) => {
-      data ? (this.lastListenedBookId = data) : (this.lastListenedBookId = '10');
-    });
-    this.db.getValue('where2Search').then((data) => {
-      data ? (this.where2Search = data) : (this.where2Search = 'A');
-    });
-    this.db.getValue('character').then((data) => {
-      data ? (this.selectedCharacter = data) : (this.selectedCharacter = 'W');
-    });
+  async ionViewWillEnter() {
+    const as = await this.db.getValue('as');
+    this.lastListenedBookId = as || '10';
+
+    const where2Search = await this.db.getValue('where2Search');
+    this.where2Search = where2Search || 'A';
+
+    const character = await this.db.getValue('character');
+    this.selectedCharacter = character || 'W';
+    this.where2Search === 'A' ? this.db.loadAuthors(this.selectedCharacter) : this.db.loadBooks('started');
   }
 
-  changeSelectedChar(character: string) {
-    this.db.saveValue('character', character);
-    this.selectedCharacter = character;
+  changeSelectedChar(type: string, whichOne: 'authors' | 'books') {
+    this.db.saveValue('character', type);
+    this.selectedCharacter = type;
+    whichOne === 'authors' ? this.db.loadAuthors(type) : this.db.loadBooks(type as any);
   }
 
   where2SearchFn() {
