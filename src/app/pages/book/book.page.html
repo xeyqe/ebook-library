@@ -181,7 +181,7 @@
 
             <mat-form-field *ngIf="bookForm.get('progress').value || ready2editing">
                 <mat-label class="red">Progress</mat-label>
-                <input class="gray" disabled [value]="(bookForm.get('progress').value * 100) || 0 + '%'" matInput>
+                <input class="gray" disabled [value]="bookForm.get('progress').value" matInput>
             </mat-form-field>
 
             <mat-form-field *ngIf="bookForm.get('rating').value || ready2editing">

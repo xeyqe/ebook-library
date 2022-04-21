@@ -136,6 +136,15 @@ export class BookPage implements OnInit, OnDestroy {
       const key = ent[0];
       const fc = ent[1];
       this.listsOfValues[key] = book[key] ? [book[key]] : [];
+      let value = book[key];
+      if (key === 'progress') {
+        if (!book[key]) value = '0%';
+        else if (book[key] === 'finished') value = '100%';
+        else if (book[key].includes('/')) {
+          const ar = book[key].split('/');
+          value = (+ar[0] / +ar[1]) * 100 + '%';
+        }
+      }
       fc.setValue(book[key] || null);
     });
     this.removeNotWorkingImg(book.img);
@@ -168,7 +177,7 @@ export class BookPage implements OnInit, OnDestroy {
       await this.onRemovePic(this.book.img);
     }
     Object.keys(this.bookForm.controls).forEach(key => {
-      this.book[key] = this.bookForm.get(key).value;
+      if (key !== 'progress') this.book[key] = this.bookForm.get(key).value;
     });
     this.db.updateBook(this.book).then(() => {
       this.bookChanged = false;
