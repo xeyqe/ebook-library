@@ -8,15 +8,14 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, Subscription } from 'rxjs';
 import { map, startWith } from 'rxjs/operators';
 
-import { DomSanitizer } from '@angular/platform-browser';
+import { Capacitor } from '@capacitor/core';
 
 import { DatabaseService } from 'src/app/services/database.service';
-import { FileReaderService } from 'src/app/services/file-reader.service';
-import { JsonDataParserService } from 'src/app/services/json-data-parser.service';
-import { WebScraperService } from 'src/app/services/web-scraper.service';
-import { AUTHOR, WIKIPEDIADATA, BOOKSIMPLIFIED, ONLINEAUTHORLINK, BOOK } from 'src/app/services/interfaces.service';
 import { DirectoryService } from 'src/app/services/directory.service';
-import { Capacitor } from '@capacitor/core';
+import { FileReaderService } from 'src/app/services/file-reader.service';
+import { WebScraperService } from 'src/app/services/web-scraper.service';
+import { JsonDataParserService } from 'src/app/services/json-data-parser.service';
+import { AUTHOR, WIKIPEDIADATA, BOOKSIMPLIFIED, ONLINEAUTHORLINK, BOOK } from 'src/app/services/interfaces';
 
 
 @Component({
@@ -119,6 +118,7 @@ export class AuthorPage implements OnInit, OnDestroy {
   }
 
   private async updateOldImgs(img: string) {
+    if (!img) return;
     if (img.startsWith('http://localhost/_app_file_/storage')) {
       this.author.img = img?.replace(/.*\/ebook-library/, '/ebook-library') || null;
       await this.db.updateAuthor(this.author);

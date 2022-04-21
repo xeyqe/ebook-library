@@ -1,5 +1,7 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { AUTHORSIMPLIFIED, BOOKSIMPLIFIED } from '../services/interfaces.service';
+
+import { AUTHORSIMPLIFIED, BOOKSIMPLIFIED } from '../services/interfaces';
+
 
 @Pipe({
   name: 'filter',

@@ -2,7 +2,8 @@ import { Injectable } from '@angular/core';
 import { Encoding, Filesystem } from '@capacitor/filesystem';
 
 import { DirectoryService } from './directory.service';
-import { BOOKJSON, INDEXOFAUTHOR, AUTHORJSON } from './interfaces.service';
+
+import { BOOKJSON, INDEXOFAUTHOR, AUTHORJSON } from './interfaces';
 
 
 @Injectable({

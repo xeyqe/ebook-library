@@ -20,6 +20,13 @@ import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
 import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
 import { BackgroundMode } from '@ionic-native/background-mode/ngx';
 
+import { EpubService } from './services/epub.service';
+import { DatabaseService } from './services/database.service';
+import { DirectoryService } from './services/directory.service';
+import { FileReaderService } from './services/file-reader.service';
+import { WebScraperService } from './services/web-scraper.service';
+import { JsonDataParserService } from './services/json-data-parser.service';
+
 import { AppRoutingModule } from 'src/app/app-routing.module';
 import { MaterialModule } from 'src/app/material/material.module';
 
@@ -41,19 +48,25 @@ import { AppComponent } from 'src/app/app.component';
     IonicStorageModule.forRoot(),
   ],
   providers: [
-    StatusBar,
-    SplashScreen,
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
+    BackgroundMode,
+    DatabaseService,
+    Dialogs,
+    DirectoryService,
+    Downloader,
+    EpubService,
+    File,
+    FileReaderService,
+    HTTP,
+    JsonDataParserService,
+    SplashScreen,
     SQLite,
     SQLitePorter,
-    File,
+    StatusBar,
     TextToSpeech,
-    HTTP,
-    Dialogs,
-    BackgroundMode,
-    Downloader,
+    WebScraperService,
     WebView,
-    Zip
+    Zip,
   ],
   bootstrap: [AppComponent]
 })

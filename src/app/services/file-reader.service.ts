@@ -4,10 +4,12 @@ import { Downloader, DownloadRequest, NotificationVisibility } from '@ionic-nati
 
 import { Filesystem, Encoding } from '@capacitor/filesystem';
 
-import { DirectoryService } from './directory.service';
-import { BOOK } from 'src/app/services/interfaces.service';
-import { DatabaseService } from 'src/app/services/database.service';
 import { WebView } from '@ionic-native/ionic-webview/ngx';
+
+import { DirectoryService } from './directory.service';
+import { DatabaseService } from 'src/app/services/database.service';
+
+import { BOOK } from 'src/app/services/interfaces';
 
 
 @Injectable({
@@ -118,7 +120,6 @@ export class FileReaderService implements OnInit {
     }).then(item => {
       item.files.forEach(file => {
         if (file.includes('.')) {
-          console.log(file)
           const extension = file.substring(file.lastIndexOf('.') + 1);
           if (extension === 'txt' || extension === 'epub') {
             if (!paths.includes(folderPath + file)) {

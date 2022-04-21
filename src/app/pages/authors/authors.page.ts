@@ -1,16 +1,17 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Platform } from '@ionic/angular';
 
+import { Capacitor } from '@capacitor/core';
+import { Encoding, Filesystem } from '@capacitor/filesystem';
+
 import { Subscription } from 'rxjs';
 
 import { SplashScreen } from '@capacitor/splash-screen';
 
 import { DatabaseService } from './../../services/database.service';
-import { FileReaderService } from './../../services/file-reader.service';
-import { BOOKSIMPLIFIED, AUTHORSIMPLIFIED } from 'src/app/services/interfaces.service';
 import { DirectoryService } from 'src/app/services/directory.service';
-import { Encoding, Filesystem } from '@capacitor/filesystem';
-import { Capacitor } from '@capacitor/core';
+import { FileReaderService } from './../../services/file-reader.service';
+import { BOOKSIMPLIFIED, AUTHORSIMPLIFIED } from 'src/app/services/interfaces';
 
 
 @Component({
@@ -55,14 +56,13 @@ export class AuthorsPage implements OnInit, OnDestroy {
         this.subs.push(this.db.getAllBooks().subscribe((books) => {
           this.books = books;
         }));
-        await this.platform.ready().then(async () => {
-          await this.fr.createApplicationFolder();
-          this.fr.listOfAuthors();
-          SplashScreen.hide();
-        }).catch((e) => {
+        await this.platform.ready().catch((e) => {
           console.error('plt.ready failed: ');
           console.error(e);
         });
+        await this.fr.createApplicationFolder();
+        this.fr.listOfAuthors();
+        SplashScreen.hide();
       }
     }));
   }

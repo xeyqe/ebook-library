@@ -39,10 +39,8 @@ export class DirectoryService {
       Filesystem.stat({
         directory: this._dir,
         path
-      }).then(() => {
-        resolve(true);
-      }).catch(e => {
-        resolve(true);
+      }).then(stats => {
+        resolve(stats.type === 'file');
       });
     });
   }

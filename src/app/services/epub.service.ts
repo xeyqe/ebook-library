@@ -1,9 +1,13 @@
 import { Injectable, OnInit } from '@angular/core';
 import { Zip } from '@ionic-native/zip/ngx';
 import { File } from '@ionic-native/file/ngx';
-import { METADATA, CHAPTER } from 'src/app/services/interfaces.service';
+
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+
 import { DirectoryService } from './directory.service';
+
+import { METADATA, CHAPTER } from 'src/app/services/interfaces';
+
 
 @Injectable({
   providedIn: 'root',
@@ -11,7 +15,6 @@ import { DirectoryService } from './directory.service';
 export class EpubService implements OnInit {
   private path2ChaptersDir: string;
   constructor(
-    private file: File,
     private dir: DirectoryService,
     private zip: Zip
   ) { }
@@ -24,18 +27,20 @@ export class EpubService implements OnInit {
         directory: this.dir.dir,
         path
       }).then(items => {
-        items?.files?.forEach(file => {
-          if (this.dir.isFile(`${path}/${file}`) && file.substring(file.lastIndexOf('.') + 1) === optOrNcx) {
-            const p2c = path + '/' + file;
-            this.path2ChaptersDir = p2c.substring(0, p2c.lastIndexOf('/'));
-            resolve(new Promise(resol => {
-              Filesystem.readFile({
-                directory: this.dir.dir,
-                path: `${path}/${file}`,
-                encoding: Encoding.UTF8
-              }).then(resp => resol(resp.data));
-            }));
-          } else if (!file.includes('.')) {
+        items?.files?.forEach(async file => {
+          if (await this.dir.isFile(`${path}/${file}`)) {
+            if (file.substring(file.lastIndexOf('.') + 1) === optOrNcx) {
+              const p2c = path + '/' + file;
+              this.path2ChaptersDir = p2c.substring(0, p2c.lastIndexOf('/'));
+              resolve(new Promise(resol => {
+                Filesystem.readFile({
+                  directory: this.dir.dir,
+                  path: `${path}/${file}`,
+                  encoding: Encoding.UTF8
+                }).then(resp => resol(resp.data));
+              }));
+            }
+          } else {
             resolve(this.getOpfNcxText(`${path}/${file}`, 'opf'));
           }
         });
@@ -102,18 +107,19 @@ export class EpubService implements OnInit {
         : null;
 
       const isbnEl = xml.getElementsByTagName('dc:identifier');
-      let isbn: string;
+      let ISBN: string;
       for (let i = 0; i < isbnEl.length; i++) {
         if (isbnEl[i].attributes[0].value === 'ISBN') {
-          isbn = isbnEl[i].innerHTML;
+          ISBN = isbnEl[i].innerHTML;
           break;
         }
       }
-      const genre = [];
+      const genreAr = [];
       const genreEl = xml.getElementsByTagName('dc:subject');
       for (let i = 0; i < genreEl.length; i++) {
-        genre.push(genreEl[i].textContent);
+        genreAr.push(genreEl[i].textContent);
       }
+      const genre = genreAr.join(', ');
 
       resolve({
         annotation,
@@ -121,7 +127,7 @@ export class EpubService implements OnInit {
         title,
         publisher,
         published,
-        isbn,
+        ISBN,
         genre,
         imgPath,
       });
@@ -190,7 +196,6 @@ export class EpubService implements OnInit {
         directory: this.dir.dir,
         path: 'ebook-library'
       }).then(item => {
-        console.warn(item.files)
         if (item.files.includes('epub')) {
           Filesystem.rmdir({
             directory: this.dir.dir,

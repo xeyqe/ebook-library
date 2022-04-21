@@ -1,5 +1,3 @@
-import { Injectable } from '@angular/core';
-
 export interface AUTHOR {
   id: number;
   name: string;
@@ -50,9 +48,9 @@ export interface AUTHORSIMPLIFIED {
 
 export interface METADATA {
   annotation: string;
-  isbn: string;
+  ISBN: string;
   author: string;
-  genre: string[];
+  genre: string;
   title: string;
   published: number;
   publisher: string;
@@ -141,12 +139,4 @@ export interface AUTHORJSON {
 export interface CHAPTER {
   id: string;
   src: string;
-}
-
-
-@Injectable({
-  providedIn: 'root',
-})
-export class InterfacesService {
-  constructor() { }
 }
