@@ -69,36 +69,30 @@ export class TtsPage implements OnInit, OnDestroy {
       this.db.saveValue('as', bookId);
       if (bookId[bookId.length - 1] === '0') {
         this.spritzBoolean = false;
-        this.strg
-          .get('speed')
-          .then((val) => {
-            if (val) {
-              this.speed = val;
-            } else {
-              this.speed = 30;
-            }
-          })
-          .catch((e) => {
-            console.error('storage failed: ');
-            console.error(e);
-            this.speed = 300;
-          });
+        this.strg.get('speed').then((val) => {
+          if (val) {
+            this.speed = val;
+          } else {
+            this.speed = 30;
+          }
+        }).catch((e) => {
+          console.error('storage failed: ');
+          console.error(e);
+          this.speed = 300;
+        });
       } else {
         this.spritzBoolean = true;
-        this.strg
-          .get('spritzSpeed')
-          .then((val) => {
-            if (val) {
-              this.speed = val;
-            } else {
-              this.speed = 300;
-            }
-          })
-          .catch((e) => {
-            console.error('storage failed: ');
-            console.error(e);
+        this.strg.get('spritzSpeed').then((val) => {
+          if (val) {
+            this.speed = val;
+          } else {
             this.speed = 300;
-          });
+          }
+        }).catch((e) => {
+          console.error('storage failed: ');
+          console.error(e);
+          this.speed = 300;
+        });
 
         this.strg.get('fs').then((val) => {
           if (val) {
