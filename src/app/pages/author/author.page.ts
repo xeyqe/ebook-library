@@ -47,6 +47,7 @@ export class AuthorPage implements OnInit, OnDestroy {
     img: any[],
     name: any[],
     surname: any[],
+    pseudonym: any[],
     nationality: any[],
     birth: any[],
     death: any[],
@@ -84,6 +85,7 @@ export class AuthorPage implements OnInit, OnDestroy {
           if (ready) {
             this.db.getAuthor(id).then((data) => {
               this.author = data;
+              console.log(this.author)
               this.imgPreLink = this.directoryServ.imgPreLink;
               this.updateOldImgs(data.img);
               this.initializeForm(this.author);
@@ -104,7 +106,7 @@ export class AuthorPage implements OnInit, OnDestroy {
             });
           }
         }, error: e => {
-          console.error(e)
+          console.error(e);
         }
       }));
       this.jsonServ.jsonAuthorsIndexesData().then(() => {
@@ -140,6 +142,7 @@ export class AuthorPage implements OnInit, OnDestroy {
       img: new FormControl({ value: null, disabled: true }),
       name: new FormControl({ value: null, disabled: true }),
       surname: new FormControl({ value: null, disabled: true }),
+      pseudonym: new FormControl({ value: null, disabled: true }),
       nationality: new FormControl({ value: null, disabled: true }),
       birth: new FormControl({ value: null, disabled: true }),
       death: new FormControl({ value: null, disabled: true }),
@@ -215,6 +218,12 @@ export class AuthorPage implements OnInit, OnDestroy {
       const key = ent[0];
       const val = ent[1].value;
       this.author[key] = val;
+      try {
+        ent[1].disable();
+      } catch (e) {
+        console.error(key)
+        console.error(e);
+      }
     });
     this.db.updateAuthor(this.author).then(() => {
       this.wikiOutputBoolean = false;
@@ -416,7 +425,7 @@ export class AuthorPage implements OnInit, OnDestroy {
     this.isWorking = true;
     this.fs.downloadPicture(uri, path, filename).then((src) => {
       this.isWorking = false;
-      this.authorForm.get('img').setValue(src);
+      this.authorForm.get('img').setValue(src?.replace(/^.*ebook-library/, '/ebook-library'));
       this.content.scrollToTop();
     }).catch((e) => {
       this.isWorking = false;
@@ -465,9 +474,9 @@ export class AuthorPage implements OnInit, OnDestroy {
   }
 
   onRemovePic() {
-    if (this.authorForm.get('img').value.includes('_capacitor_file_')) {
+    if (this.authorForm.get('img').value.startsWith('/')) {
 
-      this.fs.removeFile(this.authorForm.get('img').value.split('ebook-library')[1]).then(() => {
+      this.fs.removeFile(this.authorForm.get('img').value).then(() => {
         this.authorForm.get('img').setValue(null);
         this.authorChanged = true;
       }).catch(e => {
@@ -492,7 +501,7 @@ export class AuthorPage implements OnInit, OnDestroy {
   }
 
   onIsImgLocal(path: string): boolean {
-    return path?.startsWith('/');
+    return path && path.startsWith('/');
   }
 
   onGetImgSrc(img: string) {

@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS authors(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
     surname TEXT,
+    pseudonym TEXT,
     nationality TEXT,
     birth INTEGER,
     death INTEGER,
@@ -16,6 +17,7 @@ INSERT or IGNORE INTO authors VALUES (
     1,
     'Oscar',
     'Wilde',
+    null,
     'irská',
     '1854',
     '1900',
@@ -69,5 +71,5 @@ CREATE TABLE IF NOT EXISTS dbInfo(
 );
 
 INSERT or IGNORE INTO dbInfo VALUES(
-    1
+    2
 );

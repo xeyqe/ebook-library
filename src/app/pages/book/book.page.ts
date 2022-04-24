@@ -90,6 +90,7 @@ export class BookPage implements OnInit, OnDestroy {
           this.db.getBook(id).then((data) => {
             this.fileName = data.title;
             this.book = data;
+            console.log(this.book)
             this.imgPreLink = this.dir.imgPreLink;
             this.updateOldImgs(data.img);
             this.initializeBookForm(data);
@@ -174,9 +175,6 @@ export class BookPage implements OnInit, OnDestroy {
   }
 
   async updateBook() {
-    if (this.book.img !== this.bookForm.get('img').value && this.book.img?.includes('_capacitor_file_')) {
-      await this.onRemovePic(this.book.img);
-    }
     Object.keys(this.bookForm.controls).forEach(key => {
       if (key !== 'progress') this.book[key] = this.bookForm.get(key).value;
     });
@@ -222,8 +220,8 @@ export class BookPage implements OnInit, OnDestroy {
   }
 
   onRemovePic(img: string) {
-    if (img?.includes('_capacitor_file_')) {
-      this.fs.removeFile(img.split('ebook-library')[1]).then(() => {
+    if (img?.startsWith('/')) {
+      this.fs.removeFile(img).then(() => {
         this.bookForm.get('img').setValue(null);
         this.bookChanged = true;
       }).catch(e => {
@@ -302,7 +300,7 @@ export class BookPage implements OnInit, OnDestroy {
     this.isWorking = true;
     this.fs.downloadPicture(uri, path, filename).then((src) => {
       this.isWorking = false;
-      this.bookForm.get('img').setValue(src);
+      this.bookForm.get('img').setValue(src?.replace(/^.*ebook-library/, '/ebook-library'));
       this.bookChanged = true;
     }).catch((e) => {
       alert(e);

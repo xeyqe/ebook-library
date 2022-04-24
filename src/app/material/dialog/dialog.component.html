@@ -1,0 +1,10 @@
+<div class="cont">
+    <h1 *ngIf="data.header" mat-dialog-title>{{ data.header }}</h1>
+    <ion-icon name="close-circle" (click)="onClose()"></ion-icon>
+    <p *ngIf="data.message" class="message">{{ data.message }}</p>
+    <div class="cont__bb">
+        <ion-button *ngFor="let item of data.selects; let i = index" [mat-dialog-close]="i">
+            {{ item }}
+        </ion-button>
+    </div>
+</div>

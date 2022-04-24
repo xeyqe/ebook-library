@@ -1,16 +1,31 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatDialogModule } from '@angular/material/dialog';
 
 import { IonicModule } from '@ionic/angular';
 
-import { AuthorsPageRoutingModule } from './authors-routing.module';
-import { AuthorsPage } from 'src/app/pages/authors/authors.page';
 import { FilterPipe } from 'src/app/pipes/filter.pipe';
+
+import { AuthorsPageRoutingModule } from './authors-routing.module';
 import { ApplicationPipesModuleModule } from 'src/app/application-pipes-module/application-pipes-module.module';
 
+import { AuthorsPage } from 'src/app/pages/authors/authors.page';
+
+
 @NgModule({
-  imports: [CommonModule, FormsModule, IonicModule, AuthorsPageRoutingModule, ApplicationPipesModuleModule],
-  declarations: [AuthorsPage, FilterPipe]
+  imports: [
+    ApplicationPipesModuleModule,
+    AuthorsPageRoutingModule,
+    CommonModule,
+    FormsModule,
+    IonicModule,
+    MatDialogModule,
+    ReactiveFormsModule,
+  ],
+  declarations: [
+    AuthorsPage,
+    FilterPipe
+  ]
 })
 export class AuthorsPageModule { }

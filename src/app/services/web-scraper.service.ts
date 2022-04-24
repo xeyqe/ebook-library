@@ -33,6 +33,7 @@ export class WebScraperService {
     const output = {
       name: null,
       surname: null,
+      pseudonym: null,
       nationality: null,
       birth: null,
       death: null,
@@ -65,6 +66,9 @@ export class WebScraperService {
     const link = (data.querySelector('#tab_cv').parentElement as HTMLLinkElement).href;
     const cv = await this._getHtml(link);
     output.biography = (cv.querySelector('.new2') as HTMLElement).innerText;
+    if (data.querySelector('.norm')) {
+      output.pseudonym = Array.from(data.querySelectorAll('.norm strong')).map(dt => dt.textContent).join(', ');
+    }
     return output;
   }
 

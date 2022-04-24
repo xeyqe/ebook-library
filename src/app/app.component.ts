@@ -5,6 +5,7 @@ import { StatusBar } from '@ionic-native/status-bar/ngx';
 import { Platform, ToastController } from '@ionic/angular';
 import { BackgroundMode } from 'capacitor-plugin-background-mode';
 
+import { FileReaderService } from './services/file-reader.service';
 import { DatabaseService } from 'src/app/services/database.service';
 
 @Component({
@@ -15,6 +16,7 @@ import { DatabaseService } from 'src/app/services/database.service';
 export class AppComponent {
   constructor(
     private db: DatabaseService,
+    private fr: FileReaderService,
     private platform: Platform,
     private router: Router,
     private statusBar: StatusBar,
@@ -27,7 +29,10 @@ export class AppComponent {
   lastTimeBackPress = 0;
 
   initializeApp() {
-    this.platform.ready().then(() => {
+    this.platform.ready().then(async () => {
+      await this.db.initializeDB();
+      this.fr.createApplicationFolder();
+      this.fr.listOfAuthors();
       this.statusBar.styleDefault();
 
       BackgroundMode.setSettings({

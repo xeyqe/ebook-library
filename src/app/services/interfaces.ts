@@ -2,6 +2,7 @@ export interface AUTHOR {
   id: number;
   name: string;
   surname: string;
+  pseudonym: string;
   nationality: string;
   birth: number;
   death: number;
@@ -37,11 +38,13 @@ export interface BOOKSIMPLIFIED {
   img: string;
   progress: string;
   rating: number;
+  creatorId: number;
 }
 
 export interface AUTHORSIMPLIFIED {
   name: string;
   surname: string;
+  pseudonym: string;
   img: string;
   id: number;
 }

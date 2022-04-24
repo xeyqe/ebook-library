@@ -94,7 +94,7 @@
         {{ textsLength | number: '1.0-0' }}
     </ion-label>
 </ion-row>
-{{textsLength}}
+
 <ion-item>
     <ion-range *ngIf="textsLength" [value]="progress" min="0" [max]="textsLength" step="1"
         color="primary" style="height: 0px;" (ionChange)="changeProgress($event.detail.value)"

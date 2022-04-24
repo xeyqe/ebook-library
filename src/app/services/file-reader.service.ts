@@ -69,8 +69,12 @@ export class FileReaderService implements OnInit {
           directory: this.dir.dir,
           path: 'ebook-library'
         });
-        const folders = foldersFiles.files.filter(item => !item.includes('.') && item !== 'epub'); // TODO is directory???
-        folders.forEach(async (authorFolder) => {
+        const folders = [];
+        for (const item of foldersFiles.files) {
+          if (!await this.dir.isFile(`ebook-library/${item}`) && item !== 'epub')
+            folders.push(item);
+        }
+        for (const authorFolder of folders) {
           if (!allAuthorsPaths.includes(`/ebook-library/${authorFolder}/`)) {
             const name = authorFolder.substring(authorFolder.lastIndexOf('/') + 1).split(',');
             const surname = name[0].trim();
@@ -82,6 +86,7 @@ export class FileReaderService implements OnInit {
               id: null,
               name: firstName,
               surname,
+              pseudonym: null,
               nationality: null,
               birth: null,
               death: null,
@@ -92,15 +97,16 @@ export class FileReaderService implements OnInit {
               idInJson: null,
             });
             this.db.authorsBooksPaths(authorId).then((paths) => {
-              this._booksOfAuthor(authorFolder, authorId, paths);
+              this._booksOfAuthor(`/ebook-library/${authorFolder}/`, authorId, paths);
             });
           }
-        });
+        }
 
         this.ready2addAuthors = true;
       }
     } catch (e) {
-      console.error(e);
+      console.error('listOfAuthors failed!');
+      throw new Error(JSON.stringify(e));
     }
   }
 
@@ -117,9 +123,9 @@ export class FileReaderService implements OnInit {
     Filesystem.readdir({
       directory: this.dir.dir,
       path: folderPath
-    }).then(item => {
-      item.files.forEach(file => {
-        if (file.includes('.')) {
+    }).then(async item => {
+      for (const file of item.files) {
+        if (await this.dir.isFile(`${folderPath}/${file}`)) {
           const extension = file.substring(file.lastIndexOf('.') + 1);
           if (extension === 'txt' || extension === 'epub') {
             if (!paths.includes(folderPath + file)) {
@@ -148,15 +154,15 @@ export class FileReaderService implements OnInit {
             }
           }
         } else {
-          this._booksOfAuthor(file, authorId, paths);
+          this._booksOfAuthor(folderPath + '/' + file, authorId, paths);
         }
-      });
+      }
       this.ready2addBooks = true;
     }).catch((e) => {
       this.ready2addBooks = true;
       console.error('listDir failed: ');
+      console.error(folderPath)
       console.error(e);
-      console.warn(folderPath)
     });
   }
 
@@ -223,13 +229,22 @@ export class FileReaderService implements OnInit {
     });
   }
 
-  public async write2File(text: string) {
+  public async write2File(text: string, dbVersion: number) {
     await Filesystem.writeFile({
       directory: this.dir.dir,
-      path: `ebook-library/db_${new Date().toJSON()}.json`,
+      path: `ebook-library/db${dbVersion}_${new Date().toJSON()}.json`,
       data: text,
       encoding: Encoding.UTF8,
     });
+  }
+
+  public async getDBJsons(): Promise<string[]>  {
+    const data = await Filesystem.readdir({
+      directory: this.dir.dir,
+      path: 'ebook-library'
+    });
+    const files = data.files.filter(fl => /db.*\.json/.test(fl)).map(fl => 'ebook-library/' + fl);
+    return files;
   }
 
 }

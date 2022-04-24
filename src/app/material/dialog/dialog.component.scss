@@ -1,0 +1,24 @@
+.cont {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh;
+
+    &__bb {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        overflow-x: auto;
+    }
+
+    ion-icon {
+        position: absolute;
+        right: -1rem;
+        top: -1rem;
+    }
+
+    ion-button {
+        font-size: 12px;
+        text-transform: none;
+    }
+}

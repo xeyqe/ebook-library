@@ -36,7 +36,7 @@
     <form [formGroup]="bookForm" *ngIf="book && bookForm">
         <div *ngIf="ready2editing || bookForm.get('img').value" class="pic-container">
             <div class="bu-change-pic" *ngIf="bookForm.get('img').value && ready2editing">
-                <ion-button *ngIf="!bookForm.get('img').value?.includes('_capacitor_file_')"
+                <ion-button *ngIf="!bookForm.get('img').value.startsWith('/')"
                     (click)="downloadPicture()">
                     <ion-icon slot="icon-only" name="download-sharp"></ion-icon>
                 </ion-button>

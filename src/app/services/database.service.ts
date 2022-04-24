@@ -3,7 +3,6 @@ import { HttpClient } from '@angular/common/http';
 
 import { BehaviorSubject, Observable } from 'rxjs';
 
-import { Platform } from '@ionic/angular';
 import { Storage } from '@ionic/storage-angular';
 import { SQLitePorter } from '@ionic-native/sqlite-porter/ngx';
 import { SQLite, SQLiteObject } from '@ionic-native/sqlite/ngx';
@@ -12,6 +11,7 @@ import { Encoding, Filesystem } from '@capacitor/filesystem';
 
 import { DirectoryService } from './directory.service';
 import { AUTHOR, BOOK, AUTHORSIMPLIFIED, BOOKSIMPLIFIED } from 'src/app/services/interfaces';
+import { Platform } from '@ionic/angular';
 
 
 @Injectable({
@@ -20,7 +20,7 @@ import { AUTHOR, BOOK, AUTHORSIMPLIFIED, BOOKSIMPLIFIED } from 'src/app/services
 export class DatabaseService {
   private database: SQLiteObject;
   private dbReady: BehaviorSubject<boolean> = new BehaviorSubject(false);
-  private version = 1;
+  private version = 2;
 
   authors = new BehaviorSubject<AUTHORSIMPLIFIED[]>([]);
   books = new BehaviorSubject([]);
@@ -33,27 +33,29 @@ export class DatabaseService {
     private sqlitePorter: SQLitePorter,
     private sqlite: SQLite,
     private storage: Storage,
-  ) {
-    this.plt.ready().then(() => {
-      this.storage.create().then(() => {
-        this.sqlite.create({
-          name: 'authors.db',
-          location: 'default',
-        }).then((db: SQLiteObject) => {
-          this.database = db;
-          this.seedDatabase();
-        }).catch((e) => {
-          console.error('sqlite.create failed: ');
-          console.error(e);
-        });
-      });
-    }).catch((e) => {
-      console.error('db service plt.ready failed: ');
-      console.error(e);
+  ) { }
+
+  public async initializeDB() {
+    await this.plt.ready().catch((e) => {
+      console.error('sqlite.create failed: ');
+      throw new Error(e);
     });
+    await this.storage.create().catch(e => {
+      console.error('this.storage.create failed');
+      throw new Error(e);
+    });
+    const db = await this.sqlite.create({
+      name: 'authors.db',
+      location: 'default',
+    }).catch(e => {
+      console.error('this.sqlite.create failed');
+      throw new Error(JSON.stringify(e));
+    });
+    this.database = db;
+    this.seedDatabase();
   }
 
-  private seedDatabase() {
+  private async seedDatabase() {
     this.http.get('assets/seed.sql', { responseType: 'text' }).subscribe({
       next: async (sql) => {
         try {
@@ -61,37 +63,43 @@ export class DatabaseService {
             'SELECT id FROM authors LIMIT 1',
             []
           );
-          this.takeCareOfUpdateDB();
-        } catch (e) { }
-        this.sqlitePorter.importSqlToDb(this.database, sql).then(async () => {
-          this.dbReady.next(true);
-        }).catch((e) => console.error(e));
+          await this.takeCareOfUpdateDB().then(() => this.dbReady.next(true)).catch(e => {
+            console.error('takeCareOfUpdateDB');
+            throw new Error(JSON.stringify(e));
+          });
+        } catch (e) {
+          this.sqlitePorter.importSqlToDb(this.database, sql).then(async () => {
+            this.dbReady.next(true);
+          }).catch((e) => console.error(e));
+        }
       },
-      error: error => {
-        console.error(error);
+      error: (e) => {
+        console.error('assets/seed.sql');
+        throw new Error(e);
       }
     });
   }
 
   private async takeCareOfUpdateDB() {
-    try {
-      const data = await this.database.executeSql(
-        'SELECT version FROM dbInfo',
-        []
-      );
-      if (data.rows.item(0).version !== this.version) {
-        await this.setVersion(this.version);
+    await this.database.executeSql(
+      'SELECT version FROM dbInfo',
+      []
+    ).then(data => {
+      if (data.rows.item(0).version < this.version) {
+        return this.setVersion(data.rows.item(0).version + 1);
       }
-    } catch (e) {
-      await this.setVersion(1);
-    }
+    }).catch(e => {
+      console.error('takeCareOfUpdateDB')
+      console.error(e)
+      return this.setVersion(1);
+    });
   }
 
   private async setVersion(version: number) {
     const json = await this.exportDB();
     await Filesystem.writeFile({
       directory: this.dir.dir,
-      path: `ebook-library/db_${new Date().toJSON()}.json`,
+      path: `ebook-library/db${version}_${new Date().toJSON()}.json`,
       data: JSON.stringify(json),
       encoding: Encoding.UTF8,
     });
@@ -103,16 +111,30 @@ export class DatabaseService {
       await this.database.executeSql(
         'INSERT INTO dbInfo (version) VALUES (1)', []
       );
-      await this.updateDB0To1();
+      await this.updateDB(1);
     } else {
+      await this.updateDB(version);
       await this.database.executeSql(
         'UPDATE dbInfo SET version = ?',
         [version]
-      );
+      ).catch(e => {
+        console.error(`UPDATE dbInfo SET version ${version} failed`);
+        throw new Error(JSON.stringify(e));
+      });
+    }
+    if (this.version > version) {
+      return this.setVersion(version + 1);
     }
   }
 
+  private updateDB(version: number) {
+    const funName = `updateDB${version - 1}To${version}`;
+    // if (!this['funName']) throw new Error(`${funName} not implemented yet.`); // doesn't working in production
+    return this[funName]();
+  }
+
   private async updateDB0To1() {
+    console.log('updateDB0To1')
     await this.database.executeSql(
       `UPDATE authors SET img = SUBSTR(img, 47, LENGTH(img) - 46) WHERE img LIKE '%http://localhost/_app_file_/storage/emulated/0%'`, []
     );
@@ -122,8 +144,21 @@ export class DatabaseService {
     );
   }
 
+  private async updateDB1To2() {
+    console.log('updateDB1To2');
+    await this.database.executeSql(
+      'ALTER TABLE authors ADD COLUMN pseudonym TEXT', []
+    ).catch(e => {
+      console.error('updateDB1To2 failed');
+      throw new Error(JSON.stringify(e));
+    });
+  }
+
   public exportDB(): Promise<any> {
-    return this.sqlitePorter.exportDbToJson(this.database);
+    return this.sqlitePorter.exportDbToJson(this.database).catch(e => {
+      console.error('exportDbToJson failed!');
+      throw new Error(JSON.stringify(e));
+    });
   }
 
   public async importDB(json: string): Promise<any> {
@@ -136,16 +171,16 @@ export class DatabaseService {
     return this.dbReady.asObservable();
   }
 
-  getAuthors(): Observable<AUTHORSIMPLIFIED[]> {
-    return this.authors.asObservable();
+  getAuthors(): BehaviorSubject<AUTHORSIMPLIFIED[]> {
+    return this.authors;
   }
 
   getBooks(): Observable<BOOK[]> {
     return this.books.asObservable();
   }
 
-  public getAllBooks(): Observable<BOOKSIMPLIFIED[]> {
-    return this.allBooks.asObservable();
+  public getAllBooks(): BehaviorSubject<BOOKSIMPLIFIED[]> {
+    return this.allBooks;
   }
 
   public async loadAuthors(character: string) {
@@ -177,6 +212,7 @@ export class DatabaseService {
     const data = [
       author.name,
       author.surname,
+      author.pseudonym,
       author.nationality,
       author.birth,
       author.death,
@@ -187,24 +223,28 @@ export class DatabaseService {
     ];
     const output = await this.database.executeSql(
       `INSERT INTO authors
-          (name, surname, nationality, birth, death, biography, img, rating, path)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (name, surname, pseudonym, nationality, birth, death, biography, img, rating, path)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       data
     );
     author.id = output.insertId;
     const athrs = this.authors.getValue();
-    athrs.push({ name: author.name, surname: author.surname, img: author.img, id: author.id });
+    athrs.push({ name: author.name, surname: author.surname, pseudonym: author.pseudonym, img: author.img, id: author.id });
     this.authors.next(athrs);
     return output.insertId;
   }
 
   public async getAuthor(id: number): Promise<AUTHOR> {
-    const data = await this.database.executeSql('SELECT * FROM authors WHERE id = ?', [id]);
+    const data = await this.database.executeSql('SELECT * FROM authors WHERE id = ?', [id]).catch(e => {
+      console.error('getAuthor failed!');
+      throw new Error(JSON.stringify(e));
+    });
     return {
       id: data.rows.item(0).id,
       name: data.rows.item(0).name,
       surname: data.rows.item(0).surname,
       nationality: data.rows.item(0).nationality,
+      pseudonym: data.rows.item(0).pseudonym,
       birth: data.rows.item(0).birth,
       death: data.rows.item(0).death,
       biography: data.rows.item(0).biography
@@ -217,8 +257,58 @@ export class DatabaseService {
     };
   }
 
+  public async findAuthors(searchValue: string): Promise<void> {
+    const data = await this.database.executeSql(
+      `SELECT id, name, surname, pseudonym, img FROM authors WHERE name LIKE "%${searchValue}%" OR surname LIKE "%${searchValue}%" OR pseudonym LIKE "%${searchValue}%" ORDER BY surname COLLATE NOCASE ASC`,
+      []
+    ).catch(e => {
+      console.error('findAuthors failed!');
+      throw new Error(JSON.stringify(e));
+    });
+    const authors: AUTHORSIMPLIFIED[] = [];
+    if (data.rows.length > 0) {
+      for (let i = 0; i < data.rows.length; i++) {
+        authors.push({
+          id: data.rows.item(i).id,
+          name: data.rows.item(i).name,
+          surname: data.rows.item(i).surname,
+          pseudonym: data.rows.item(i).pseudonym,
+          img: data.rows.item(i).img
+        });
+      }
+    }
+    this.authors.next(authors);
+  }
+
+  public async findBooks(searchValue: string): Promise<void> {
+    const data = await this.database.executeSql(
+      `SELECT id, title, progress, img, rating creatorId FROM books WHERE title LIKE "%${searchValue}%" OR originalTitle LIKE "%${searchValue}%" ORDER BY title COLLATE NOCASE ASC`,
+      []
+    ).catch(e => {
+      console.error('findAuthors failed!');
+      throw new Error(JSON.stringify(e));
+    });
+    const books: BOOKSIMPLIFIED[] = [];
+    if (data.rows.length > 0) {
+      for (let i = 0; i < data.rows.length; i++) {
+        books.push({
+          id: data.rows.item(i).id,
+          title: data.rows.item(i).title,
+          progress: data.rows.item(i).progress,
+          img: data.rows.item(i).img,
+          rating: data.rows.item(i).rating,
+          creatorId: data.rows.item(i).creatorId
+        });
+      }
+    }
+    this.allBooks.next(books);
+  }
+
   public async getBooksOfAuthor(id: number): Promise<any> {
-    const data = await this.database.executeSql('SELECT * FROM books WHERE creatorId = ? ORDER BY title ASC', [id]);
+    const data = await this.database.executeSql('SELECT * FROM books WHERE creatorId = ? ORDER BY title ASC', [id]).catch(e => {
+      console.error('getBooksOfAuthor failed!');
+      throw new Error(JSON.stringify(e));
+    });
     const books: BOOK[] = [];
     if (data.rows.length > 0) {
       for (let i = 0; i < data.rows.length; i++) {
@@ -269,7 +359,10 @@ export class DatabaseService {
 
   public async deleteAuthor(id: number) {
     await this.database.executeSql('DELETE FROM authors WHERE id = ?', [id]);
+    this.authors.next(this.authors.getValue().filter(ath => ath.id !== id));
     await this.database.executeSql('DELETE FROM books WHERE creatorId = ?', [id]);
+    this.allBooks.next(this.allBooks.getValue().filter(bk => bk.creatorId !== id));
+    this.books.next(this.books.getValue().filter(bk => bk.creatorId !== id));
   }
 
   public async deleteBook(bookId: number, authorId: number) {
@@ -281,6 +374,7 @@ export class DatabaseService {
     const data = [
       author.name,
       author.surname,
+      author.pseudonym,
       author.nationality,
       author.birth,
       author.death,
@@ -292,10 +386,25 @@ export class DatabaseService {
     ];
     await this.database.executeSql(
       `UPDATE authors SET name = ?,
-          surname = ?, nationality = ?, birth = ?, death = ?,
+          surname = ?, pseudonym = ?, nationality = ?, birth = ?, death = ?,
           biography = ?, img = ?, rating = ?, path = ?, idInJson = ? WHERE id = ${author.id}`,
       data
     );
+    const simpl = {
+      name: author.name,
+      surname: author.surname,
+      pseudonym: author.pseudonym,
+      img: author.img,
+      id: author.id,
+    };
+    const authors = this.authors.getValue().map(ath => {
+      if (ath.id === author.id) {
+        return simpl;
+      } else {
+        return ath;
+      }
+    });
+    this.authors.next(authors);
   }
 
 
@@ -346,6 +455,9 @@ export class DatabaseService {
         }
         return item;
       });
+    }).catch(e => {
+      console.error('updateBookProgress failed');
+      throw new Error(JSON.stringify(e));
     });
   }
 
@@ -417,7 +529,7 @@ export class DatabaseService {
     } else if (type === 'finished') {
       books = await this.getFinishedBooks();
     }
-    this.books.next(books);
+    this.allBooks.next(books);
   }
 
   public async getStartedBooks(): Promise<{
@@ -425,8 +537,16 @@ export class DatabaseService {
     title: string,
     progress: string,
     img: string,
+    creatorId: number,
   }[]> {
-    const data = await this.database.executeSql('SELECT id, title, progress, img FROM books WHERE progress LIKE "%/%" ORDER BY title COLLATE NOCASE ASC', []);
+    const data = await this.database.executeSql(
+      'SELECT id, title, progress, img, creatorId FROM books WHERE progress LIKE "%/%" ORDER BY title COLLATE NOCASE ASC',
+      []
+    ).catch((e) => {
+      console.error('getStartedBooks failed!');
+      throw new Error(JSON.stringify(e));
+    });
+
     const books = this.getReducedBooksFromSqlRows(data.rows);
     return books;
   }
@@ -436,8 +556,15 @@ export class DatabaseService {
     title: string,
     progress: string,
     img: string,
+    creatorId: number,
   }[]> {
-    const data = await this.database.executeSql('SELECT id, title, progress, img FROM books WHERE progress == "finished" ORDER BY title COLLATE NOCASE ASC', []);
+    const data = await this.database.executeSql(
+      'SELECT id, title, progress, img, creatorId FROM books WHERE progress == "finished" ORDER BY title COLLATE NOCASE ASC',
+      []
+    ).catch((e) => {
+      console.error('getFinishedBooks failed!');
+      throw new Error(JSON.stringify(e));
+    });
     const books = this.getReducedBooksFromSqlRows(data.rows);
     return books;
   }
@@ -447,8 +574,15 @@ export class DatabaseService {
     title: string,
     progress: string,
     img: string,
+    creatorId: number,
   }[]> {
-    const data = await this.database.executeSql('SELECT id, title, progress, img FROM books WHERE rating > 2 ORDER BY title COLLATE NOCASE ASC', []);
+    const data = await this.database.executeSql(
+      'SELECT id, title, progress, img, creatorId FROM books WHERE rating > 2 ORDER BY title COLLATE NOCASE ASC',
+      []
+    ).catch((e) => {
+      console.error('getLikedBooks failed!');
+      throw new Error(JSON.stringify(e));
+    });
     const books = this.getReducedBooksFromSqlRows(data.rows);
     return books;
   }
@@ -458,6 +592,7 @@ export class DatabaseService {
     title: string,
     progress: string,
     img: string,
+    creatorId: number,
   }[] {
     const books = [];
     if (rows.length > 0) {
@@ -467,6 +602,7 @@ export class DatabaseService {
           title: rows.item(i).title,
           progress: rows.item(i).progress,
           img: rows.item(i).img,
+          creatorId: rows.item(i).creatorId
         });
       }
     }
@@ -474,10 +610,27 @@ export class DatabaseService {
   }
 
   public saveValue(name: string, value: any) {
-    this.storage.set(name, value);
+    this.storage.set(name, value).catch((e) => {
+      console.error(`saveValue failed! name: ${name}, value: ${value}`);
+      throw new Error(JSON.stringify(e));
+    });
   }
 
   public getValue(name: string): Promise<any> {
-    return this.storage.get(name);
+    return this.storage.get(name).catch((e) => {
+      console.error(`getValue failed! name: ${name}`);
+      throw new Error(JSON.stringify(e));
+    });
+  }
+
+  public async getVersion() {
+    const data = await this.database.executeSql(
+      'SELECT version FROM dbInfo',
+      []
+    ).catch((e) => {
+      console.error('getVersion failed!');
+      throw new Error(JSON.stringify(e));
+    });
+    return data.rows.item(0).version;
   }
 }

@@ -14,9 +14,9 @@
                     </ion-icon>
                     <ion-icon *ngIf="ready2editing" slot="icon-only" name="close"></ion-icon>
                 </ion-button>
-                <ion-button *ngIf="ready2editing" (click)="getFromWikipedia()">
+                <!-- <ion-button *ngIf="ready2editing" (click)="getFromWikipedia()">
                     W
-                </ion-button>
+                </ion-button> -->
                 <ion-button *ngIf="ready2editing && showAble" (click)="onGetAuthor()">
                     <ion-icon slot="icon-only" name="add-circle-sharp"></ion-icon>
                 </ion-button>
@@ -68,6 +68,19 @@
                     <mat-option *ngFor="let option of filteredOptions | async" [value]="option">
                         {{ option.name }}
                     </mat-option>
+                </mat-autocomplete>
+            </mat-form-field>
+
+            <mat-form-field *ngIf="authorForm.get('pseudonym').value || ready2editing">
+                <mat-label class="red">Pseudonym</mat-label>
+                <input type="text" matInput [matAutocomplete]="autoPseudonym" formControlName="pseudonym"
+                    [ngClass]="ready2editing ? 'white' : 'gray'" [ngStyle]="onGetWidth('pseudonym', 'Pseudonym')">
+                <mat-autocomplete #autoPseudonym="matAutocomplete" [panelWidth]="'auto'">
+                    <ng-container *ngFor="let pseudonym of listsOfValues.pseudonym">
+                        <mat-option *ngIf="authorForm.get('pseudonym').value !== pseudonym" [value]="pseudonym">
+                            {{ pseudonym }}
+                        </mat-option>
+                    </ng-container>
                 </mat-autocomplete>
             </mat-form-field>
 

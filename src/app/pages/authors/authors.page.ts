@@ -1,17 +1,23 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Platform } from '@ionic/angular';
+
+import { MatDialog } from '@angular/material/dialog';
 
 import { Capacitor } from '@capacitor/core';
 import { Encoding, Filesystem } from '@capacitor/filesystem';
 
 import { Subscription } from 'rxjs';
+import { first, debounceTime } from 'rxjs/operators';
 
 import { SplashScreen } from '@capacitor/splash-screen';
 
 import { DatabaseService } from './../../services/database.service';
 import { DirectoryService } from 'src/app/services/directory.service';
 import { FileReaderService } from './../../services/file-reader.service';
+
+import { DialogComponent } from 'src/app/material/dialog/dialog.component';
+
 import { BOOKSIMPLIFIED, AUTHORSIMPLIFIED } from 'src/app/services/interfaces';
+import { FormControl } from '@angular/forms';
 
 
 @Component({
@@ -28,7 +34,6 @@ export class AuthorsPage implements OnInit, OnDestroy {
   where2Search: string;
 
   selectedView = 'TODO';
-  filterStatus = '';
   alphabet = [
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
     'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#',
@@ -37,16 +42,18 @@ export class AuthorsPage implements OnInit, OnDestroy {
 
   private subs: Subscription[] = [];
   imgPreLink: string;
+  searchFc: FormControl;
 
 
   constructor(
     private db: DatabaseService,
     private dir: DirectoryService,
     private fr: FileReaderService,
-    private platform: Platform,
+    private dialog: MatDialog,
   ) { }
 
   ngOnInit() {
+    this.searchFc = new FormControl();
     this.subs.push(this.db.getDatabaseState().subscribe(async (ready) => {
       if (ready) {
         this.imgPreLink = this.dir.imgPreLink;
@@ -56,13 +63,18 @@ export class AuthorsPage implements OnInit, OnDestroy {
         this.subs.push(this.db.getAllBooks().subscribe((books) => {
           this.books = books;
         }));
-        await this.platform.ready().catch((e) => {
-          console.error('plt.ready failed: ');
-          console.error(e);
-        });
-        await this.fr.createApplicationFolder();
-        this.fr.listOfAuthors();
-        SplashScreen.hide();
+      }
+    }));
+    this.subs.push(this.searchFc.valueChanges.pipe(debounceTime(200)).subscribe(val => {
+      if (!val) {
+        this.onSearchClear();
+        return;
+      }
+      if (val.length < 3) return;
+      if (this.where2Search === 'A') {
+        this.db.findAuthors(val);
+      } else {
+        this.db.findBooks(val);
       }
     }));
   }
@@ -76,7 +88,15 @@ export class AuthorsPage implements OnInit, OnDestroy {
 
     const character = await this.db.getValue('character');
     this.selectedCharacter = character || 'W';
-    this.where2Search === 'A' ? this.db.loadAuthors(this.selectedCharacter) : this.db.loadBooks('started');
+
+    if (this.where2Search === 'A') {
+      this.authors = this.db.getAuthors().getValue();
+      if (!this.authors.length) this.db.loadAuthors(this.selectedCharacter);
+    } else {
+      this.books = this.db.getAllBooks().getValue();
+      if (!this.books.length)  this.db.loadBooks('started');
+    }
+    SplashScreen.hide();
   }
 
   changeSelectedChar(type: string, whichOne: 'authors' | 'books') {
@@ -97,18 +117,54 @@ export class AuthorsPage implements OnInit, OnDestroy {
     this.db.saveValue('where2Search', this.where2Search);
   }
 
-  onDBExport() {
-    this.db.exportDB().then(json => {
-      this.fr.write2File(JSON.stringify(json)).catch(e => {
-        console.error(e);
-      });
+  onShowDialog() {
+    const dialogRef = this.dialog.open(
+      DialogComponent,
+      {
+        data: {
+          message: 'Choose export/import database.',
+          selects: ['EXPORT', 'IMPORT'],
+        }
+      }
+    );
+    dialogRef.afterClosed().pipe(first()).subscribe((selected) => {
+      if (selected === 0) {
+        this.exportDB();
+      } else if (selected === 1) {
+        this.selectWhat2Import();
+      }
     });
   }
 
-  async onJSONImport() {
+  private async selectWhat2Import() {
+    const files = await this.fr.getDBJsons();
+    const dialogRef = this.dialog.open(
+      DialogComponent,
+      {
+        data: {
+          message: 'Choose a file to import.',
+          selects: files.map(fl => fl.replace('ebook-library/', '')),
+        }
+      }
+    );
+    dialogRef.afterClosed().pipe(first()).subscribe((selected) => {
+      this.importJson2DB(files[selected]);
+    });
+  }
+
+  private async exportDB() {
+    const json = await this.db.exportDB();
+    const version = await this.db.getVersion();
+    await this.fr.write2File(JSON.stringify(json), version).catch(e => {
+      console.error('write2File failed!');
+      throw new Error(JSON.stringify(e));
+    });
+  }
+
+  private async importJson2DB(path: string) {
     const json = await Filesystem.readFile({
       directory: this.dir.dir,
-      path: 'ebook-library/db.json',
+      path,
       encoding: Encoding.UTF8
     });
     this.db.importDB(json.data);
@@ -120,6 +176,14 @@ export class AuthorsPage implements OnInit, OnDestroy {
 
   onGetImgSrc(img: string) {
     return img?.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink + img) : img;
+  }
+
+  onSearchClear() {
+    if (this.where2Search === 'A') {
+      this.db.loadAuthors(this.selectedCharacter);
+    } else {
+      this.db.loadBooks(this.selectedCharacter as any);
+    }
   }
 
   ngOnDestroy() {

@@ -317,23 +317,28 @@ export class TtsPage implements OnInit, OnDestroy {
             progress = this.texts.length;
           }
           this.progress = progress;
-
-          let progress2DB: string;
-          if (this.progress === this.texts.length) {
-            progress2DB = 'finished';
-          } else if (progress) {
-            progress2DB = progress + '/' + this.texts.length;
-          } else {
-            progress2DB = null;
-          }
-          this.db.updateBookProgress(this.id, progress2DB);
         }
       }
     }
   }
 
+  private setProgress2DB() {
+    if (this.texts) {
+      let progress2DB: string;
+      if (this.progress === this.texts.length) {
+        progress2DB = 'finished';
+      } else if (this.progress) {
+        progress2DB = this.progress + '/' + this.texts.length;
+      } else {
+        progress2DB = null;
+      }
+      this.db.updateBookProgress(this.id, progress2DB);
+    }
+  }
+
 
   stopStartSpeaking() {
+    this.setProgress2DB();
     if (!this.spritzBoolean) {
       if (this.isSpeaking) {
         this.stopSpeaking().then(() => {
@@ -495,20 +500,8 @@ export class TtsPage implements OnInit, OnDestroy {
   //   return this.epubService.getTextsFromEpub(chapter.src);
   // }
 
-
   ngOnDestroy() {
     this.subs?.forEach(sub => sub?.unsubscribe());
-
-    if (this.texts) {
-      let progress: string;
-      if (this.progress === this.texts.length) {
-        progress = 'finished';
-      } else if (this.progress) {
-        progress = this.progress + '/' + this.texts.length;
-      } else {
-        progress = null;
-      }
-      this.db.updateBookProgress(this.id, progress);
-    }
+    this.setProgress2DB();
   }
 }

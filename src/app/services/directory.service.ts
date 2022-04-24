@@ -41,7 +41,10 @@ export class DirectoryService {
         path
       }).then(stats => {
         resolve(stats.type === 'file');
-      });
+      }).catch(e => {
+        console.error(path)
+        console.error(e)
+      })
     });
   }
 }

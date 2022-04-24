@@ -26,8 +26,8 @@ export class EpubService implements OnInit {
       Filesystem.readdir({
         directory: this.dir.dir,
         path
-      }).then(items => {
-        items?.files?.forEach(async file => {
+      }).then(async (items) => {
+        for (const file of items.files) {
           if (await this.dir.isFile(`${path}/${file}`)) {
             if (file.substring(file.lastIndexOf('.') + 1) === optOrNcx) {
               const p2c = path + '/' + file;
@@ -43,7 +43,7 @@ export class EpubService implements OnInit {
           } else {
             resolve(this.getOpfNcxText(`${path}/${file}`, 'opf'));
           }
-        });
+        }
       }).catch(e => {
         console.error('getOpfNcxText failed');
         console.error(this.dir.dir)
