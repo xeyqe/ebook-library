@@ -185,11 +185,25 @@ export class DatabaseService {
 
   public async loadAuthors(character: string) {
     try {
-      const data = await this.database.executeSql(
-        `SELECT id, name, surname, img FROM authors WHERE surname LIKE "${character}%" ORDER BY surname COLLATE NOCASE ASC`,
-        []
-      );
-      const authors = [];
+      let data: any;
+      if (character === '#') {
+        data = await this.database.executeSql(
+          `SELECT id, name, surname, img FROM authors ORDER BY surname COLLATE NOCASE ASC`,
+          []
+        ).catch(e => {
+          console.error('loadAuthors for # failed');
+          throw new Error(JSON.stringify(e));
+        });
+      } else {
+        data = await this.database.executeSql(
+          `SELECT id, name, surname, img FROM authors WHERE surname LIKE "${character}%" ORDER BY surname COLLATE NOCASE ASC`,
+          []
+        ).catch(e => {
+          console.error('loadAuthors failed');
+          throw new Error(JSON.stringify(e));
+        });
+      }
+      let authors = [];
 
       if (data.rows.length > 0) {
         for (let i = 0; i < data.rows.length; i++) {
@@ -200,6 +214,9 @@ export class DatabaseService {
             img: data.rows.item(i).img,
           });
         }
+      }
+      if (character === '#') {
+        authors = authors.filter(auth => !/^[a-zA-Z]$/.test(auth.surname[0]));
       }
       this.authors.next(authors);
     } catch (e) {
