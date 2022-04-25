@@ -20,7 +20,7 @@ import { Platform } from '@ionic/angular';
 export class DatabaseService {
   private database: SQLiteObject;
   private dbReady: BehaviorSubject<boolean> = new BehaviorSubject(false);
-  private version = 2;
+  private version = 3;
 
   authors = new BehaviorSubject<AUTHORSIMPLIFIED[]>([]);
   books = new BehaviorSubject([]);
@@ -154,6 +154,22 @@ export class DatabaseService {
     });
   }
 
+  private async updateDB2To3() {
+    console.log('updateDB2To3');
+    await this.database.executeSql(
+      'ALTER TABLE books ADD COLUMN serie TEXT', []
+    ).catch(e => {
+      console.error('adding serie failed');
+      throw new Error(JSON.stringify(e));
+    });
+    await this.database.executeSql(
+      'ALTER TABLE books ADD COLUMN serieOrder INTEGER', []
+    ).catch(e => {
+      console.error('adding serieOrder failed');
+      throw new Error(JSON.stringify(e));
+    });
+  }
+
   public exportDB(): Promise<any> {
     return this.sqlitePorter.exportDbToJson(this.database).catch(e => {
       console.error('exportDbToJson failed!');
@@ -243,7 +259,10 @@ export class DatabaseService {
           (name, surname, pseudonym, nationality, birth, death, biography, img, rating, path)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       data
-    );
+    ).catch(e => {
+      console.error('addAuthor failed!');
+      throw new Error(JSON.stringify(e));
+    });
     author.id = output.insertId;
     const athrs = this.authors.getValue();
     athrs.push({ name: author.name, surname: author.surname, pseudonym: author.pseudonym, img: author.img, id: author.id });
@@ -346,6 +365,8 @@ export class DatabaseService {
           progress: data.rows.item(i).progress,
           rating: data.rows.item(i).rating,
           img: data.rows.item(i).img,
+          serie: data.rows.item(i).serie,
+          serieOrder: data.rows.item(i).serieOrder,
         });
       }
     }
@@ -371,6 +392,8 @@ export class DatabaseService {
       progress: data.rows.item(0).progress,
       rating: data.rows.item(0).rating,
       img: data.rows.item(0).img,
+      serie: data.rows.item(0).serie,
+      serieOrder: data.rows.item(0).serieOrder,
     };
   }
 
@@ -494,6 +517,8 @@ export class DatabaseService {
       book.progress,
       book.rating,
       book.img,
+      book.serie,
+      book.serieOrder
     ];
     await this.database.executeSql(
       `UPDATE books SET title = ?,
@@ -509,7 +534,9 @@ export class DatabaseService {
           path = ?,
           progress = ?,
           rating = ?,
-          img = ?
+          img = ?,
+          serie = ?,
+          serieOrder = ?
           WHERE id = ${book.id}`,
       data
     );
@@ -527,7 +554,13 @@ export class DatabaseService {
   }
 
   public async authorsBooksPaths(authorId: number): Promise<string[]> {
-    const data = await this.database.executeSql('SELECT path FROM books WHERE creatorId = ?', [authorId]);
+    const data = await this.database.executeSql(
+      'SELECT path FROM books WHERE creatorId = ?',
+      [authorId]
+    ).catch(e => {
+      console.error('authorsBooksPaths failed!');
+      throw new Error(JSON.stringify(e));
+    });
     const paths = [];
     if (data.rows.length > 0) {
       for (let i = 0; i < data.rows.length; i++) {

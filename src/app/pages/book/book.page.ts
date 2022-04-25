@@ -59,6 +59,8 @@ export class BookPage implements OnInit, OnDestroy {
     progress: any[],
     rating: any[],
     annotation: any[],
+    serie: any[],
+    serieOrder: any[],
   };
   _textAreaReduced = true;
   imgIsLocal: boolean;
@@ -110,8 +112,8 @@ export class BookPage implements OnInit, OnDestroy {
 
   private async updateOldImgs(img: string) {
     if (!img) return;
-    if (img.startsWith('http://localhost/_app_file_/storage')) {
-      this.book.img = img?.replace('http://localhost/_app_file_/storage', '') || null;
+    if (img.startsWith('http://localhost/_app_file_/storage') || img.startsWith('http://localhost/_capacitor_file_/')) {
+      this.book.img = img.replace(/.*\/ebook-library/, '/ebook-library') || null;
       await this.db.updateBook(this.book);
     }
     this.imgIsLocal = this.book.img?.startsWith('/');
@@ -132,6 +134,8 @@ export class BookPage implements OnInit, OnDestroy {
       progress: new FormControl({ value: null, disabled: true }),
       rating: new FormControl({ value: null, disabled: true }),
       annotation: new FormControl({ value: null, disabled: true }),
+      serie: new FormControl({ value: null, disabled: true }),
+      serieOrder: new FormControl({ value: null, disabled: true }),
     });
     this.listsOfValues = {} as any;
     Object.entries(this.bookForm.controls).forEach(ent => {
@@ -147,7 +151,7 @@ export class BookPage implements OnInit, OnDestroy {
           value = (+ar[0] / +ar[1]) * 100 + '%';
         }
       }
-      fc.setValue(book[key] || null);
+      fc.setValue(value || null);
     });
     this.removeNotWorkingImg(book.img);
   }
@@ -341,7 +345,7 @@ export class BookPage implements OnInit, OnDestroy {
         [
           'img', 'title', 'originalTitle', 'genre',
           'publisher', 'published', 'annotation', 'language',
-          'translator', 'ISBN', 'length'
+          'translator', 'ISBN', 'length', 'serie', 'serieOrder'
         ].forEach(key => {
           if (data[key]) {
             this.bookForm.get(key).setValue(data[key]);
@@ -368,6 +372,8 @@ export class BookPage implements OnInit, OnDestroy {
     title: string;
     translator: string;
     ISBN: string;
+    serie: string;
+    serieOrder: number;
   }> {
     return new Promise((resolve, reject) => {
       const target = '_blank';
@@ -381,6 +387,9 @@ export class BookPage implements OnInit, OnDestroy {
         if (e.data.genre) {
           e.data.genre = e.data.genre.split(',');
         }
+        if (e.data.serieOrder) {
+          e.data.serieOrder = +e.data.serieOrder;
+        }
 
         resolve(e.data as any);
         browser.close();
@@ -388,7 +397,36 @@ export class BookPage implements OnInit, OnDestroy {
 
       browser.on('loadstop').subscribe(event => {
         browser.executeScript({
-          code: `function a(el, i){if(el){if (i == 'click'){el.click()}else{return el[i]}}else{return null}};a(document.querySelector('#abinfo > a'),'click');setTimeout(()=>{var o={annotation:a(document.querySelector('#bdetdesc'),'textContent'),genre:a(document.querySelector('[itemprop=genre]'),'textContent'),img:a(document.querySelector('.kniha_img'),'src'),language:a(document.querySelector('[itemprop=language]'),'innerText'),originalTitle:a(document.querySelector('#bdetail_rest>div.detail_description>h4'),'textContent'),length:a(document.querySelector('[itemprop=numberOfPages]'),'innerText'),published:a(document.querySelector('[itemprop=datePublished]'),'textContent'),publisher:a(document.querySelector('[itemprop=publisher]'),'innerText'),title:a(document.querySelector('[itemprop=name]'),'innerText'),translator:a(document.querySelector('[itemprop=translator]'),'textContent'),ISBN:a(document.querySelector('[itemprop=isbn]'),'innerText')};webkit.messageHandlers.cordova_iab.postMessage(JSON.stringify(o))},1000)`
+          code: "function a(el, i) {\
+            if (el) {\
+              if (i == 'click') {\
+                el.click();\
+              } else{\
+                return el[i];\
+              }\
+            } else {\
+              return null;\
+            }\
+          }\
+          a(document.querySelector('#abinfo > a'),'click');\
+          setTimeout(() => {\
+            var o={\
+              annotation:a(document.querySelector('#bdetdesc'),'textContent'),\
+              genre:a(document.querySelector('[itemprop=genre]'),'textContent'),\
+              img:a(document.querySelector('.kniha_img'),'src'),\
+              language:a(document.querySelector('[itemprop=language]'),'innerText'),\
+              originalTitle:a(document.querySelector('#bdetail_rest>div.detail_description>h4'),'textContent'),\
+              length:a(document.querySelector('[itemprop=numberOfPages]'),'innerText'),\
+              published:a(document.querySelector('[itemprop=datePublished]'),'textContent'),\
+              publisher:a(document.querySelector('[itemprop=publisher]'),'innerText'),\
+              title:a(document.querySelector('[itemprop=name]'),'innerText'),\
+              translator:a(document.querySelector('[itemprop=translator]'),'textContent'),\
+              ISBN:a(document.querySelector('[itemprop=isbn]'),'innerText'),\
+              serie:a(document.querySelector('.detail_description h3 a'),'textContent'),\
+              serieOrder:a(document.querySelector('.detail_description h3 em'),'textContent')\
+            };\
+            webkit.messageHandlers.cordova_iab.postMessage(JSON.stringify(o)\
+          )},1000)"
         }).catch(e => {
           browser.close();
           reject(e);
@@ -459,7 +497,7 @@ export class BookPage implements OnInit, OnDestroy {
   onGetWidth(fcName: string, title: string) {
     return {
       width: (String(this.bookForm.get(fcName).value).length * 7 + 2) + 'px',
-      'min-width': (title.length * 9.5) + 'px'
+      'min-width': ((title.length * 9.5) + 5) + 'px'
     };
   }
 

@@ -54,6 +54,32 @@
         </div>
 
         <div class="flexed">
+            <mat-form-field *ngIf="bookForm.get('serie').value || ready2editing">
+                <mat-label class="red">Serie</mat-label>
+                <input type="text" formControlName="serie" matInput [matAutocomplete]="autoSerie"
+                    [ngClass]="ready2editing ? 'white' : 'gray'" [ngStyle]="onGetWidth('serie', 'Serie')">
+                <mat-autocomplete #autoSerie="matAutocomplete" [panelWidth]="'auto'">
+                    <ng-container *ngFor="let serie of listsOfValues.serie">
+                        <mat-option *ngIf="bookForm.get('serie').value !== serie" [value]="serie">
+                            {{ serie }}
+                        </mat-option>
+                    </ng-container>
+                </mat-autocomplete>
+            </mat-form-field>
+
+            <mat-form-field *ngIf="bookForm.get('serieOrder').value || ready2editing">
+                <mat-label class="red">Serie order</mat-label>
+                <input type="text" formControlName="serieOrder" matInput [matAutocomplete]="autoSerieOrder"
+                    [ngClass]="ready2editing ? 'white' : 'gray'" [ngStyle]="onGetWidth('serieOrder', 'Serie order')">
+                <mat-autocomplete #autoSerieOrder="matAutocomplete" [panelWidth]="'auto'">
+                    <ng-container *ngFor="let serieOrder of listsOfValues.serieOrder">
+                        <mat-option *ngIf="bookForm.get('serieOrder').value !== serieOrder" [value]="serieOrder">
+                            {{ serieOrder }}
+                        </mat-option>
+                    </ng-container>
+                </mat-autocomplete>
+            </mat-form-field>
+
             <mat-form-field *ngIf="bookForm.get('title').value || ready2editing">
                 <mat-label class="red">Title</mat-label>
                 <input type="text" formControlName="title" matInput [matAutocomplete]="autoTitle"
@@ -67,14 +93,14 @@
                 </mat-autocomplete>
             </mat-form-field>
 
-            <mat-form-field *ngIf="jsonBooks && ready2editing">
+            <!-- <mat-form-field *ngIf="jsonBooks && ready2editing">
                 <mat-label class="red">Choose an option</mat-label>
                 <mat-select (selectionChange)="getBookData($event.value)">
                     <mat-option *ngFor="let book of jsonBooks" [value]="book.index">
                         {{ book.title }}
                     </mat-option>
                 </mat-select>
-            </mat-form-field>
+            </mat-form-field> -->
 
             <mat-form-field *ngIf="bookForm.get('originalTitle').value || ready2editing">
                 <mat-label class="red">Original title</mat-label>
@@ -208,19 +234,15 @@
         </div>
 
         <div #target *ngIf="ready2editing">
-            <ng-container *ngFor="let item of onlineBookList">
-                <div (click)="downloadBookInfo(item.link)">
-                    <ion-avatar>
-                        <img [src]="item.img" />
-                    </ion-avatar>
-                    <mat-label>
-                        <div class="ion-text-wrap">
-                            <h2>{{ item.title }}</h2>
-                            <p>{{ item.comment }}</p>
-                        </div>
-                    </mat-label>
+            <div class="online-item" *ngFor="let item of onlineBookList" (click)="downloadBookInfo(item.link)">
+                <ion-avatar>
+                    <img [src]="item.img" />
+                </ion-avatar>
+                <div class="ion-text-wrap">
+                    <h2>{{ item.title }}</h2>
+                    <p>{{ item.comment }}</p>
                 </div>
-            </ng-container>
+            </div>
         </div>
     </form>
     <ion-spinner class="spinner" name="bubbles" *ngIf="isWorking"></ion-spinner>

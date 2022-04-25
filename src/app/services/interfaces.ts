@@ -30,6 +30,8 @@ export interface BOOK {
   progress: string;
   rating: number;
   img: string;
+  serie: string;
+  serieOrder: number;
 }
 
 export interface BOOKSIMPLIFIED {

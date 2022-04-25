@@ -100,3 +100,10 @@ mat-select {
         margin: 1rem auto;
     }
 }
+
+.online-item {
+    display: flex;
+    ion-avatar {
+        margin-right: .5rem;
+    }
+}

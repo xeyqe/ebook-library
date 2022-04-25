@@ -84,3 +84,39 @@ mat-form-field, .marged {
         margin: 1rem auto;
     }
 }
+
+.online-item {
+    display: flex;
+    ion-avatar {
+        margin-right: .5rem;
+    }
+}
+
+.serie-cont {
+    border-bottom: thin double gray;
+    border-top: thin double gray;
+    &__books {
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden;
+        & > div {
+            display: flex;
+            width: 100%;
+            flex-direction: row;
+            align-items: center;
+            & > span {
+                margin: auto .5rem;
+                font-size: 1.5rem;
+            }
+        }
+    }
+    &__name {
+        text-align: center;
+        margin: .5rem auto;
+        font-size: 1.5rem;
+    }
+}
+
+.book-cont {
+    display: flex;
+}

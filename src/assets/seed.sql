@@ -44,7 +44,9 @@ CREATE TABLE IF NOT EXISTS books(
     path TEXT,
     progress TEXT,
     rating INTEGER,
-    img TEXT
+    img TEXT,
+    serie TEXT,
+    serieOrder INTEGER
 );
 
 INSERT or IGNORE INTO books VALUES(
@@ -63,7 +65,9 @@ INSERT or IGNORE INTO books VALUES(
     '/ebook-library/Wilde, Oscar/The Picture of Dorian Gray.epub',
     null,
     null,
-    'https://upload.wikimedia.org/wikipedia/commons/0/00/The_title_card_of_an_1891_print_of_The_Picture_of_Dorian_Gray%2C_by_Oscar_Wilde.png'
+    'https://upload.wikimedia.org/wikipedia/commons/0/00/The_title_card_of_an_1891_print_of_The_Picture_of_Dorian_Gray%2C_by_Oscar_Wilde.png',
+    null,
+    null
 );
 
 CREATE TABLE IF NOT EXISTS dbInfo(
@@ -71,5 +75,5 @@ CREATE TABLE IF NOT EXISTS dbInfo(
 );
 
 INSERT or IGNORE INTO dbInfo VALUES(
-    2
+    3
 );

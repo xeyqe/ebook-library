@@ -134,22 +134,38 @@
             </div>
         </div>
 
-        <ion-list *ngIf="!wikiOutputBoolean">
-            <ion-item button *ngFor="let book of books" [routerLink]="['/book', book.id]">
+        <ng-container *ngIf="!wikiOutputBoolean">
+            <div class="serie-cont" *ngFor="let serie of seriesCont">
+                <div class="serie-cont__name" (click)="serie.open = !serie.open">{{serie.name}}</div>
+                <div class="serie-cont__books" [@collapse]="serie.open">
+                    <div *ngFor="let item of serie.items" [routerLink]="['/book', item.book.id]" [ngStyle]="{'order': item.order}">
+                        <span>{{item.order}}</span>
+                        <ion-avatar *ngIf="item.book.img">
+                            <img [src]="onGetImgSrc(item.book.img)" />
+                        </ion-avatar>
+                        <mat-label class="book-title">
+                            <div class="ion-text-wrap">
+                                <h2>{{ item.book.title }}</h2>
+                            </div>
+                            <ion-progress-bar *ngIf="item.book.progress" [value]="(item.book.progress | percent2:item.book.progress) / 100">
+                            </ion-progress-bar>
+                        </mat-label>
+                    </div>
+                </div>
+            </div>
+            <div class="book-cont" *ngFor="let book of books" [routerLink]="['/book', book.id]">
                 <ion-avatar *ngIf="book.img">
                     <img [src]="onGetImgSrc(book.img)" />
                 </ion-avatar>
-                <mat-label class="book-title">
-                    <div class="ion-text-wrap">
-                        <h2>{{ book.title }}</h2>
-                    </div>
+                <div class="book-title">
+                    <h2>{{ book.title }}</h2>
                     <ion-progress-bar *ngIf="book.progress" [value]="(book.progress | percent2:book.progress) / 100">
                     </ion-progress-bar>
-                </mat-label>
-            </ion-item>
-        </ion-list>
+                </div>
+            </div>
+        </ng-container>
 
-        <div #target1 *ngIf="wikiOutputBoolean">
+        <!-- <div #target1 *ngIf="wikiOutputBoolean">
             <ion-list>
                 <ion-item button *ngFor="let output of fromWiki" (click)="onSetWikipediaData(output)">
                     <ion-grid>
@@ -162,18 +178,18 @@
                     </ion-grid>
                 </ion-item>
             </ion-list>
-        </div>
+        </div> -->
 
         <div #target2 *ngIf="ready2editing">
-            <ion-item *ngFor="let item of onlineAuthorsList">
-                <div (click)="onDownloadAuthorInfo(item.link)">
-                    <ion-avatar>
-                        <img [src]="item.img" />
-                    </ion-avatar>
-                    <mat-label>{{ item.name }}</mat-label>
-                    <mat-label>{{ item.year }}</mat-label>
+            <div class="online-item" *ngFor="let item of onlineAuthorsList" (click)="onDownloadAuthorInfo(item.link)">
+                <ion-avatar>
+                    <img [src]="item.img" />
+                </ion-avatar>
+                <div class="ion-text-wrap">
+                    <h2>{{ item.name }}</h2>
+                    <p>{{ item.year }}</p>
                 </div>
-            </ion-item>
+            </div>
         </div>
     </form>
     <ion-spinner class="spinner" name="bubbles" *ngIf="isWorking"></ion-spinner>

@@ -4,6 +4,7 @@ import { HTTP } from '@ionic-native/http/ngx';
 import { Dialogs } from '@ionic-native/dialogs/ngx';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { animate, AUTO_STYLE, state, style, transition, trigger } from '@angular/animations';
 
 import { Observable, Subscription } from 'rxjs';
 import { map, startWith } from 'rxjs/operators';
@@ -22,6 +23,14 @@ import { AUTHOR, WIKIPEDIADATA, BOOKSIMPLIFIED, ONLINEAUTHORLINK, BOOK } from 's
   selector: 'app-author',
   templateUrl: './author.page.html',
   styleUrls: ['./author.page.scss'],
+  animations: [
+    trigger('collapse', [
+      state('true', style({ height: AUTO_STYLE, visibility: AUTO_STYLE })),
+      state('false', style({ height: '0', visibility: 'hidden' })),
+      transition('false => true', animate(500 + 'ms ease-in')),
+      transition('true => false', animate(500 + 'ms ease-out'))
+    ])
+  ]
 })
 export class AuthorPage implements OnInit, OnDestroy {
   author: AUTHOR = null;
@@ -55,6 +64,7 @@ export class AuthorPage implements OnInit, OnDestroy {
   };
   _textAreaReduced = true;
   imgPreLink: string;
+  seriesCont: { name: string, open: boolean, items: { book: BOOK, order: number }[] }[];
 
   private subs: Subscription[] = [];
 
@@ -93,8 +103,8 @@ export class AuthorPage implements OnInit, OnDestroy {
 
               this.db.getBooksOfAuthor(id).then(() => {
                 this.subs.push(this.db.getBooks().subscribe((books) => {
-                  this.books = books;
                   this.updateOldBooksImgs(books);
+                  this.takeCareOfSeries(books);
                 }));
               }).catch((e) => {
                 console.error('getBooksOfAuthor failed: ');
@@ -121,7 +131,7 @@ export class AuthorPage implements OnInit, OnDestroy {
 
   private async updateOldImgs(img: string) {
     if (!img) return;
-    if (img.startsWith('http://localhost/_app_file_/storage')) {
+    if (img.startsWith('http://localhost/_app_file_/storage') || img.startsWith('http://localhost/_capacitor_file_/')) {
       this.author.img = img?.replace(/.*\/ebook-library/, '/ebook-library') || null;
       await this.db.updateAuthor(this.author);
     }
@@ -129,7 +139,7 @@ export class AuthorPage implements OnInit, OnDestroy {
 
   private async updateOldBooksImgs(books: BOOK[]) {
     for (const book of books) {
-      if (book.img?.startsWith('http://localhost/_app_file_/storage')) {
+      if (book.img?.startsWith('http://localhost/_app_file_/storage') || book.img?.startsWith('http://localhost/_capacitor_file_/')) {
         book.img = book.img?.replace(/.*\/ebook-library/, '/ebook-library') || null;
         await this.db.updateBook(book);
       }
@@ -163,6 +173,30 @@ export class AuthorPage implements OnInit, OnDestroy {
     this.subs.push(this.authorForm.valueChanges.subscribe(() => {
       this.authorChanged = true;
     }));
+  }
+
+  private takeCareOfSeries(books: BOOK[]) {
+    const seriesNames = [];
+    this.seriesCont = [];
+
+    const serieLessBooks = [];
+    books.forEach(book => {
+      if (book.serie) {
+        if (!seriesNames.includes(book.serie)) {
+          seriesNames.push(book.serie);
+          this.seriesCont.push({ name: book.serie, open: false, items: [{ book, order: book.serieOrder }] });
+        } else {
+          const item = this.seriesCont.find(itm => itm.name === book.serie);
+          item.items.push({ book, order: book.serieOrder });
+        }
+      } else {
+        serieLessBooks.push(book);
+      }
+    });
+    this.seriesCont.sort((a, b) => {
+      return a.name.localeCompare(b.name);
+    });
+    this.books = serieLessBooks;
   }
 
   async onGetPosts(index: string) {
@@ -496,7 +530,7 @@ export class AuthorPage implements OnInit, OnDestroy {
   onGetWidth(fcName: string, title: string) {
     return {
       width: (String(this.authorForm.get(fcName).value).length * 7 + 4) + 'px',
-      'min-width': (title.length * 9.5) + 'px'
+      'min-width': ((title.length * 9.5) + 5) + 'px'
     };
   }
 

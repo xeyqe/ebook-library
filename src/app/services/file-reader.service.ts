@@ -149,6 +149,8 @@ export class FileReaderService implements OnInit {
                 progress: null,
                 rating: null,
                 img: null,
+                serie: null,
+                serieOrder: null
               };
               this.db.addBook(book);
             }
