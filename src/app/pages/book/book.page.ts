@@ -328,12 +328,18 @@ export class BookPage implements OnInit, OnDestroy {
     if (authorsName.length) {
       this.isWorking = true;
       const data = await this.webScrapper.getBooksListOfAnyAuthor(this.bookForm.get('title').value);
-      this.onlineBookList = data.filter(dt => dt.comment.includes(author.surname));
-      if (!this.onlineBookList.length && !author.pseudonym) {
-        this.onlineBookList = await this.webScrapper.getBooksListOfAuthor(authorsName);
-      }
-      if (!this.onlineBookList.length) {
-        this.onlineBookList = data;
+      if (author.dtbkId) {
+        const authorsBooks = author.dtbkId ? await this.webScrapper.getBooksListOfAuthorById(author.dtbkId) : [];
+        this.onlineBookList = data.filter(bk => authorsBooks.some(abk => abk.link === bk.link));
+        this.onlineBookList = this.onlineBookList.length ? this.onlineBookList : authorsBooks;
+      } else {
+        this.onlineBookList = data.filter(dt => dt.comment.includes(author.surname));
+        if (!this.onlineBookList.length && !author.pseudonym) {
+          this.onlineBookList = await this.webScrapper.getBooksListOfAuthor(authorsName);
+        }
+        if (!this.onlineBookList.length) {
+          this.onlineBookList = data;
+        }
       }
       this.isWorking = false;
       this.scrollElement();

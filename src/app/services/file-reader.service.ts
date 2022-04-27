@@ -95,6 +95,7 @@ export class FileReaderService implements OnInit {
               rating: null,
               path: `/ebook-library/${authorFolder}/`,
               idInJson: null,
+              dtbkId: null,
             });
             this.db.authorsBooksPaths(authorId).then((paths) => {
               this._booksOfAuthor(`/ebook-library/${authorFolder}/`, authorId, paths);

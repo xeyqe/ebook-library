@@ -27,8 +27,11 @@ export class WebScraperService {
     birth: string,
     death: string,
     biography: string,
-    img: string
+    img: string,
+    dtbkId: string
   }> {
+    const dtbkId = url.substring(url.lastIndexOf('/') + 1);
+
     const data = await this._getHtml(url);
     const output = {
       name: null,
@@ -38,7 +41,8 @@ export class WebScraperService {
       birth: null,
       death: null,
       biography: null,
-      img: null
+      img: null,
+      dtbkId,
     };
 
     if (data.querySelector('.circle-avatar')) {
@@ -73,7 +77,12 @@ export class WebScraperService {
   }
 
 
-  private async _getList(url: string) {
+  private async _getList(url: string): Promise<{
+    link: string,
+    img: string,
+    title: string,
+    comment: string,
+  }[]> {
     const response = await this._getHtml(url);
     const list = response.querySelectorAll('#left_less > p.new:not(#main_search_word)');
     const parsedList = [];
@@ -96,10 +105,62 @@ export class WebScraperService {
     });
   }
 
-  public async getBooksListOfAuthor(authorName: string): Promise<any> {
+  private async _getListFromAuthorPG(url: string): Promise<{
+    link: string,
+    img: string,
+    title: string,
+    comment: string,
+  }[]> {
+    const doc = await this._getHtml(url);
+    const pages = doc.querySelector('.pager')?.childElementCount || 0;
+    const parsedList = this._booksFromAuthorsDoc(doc);
+    for (let i = 2; i < pages + 1; i++) {
+      const doc2 = await this._getHtml(`${url}?orderBy=&filtr=&id=${i}`);
+      parsedList.push(...this._booksFromAuthorsDoc(doc2));
+    }
+
+    return parsedList;
+  }
+
+  private _booksFromAuthorsDoc(doc: Document): {
+    link: string,
+    img: string,
+    title: string,
+    comment: string,
+  }[] {
+    const parsedList = [];
+    const list = doc.querySelectorAll('#tabcontent .new2');
+    list.forEach(item => {
+      parsedList.push({
+        link: item.querySelector('a').href,
+        img: (item.previousElementSibling.querySelector('img') as HTMLImageElement).src,
+        title: item.querySelector('a').textContent,
+        comment: item.querySelector('.pozn.odl').textContent
+      });
+    });
+    return parsedList;
+  }
+
+  public async getBooksListOfAuthor(authorName: string): Promise<{
+    link: string;
+    img: string;
+    title: string;
+    comment: string;
+  }[]> {
     const url = `https://www.databazeknih.cz/search?q=${authorName}&sm=books`;
     const books = await this._getList(url);
     return books.filter(bk => bk.comment.includes(authorName));
+  }
+
+  public async getBooksListOfAuthorById(dtbkId: string): Promise<{
+    link: string;
+    img: string;
+    title: string;
+    comment: string;
+  }[]> {
+    const url = `https://www.databazeknih.cz/vydane-knihy/${dtbkId}`;
+    const books = await this._getListFromAuthorPG(url);
+    return books;
   }
 
   public getBooksListOfAnyAuthor(title: string): Promise<any> {
@@ -118,7 +179,8 @@ export class WebScraperService {
         name: (item.firstElementChild as HTMLElement).innerText,
         link: (item.firstElementChild as HTMLLinkElement).href,
         year: item.children[2].innerHTML,
-        img: link.substring(5, link.length - 2)
+        img: link.substring(5, link.length - 2),
+
       });
     });
     return parsedList;

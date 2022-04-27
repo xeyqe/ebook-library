@@ -160,7 +160,8 @@ export class AuthorPage implements OnInit, OnDestroy {
       birth: new FormControl({ value: null, disabled: true }),
       death: new FormControl({ value: null, disabled: true }),
       biography: new FormControl({ value: null, disabled: true }),
-      idInJson: new FormControl()
+      idInJson: new FormControl(),
+      dtbkId: new FormControl(),
     });
     Object.entries(this.authorForm.controls).forEach(ent => {
       const key = ent[0];
@@ -494,9 +495,9 @@ export class AuthorPage implements OnInit, OnDestroy {
     });
   }
 
-  onDownloadAuthorInfo(url: string) {
+  onDownloadAuthorInfo(item: ONLINEAUTHORLINK) {
     this.isWorking = true;
-    this.webScraper.getAuthor(url).then((data) => {
+    this.webScraper.getAuthor(item.link).then((data) => {
       if (data) {
         Object.entries(this.authorForm.controls).forEach(ent => {
           const key = ent[0];
@@ -505,6 +506,7 @@ export class AuthorPage implements OnInit, OnDestroy {
           if (data[key] && !this.listsOfValues[key].includes(data[key]))
             this.listsOfValues[key].push(data[key]);
         });
+        // this.authorForm.get('dtbkId').setValue(item.dtbkId);
 
         this.isWorking = false;
         this.content.scrollToTop();

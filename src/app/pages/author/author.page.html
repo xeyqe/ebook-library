@@ -181,7 +181,7 @@
         </div> -->
 
         <div #target2 *ngIf="ready2editing">
-            <div class="online-item" *ngFor="let item of onlineAuthorsList" (click)="onDownloadAuthorInfo(item.link)">
+            <div class="online-item" *ngFor="let item of onlineAuthorsList" (click)="onDownloadAuthorInfo(item)">
                 <ion-avatar>
                     <img [src]="item.img" />
                 </ion-avatar>

@@ -11,6 +11,7 @@ export interface AUTHOR {
   rating: number;
   path: string;
   idInJson: string;
+  dtbkId: string;
 }
 
 export interface BOOK {
@@ -77,6 +78,7 @@ export interface ONLINEAUTHORLINK {
   link: string;
   year: number;
   img: string;
+  dtbkId: string;
 }
 
 export interface ONLINEBOOKLINK {

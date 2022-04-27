@@ -20,7 +20,7 @@ import { Platform } from '@ionic/angular';
 export class DatabaseService {
   private database: SQLiteObject;
   private dbReady: BehaviorSubject<boolean> = new BehaviorSubject(false);
-  private version = 3;
+  private version = 4;
 
   authors = new BehaviorSubject<AUTHORSIMPLIFIED[]>([]);
   books = new BehaviorSubject([]);
@@ -167,6 +167,15 @@ export class DatabaseService {
     });
   }
 
+  private async updateDB3To4() {
+    await this.database.executeSql(
+      'ALTER TABLE authors ADD COLUMN dtbkId TEXT', []
+    ).catch(e => {
+      console.error('adding dtbkId failed');
+      throw new Error(JSON.stringify(e));
+    });
+  }
+
   public exportDB(): Promise<any> {
     return this.sqlitePorter.exportDbToJson(this.database).catch(e => {
       console.error('exportDbToJson failed!');
@@ -250,11 +259,12 @@ export class DatabaseService {
       author.img,
       author.rating,
       author.path,
+      author.dtbkId
     ];
     const output = await this.database.executeSql(
       `INSERT INTO authors
-          (name, surname, pseudonym, nationality, birth, death, biography, img, rating, path)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (name, surname, pseudonym, nationality, birth, death, biography, img, rating, path, dtbkId)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       data
     ).catch(e => {
       console.error('addAuthor failed!');
@@ -287,6 +297,7 @@ export class DatabaseService {
       rating: data.rows.item(0).rating,
       path: data.rows.item(0).path,
       idInJson: data.rows.item(0).idInJson,
+      dtbkId: data.rows.item(0).dtbkId,
     };
   }
 
@@ -420,11 +431,13 @@ export class DatabaseService {
       author.rating,
       author.path,
       author.idInJson,
+      author.dtbkId,
     ];
+
     await this.database.executeSql(
       `UPDATE authors SET name = ?,
           surname = ?, pseudonym = ?, nationality = ?, birth = ?, death = ?,
-          biography = ?, img = ?, rating = ?, path = ?, idInJson = ? WHERE id = ${author.id}`,
+          biography = ?, img = ?, rating = ?, path = ?, idInJson = ?, dtbkId = ? WHERE id = ${author.id}`,
       data
     );
     const simpl = {
