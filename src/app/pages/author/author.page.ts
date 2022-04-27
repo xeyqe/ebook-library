@@ -11,6 +11,7 @@ import { map, startWith } from 'rxjs/operators';
 
 import { Capacitor } from '@capacitor/core';
 
+import { NonusedPicsService } from './nonused-pics.service';
 import { DatabaseService } from 'src/app/services/database.service';
 import { DirectoryService } from 'src/app/services/directory.service';
 import { FileReaderService } from 'src/app/services/file-reader.service';
@@ -79,6 +80,7 @@ export class AuthorPage implements OnInit, OnDestroy {
     private fs: FileReaderService,
     private http: HTTP,
     private jsonServ: JsonDataParserService,
+    private picsServ: NonusedPicsService,
     private route: ActivatedRoute,
     private router: Router,
     private webScraper: WebScraperService,
@@ -105,6 +107,7 @@ export class AuthorPage implements OnInit, OnDestroy {
                 this.subs.push(this.db.getBooks().subscribe((books) => {
                   this.updateOldBooksImgs(books);
                   this.takeCareOfSeries(books);
+                  this.loadUnusedPics([...books.map(bk => bk.img), this.author.img]);
                 }));
               }).catch((e) => {
                 console.error('getBooksOfAuthor failed: ');
@@ -197,6 +200,13 @@ export class AuthorPage implements OnInit, OnDestroy {
       return a.name.localeCompare(b.name);
     });
     this.books = serieLessBooks;
+  }
+
+  private async loadUnusedPics(usedPics: string[]): Promise<void> {
+    const allFiles = await this.fs.getNonBookFilesOfFolder(this.author.path);
+    const unUsed = allFiles.filter(fl => !usedPics.includes(fl));
+    this.listsOfValues.img = [...this.listsOfValues.img, ...unUsed];
+    this.picsServ.pics = unUsed.length ? unUsed : null;
   }
 
   async onGetPosts(index: string) {
@@ -509,7 +519,6 @@ export class AuthorPage implements OnInit, OnDestroy {
 
   onRemovePic() {
     if (this.authorForm.get('img').value.startsWith('/')) {
-
       this.fs.removeFile(this.authorForm.get('img').value).then(() => {
         this.authorForm.get('img').setValue(null);
         this.authorChanged = true;

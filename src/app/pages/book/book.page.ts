@@ -13,6 +13,7 @@ import { InAppBrowser } from '@ionic-native/in-app-browser/ngx';
 
 import { EpubService } from 'src/app/services/epub.service';
 import { DatabaseService } from 'src/app/services/database.service';
+import { NonusedPicsService } from '../author/nonused-pics.service';
 import { DirectoryService } from 'src/app/services/directory.service';
 import { FileReaderService } from 'src/app/services/file-reader.service';
 import { WebScraperService } from 'src/app/services/web-scraper.service';
@@ -77,6 +78,7 @@ export class BookPage implements OnInit, OnDestroy {
     private fs: FileReaderService,
     private iab: InAppBrowser,
     private jsonServ: JsonDataParserService,
+    private picsServ: NonusedPicsService,
     private route: ActivatedRoute,
     private router: Router,
     private webScrapper: WebScraperService,
@@ -100,6 +102,8 @@ export class BookPage implements OnInit, OnDestroy {
             this.getAuthorsBooks();
             this.dontworryiwillnameyoulater = this.book.id + '0';
             this.dontworryiwillnameyoulater2 = this.book.id + '1';
+            if (this.picsServ.pics?.length)
+              this.listsOfValues.img = [...this.listsOfValues.img, this.picsServ.pics];
           }).catch((e) => {
             console.error('getBook failed: ');
             console.error(e);
@@ -215,8 +219,12 @@ export class BookPage implements OnInit, OnDestroy {
     if (res === 1) {
       const bookId = this.book.id;
       const authorId = this.book.creatorId;
-      await this.onRemovePic(this.book.img);
-      await this.removeBookFile();
+      try {
+        await this.onRemovePic(this.book.img);
+        await this.removeBookFile();
+      } catch (e) {
+        // nothing
+      }
       this.db.deleteBook(bookId, authorId).then(() => {
         this.router.navigate(['/author', authorId]);
       });
@@ -239,7 +247,7 @@ export class BookPage implements OnInit, OnDestroy {
   }
 
   private async removeBookFile() {
-    await this.fs.removeFile(this.book.path.split('ebook-library')[1]).catch(e => {
+    await this.fs.removeFile(this.book.path.replace(/.*ebook-library/, '/ebook-library/')[1]).catch(e => {
       this.dialog.alert('Deleting of book file failed!', 'Warning', 'OK');
     });
   }
@@ -323,6 +331,9 @@ export class BookPage implements OnInit, OnDestroy {
       this.onlineBookList = data.filter(dt => dt.comment.includes(author.surname));
       if (!this.onlineBookList.length) {
         this.onlineBookList = await this.webScrapper.getBooksListOfAuthor(authorsName);
+      }
+      if (!this.onlineBookList.length) {
+        this.onlineBookList = data;
       }
       this.isWorking = false;
       this.scrollElement();

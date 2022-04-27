@@ -119,16 +119,37 @@ export class FileReaderService implements OnInit {
     }
   }
 
+  public async getNonBookFilesOfFolder(path: string): Promise<string[]> {
+    const item = await Filesystem.readdir({
+      directory: this.dir.dir,
+      path
+    }).catch(e => {
+      console.error('getNonBookFilesOfFolder readdir failed.');
+      throw new Error(JSON.stringify(e));
+    });
+    const foundFiles = [];
+    for (const file of item.files) {
+      if (await this.dir.isFile(`${path}${file}`)) {
+        const extension = file.substring(file.lastIndexOf('.') + 1);
+        if (!['txt', 'epub'].includes(extension)) {
+          foundFiles.push(path + file);
+        }
+      }
+    }
+    return foundFiles;
+  }
+
+
   private _booksOfAuthor(folderPath: string, authorId: number, paths: string[]) {
     Filesystem.readdir({
       directory: this.dir.dir,
       path: folderPath
     }).then(async item => {
       for (const file of item.files) {
-        if (await this.dir.isFile(`${folderPath}/${file}`)) {
+        if (await this.dir.isFile(`${folderPath}${file}`)) {
           const extension = file.substring(file.lastIndexOf('.') + 1);
           if (extension === 'txt' || extension === 'epub') {
-            if (!paths.includes(folderPath + file)) {
+            if (!paths.includes(`${folderPath}${file}`)) {
               let book: BOOK;
               const id = authorId;
               const name = file.substring(0, file.lastIndexOf('.'));
@@ -218,16 +239,14 @@ export class FileReaderService implements OnInit {
     });
   }
 
-  /**
-   * removes a file
-   * @param path path after ebook-library
-   */
-  public removeFile(path: string) {
-    path = 'ebook-library' + path;
 
+  public removeFile(path: string) {
     return Filesystem.deleteFile({
       directory: this.dir.dir,
       path
+    }).catch(e => {
+      console.error(`removeFile on ${path} failed!`);
+      throw new Error(JSON.stringify(e));
     });
   }
 
@@ -240,7 +259,7 @@ export class FileReaderService implements OnInit {
     });
   }
 
-  public async getDBJsons(): Promise<string[]>  {
+  public async getDBJsons(): Promise<string[]> {
     const data = await Filesystem.readdir({
       directory: this.dir.dir,
       path: 'ebook-library'
