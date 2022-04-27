@@ -1,34 +1,20 @@
 <ion-header>
     <ion-toolbar>
-        <ion-row>
-            <ion-col>
-                <ion-row>
-                    <ion-label>{{ authorName }}</ion-label>
-                </ion-row>
-                <ion-row>
-                    <ion-label>{{ title }}</ion-label>
-                </ion-row>
-            </ion-col>
-            <ion-col>
-                <ion-button (click)="changeSpeed('-')">
-                    <ion-icon slot="icon-only" name="remove"></ion-icon>
-                </ion-button>
-                <ion-label *ngIf="!spritzBoolean">
-                    {{ speed / 10 }}
-                </ion-label>
-                <ion-label *ngIf="spritzBoolean">
-                    {{ speed }}
-                </ion-label>
-
-                <ion-col>
+            <div class="header">
+                <div class="header__name">
+                    <span>{{ authorName }}</span>
+                    <span>{{ title }}</span>
+                </div>
+                <div class="header__speed">
+                    <ion-button (click)="changeSpeed('-')">
+                        <ion-icon slot="icon-only" name="remove"></ion-icon>
+                    </ion-button>
+                    <span> {{ spritzBoolean ? speed : speed / 10 }} </span>
                     <ion-button (click)="changeSpeed('+')">
-                    <!-- <ion-button (click)="test()"> -->
-
                         <ion-icon slot="icon-only" name="add"></ion-icon>
                     </ion-button>
-                </ion-col>
-            </ion-col>
-        </ion-row>
+                </div>
+            </div>
     </ion-toolbar>
 </ion-header>
 
@@ -96,8 +82,7 @@
 </ion-row>
 
 <ion-item>
-    <ion-range *ngIf="textsLength" [value]="progress" min="0" [max]="textsLength" step="1"
-        color="primary" style="height: 0px;" (ionChange)="changeProgress($event.detail.value)"
-        (touchend)="stopStartSpeaking()">
+    <ion-range *ngIf="textsLength" [value]="progress" min="0" [max]="textsLength" step="1" color="primary"
+        style="height: 0px;" (ionChange)="changeProgress($event.detail.value)" (touchend)="stopStartSpeaking()">
     </ion-range>
 </ion-item>

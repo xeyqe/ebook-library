@@ -32,3 +32,21 @@ ion-range-knob {
     left: 50%;
     top: 50%;
 }
+
+.header {
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    &__name {
+        flex-basis: 49%;
+        flex-direction: column;
+        display: flex;
+        align-items: center;
+    }
+    &__speed {
+        flex-basis: 49%;
+        flex-wrap: nowrap;
+        display: flex;
+        align-items: center;
+    }
+}
