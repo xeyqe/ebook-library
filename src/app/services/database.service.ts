@@ -134,7 +134,6 @@ export class DatabaseService {
   }
 
   private async updateDB0To1() {
-    console.log('updateDB0To1')
     await this.database.executeSql(
       `UPDATE authors SET img = SUBSTR(img, 47, LENGTH(img) - 46) WHERE img LIKE '%http://localhost/_app_file_/storage/emulated/0%'`, []
     );
@@ -145,7 +144,6 @@ export class DatabaseService {
   }
 
   private async updateDB1To2() {
-    console.log('updateDB1To2');
     await this.database.executeSql(
       'ALTER TABLE authors ADD COLUMN pseudonym TEXT', []
     ).catch(e => {
@@ -155,7 +153,6 @@ export class DatabaseService {
   }
 
   private async updateDB2To3() {
-    console.log('updateDB2To3');
     await this.database.executeSql(
       'ALTER TABLE books ADD COLUMN serie TEXT', []
     ).catch(e => {
@@ -447,7 +444,6 @@ export class DatabaseService {
     this.authors.next(authors);
   }
 
-
   public async addBook(book: BOOK) {
     const data = [
       book.title,
@@ -477,8 +473,7 @@ export class DatabaseService {
       book.id = output.insertId;
       books.push(book);
       this.books.next(books);
-    }
-    catch (e) {
+    } catch (e) {
       console.error('cannot add a book');
       console.error(e);
     }
@@ -540,10 +535,25 @@ export class DatabaseService {
           WHERE id = ${book.id}`,
       data
     );
+    const allBooks = this.allBooks.getValue();
+    const indexAllBooks = allBooks.findIndex(bk => bk.id === book.id);
+    if (indexAllBooks !== -1) {
+      allBooks[indexAllBooks] = book;
+      this.allBooks.next(allBooks);
+    }
+    const books = this.books.getValue();
+    const index = books.findIndex(bk => bk.id === book.id);
+    if (index !== -1) {
+      books[index] = book;
+      this.books.next(books);
+    }
   }
 
   public async allAuthorsPaths(): Promise<string[]> {
-    const data = await this.database.executeSql('SELECT path FROM authors', []);
+    const data = await this.database.executeSql('SELECT path FROM authors', []).catch(e => {
+      console.error('allAuthorsPaths select failed.');
+      throw new Error(JSON.stringify(e));
+    });
     const paths = [];
     if (data.rows.length > 0) {
       for (let i = 0; i < data.rows.length; i++) {
