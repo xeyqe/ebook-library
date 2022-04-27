@@ -317,6 +317,7 @@ export class TtsPage implements OnInit, OnDestroy {
             progress = this.texts.length;
           }
           this.progress = progress;
+          this.setProgress2DB();
         }
       }
     }
