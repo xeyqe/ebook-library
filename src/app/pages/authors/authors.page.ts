@@ -18,6 +18,7 @@ import { DialogComponent } from 'src/app/material/dialog/dialog.component';
 
 import { BOOKSIMPLIFIED, AUTHORSIMPLIFIED } from 'src/app/services/interfaces';
 import { FormControl } from '@angular/forms';
+import { BusyService } from 'src/app/services/busy.service';
 
 
 @Component({
@@ -47,9 +48,10 @@ export class AuthorsPage implements OnInit, OnDestroy {
 
   constructor(
     private db: DatabaseService,
+    private dialog: MatDialog,
     private dir: DirectoryService,
     private fr: FileReaderService,
-    private dialog: MatDialog,
+    private workingServ: BusyService,
   ) { }
 
   ngOnInit() {
@@ -153,21 +155,26 @@ export class AuthorsPage implements OnInit, OnDestroy {
   }
 
   private async exportDB() {
+    this.workingServ.busy();
     const json = await this.db.exportDB();
     const version = await this.db.getVersion();
     await this.fr.write2File(JSON.stringify(json), version).catch(e => {
       console.error('write2File failed!');
+      this.workingServ.done();
       throw new Error(JSON.stringify(e));
     });
+    this.workingServ.done();
   }
 
   private async importJson2DB(path: string) {
+    this.workingServ.busy();
     const json = await Filesystem.readFile({
       directory: this.dir.dir,
       path,
       encoding: Encoding.UTF8
     });
-    this.db.importDB(json.data);
+    await this.db.importDB(json.data);
+    this.workingServ.done();
   }
 
   onImgIsLocal(path: string) {

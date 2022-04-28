@@ -24,6 +24,7 @@ import { JsonDataParserService } from 'src/app/services/json-data-parser.service
 import { BOOK, ONLINEBOOKLINK, INDEXOFBOOK } from 'src/app/services/interfaces';
 
 import { DialogComponent } from 'src/app/material/dialog/dialog.component';
+import { BusyService } from 'src/app/services/busy.service';
 
 
 @Component({
@@ -42,8 +43,6 @@ export class BookPage implements OnInit, OnDestroy {
   showAble = false;
 
   onlineBookList: ONLINEBOOKLINK[];
-
-  isWorking = false;
 
   dontworryiwillnameyoulater: string;
   dontworryiwillnameyoulater2: string;
@@ -86,6 +85,7 @@ export class BookPage implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private webScrapper: WebScraperService,
+    private workingServ: BusyService,
   ) { }
 
   ngOnInit() {
@@ -307,9 +307,9 @@ export class BookPage implements OnInit, OnDestroy {
       jsonBook[`length`] = jsonBook.pages;
       this.fillData(jsonBook);
     } else {
-      this.isWorking = true;
+      this.workingServ.busy();
       this.jsonServ.jsonBooksData().then(() => {
-        this.isWorking = false;
+        this.workingServ.done();
         jsonBook = this.jsonServ.getBook(index);
         jsonBook[`length`] = jsonBook.pages;
         this.fillData(jsonBook);
@@ -338,9 +338,9 @@ export class BookPage implements OnInit, OnDestroy {
     const extension = this.bookForm.get('img').value.substring(index);
     const filename = this.book.title + extension;
 
-    this.isWorking = true;
+    this.workingServ.busy();
     this.fs.downloadPicture(uri, path, filename).then((src) => {
-      this.isWorking = false;
+      this.workingServ.done();
       this.bookForm.get('img').setValue(src?.replace(/^.*ebook-library/, '/ebook-library'));
       this.bookChanged = true;
     }).catch((e) => {
@@ -355,7 +355,7 @@ export class BookPage implements OnInit, OnDestroy {
       authorsName = authorsName.replace(' ', '');
     }
     if (authorsName.length) {
-      this.isWorking = true;
+      this.workingServ.busy();
       const data = await this.webScrapper.getBooksListOfAnyAuthor(this.bookForm.get('title').value);
       if (author.dtbkId) {
         const authorsBooks = author.dtbkId ? await this.webScrapper.getBooksListOfAuthorById(author.dtbkId) : [];
@@ -370,13 +370,13 @@ export class BookPage implements OnInit, OnDestroy {
           this.onlineBookList = data;
         }
       }
-      this.isWorking = false;
+      this.workingServ.done();
       this.scrollElement();
     }
   }
 
   downloadBookInfo(link: string) {
-    this.isWorking = true;
+    this.workingServ.busy();
 
     this.getBook2(link).then((data) => {
       if (data) {
@@ -403,7 +403,7 @@ export class BookPage implements OnInit, OnDestroy {
         this.bookChanged = true;
         this.content.scrollToTop();
       }
-    }).finally(() => this.isWorking = false);
+    }).finally(() => this.workingServ.done());
   }
 
   async getBook2(url: string): Promise<{

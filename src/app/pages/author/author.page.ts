@@ -21,6 +21,7 @@ import { JsonDataParserService } from 'src/app/services/json-data-parser.service
 import { AUTHOR, WIKIPEDIADATA, BOOKSIMPLIFIED, ONLINEAUTHORLINK, BOOK } from 'src/app/services/interfaces';
 
 import { DialogComponent } from 'src/app/material/dialog/dialog.component';
+import { BusyService } from 'src/app/services/busy.service';
 
 
 @Component({
@@ -51,8 +52,6 @@ export class AuthorPage implements OnInit, OnDestroy {
   fullHeight = false;
   onlineAuthorsList: ONLINEAUTHORLINK[];
   showAble = false;
-
-  isWorking = false;
 
   filteredOptions: Observable<any[]>;
   authorForm: FormGroup;
@@ -87,6 +86,7 @@ export class AuthorPage implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private webScraper: WebScraperService,
+    private workingServ: BusyService,
   ) { }
 
   ngOnInit() {
@@ -214,7 +214,7 @@ export class AuthorPage implements OnInit, OnDestroy {
   }
 
   async onGetPosts(index: string) {
-    this.isWorking = true;
+    this.workingServ.busy();
     await this.jsonServ.jsonAuthorsData();
     const jsonAuthor = this.jsonServ.getAuthor(index);
 
@@ -227,7 +227,7 @@ export class AuthorPage implements OnInit, OnDestroy {
           this.listsOfValues[key].push(jsonAuthor[key]);
       });
       this.authorForm.get('idInJson').setValue(index);
-      this.isWorking = false;
+      this.workingServ.done();
     }
   }
 
@@ -305,7 +305,7 @@ export class AuthorPage implements OnInit, OnDestroy {
 
   getFromWikipedia() {
     const searchValue = this.authorForm.get('name').value + ' ' + this.authorForm.get('surname').value;
-    this.isWorking = true;
+    this.workingServ.busy();
 
     this.http.get(
       'https://wikipedia.org/w/api.php',
@@ -323,7 +323,7 @@ export class AuthorPage implements OnInit, OnDestroy {
       this.ready2editing = true;
       this.wikiOutputBoolean = true;
       this.fromWiki = JSON.parse(output.data).query.search;
-      this.isWorking = false;
+      this.workingServ.done();
       this.scrollElement(this.target1);
     }).catch((e) => {
       this.ready2editing = false;
@@ -333,7 +333,7 @@ export class AuthorPage implements OnInit, OnDestroy {
 
   onSetWikipediaData(aa: WIKIPEDIADATA) {
     const pageid = aa.pageid + '';
-    this.isWorking = true;
+    this.workingServ.busy();
     this.http.get(
       'https://wikipedia.org/w/api.php',
       {
@@ -380,7 +380,7 @@ export class AuthorPage implements OnInit, OnDestroy {
         this.parseInfobox(data.query.pages[pageid].revisions[0].slots.main['*']);
       } catch (er) {
         this.content.scrollToTop();
-        this.isWorking = false;
+        this.workingServ.done();
         console.error(er);
         console.error('cannot parse data from wikipedia');
       }
@@ -464,7 +464,7 @@ export class AuthorPage implements OnInit, OnDestroy {
         this.listsOfValues[key].push(obj[key]);
     });
 
-    this.isWorking = false;
+    this.workingServ.done();
     this.content.scrollToTop();
   }
 
@@ -476,13 +476,13 @@ export class AuthorPage implements OnInit, OnDestroy {
 
     const filename = this.authorForm.get('name').value + '_' + this.authorForm.get('surname').value + extension;
 
-    this.isWorking = true;
+    this.workingServ.busy();
     this.fs.downloadPicture(uri, path, filename).then((src) => {
-      this.isWorking = false;
+      this.workingServ.done();
       this.authorForm.get('img').setValue(src?.replace(/^.*ebook-library/, '/ebook-library'));
       this.content.scrollToTop();
     }).catch((e) => {
-      this.isWorking = false;
+      this.workingServ.done();
       this.content.scrollToTop();
       console.error(e);
       alert(JSON.stringify(e));
@@ -496,16 +496,16 @@ export class AuthorPage implements OnInit, OnDestroy {
     } else {
       authorsName = this.authorForm.get('name').value + ' ' + this.authorForm.get('surname').value;
     }
-    this.isWorking = true;
+    this.workingServ.busy();
     this.webScraper.getAuthorsList(authorsName).then((data) => {
       this.onlineAuthorsList = data;
-      this.isWorking = false;
+      this.workingServ.done();
       this.scrollElement(this.target2);
     });
   }
 
   onDownloadAuthorInfo(item: ONLINEAUTHORLINK) {
-    this.isWorking = true;
+    this.workingServ.busy();
     this.webScraper.getAuthor(item.link).then((data) => {
       if (data) {
         Object.entries(this.authorForm.controls).forEach(ent => {
@@ -517,7 +517,7 @@ export class AuthorPage implements OnInit, OnDestroy {
         });
         // this.authorForm.get('dtbkId').setValue(item.dtbkId);
 
-        this.isWorking = false;
+        this.workingServ.done();
         this.content.scrollToTop();
       }
     });

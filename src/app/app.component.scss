@@ -1,3 +1,20 @@
 ion-app {
     margin: 1rem;
 }
+
+.cont {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    z-index: 100;
+    background-color: rgba(0, 0, 0, .7);
+}
+
+ion-spinner {
+    position: fixed;
+    z-index: 101;
+    transform: translate(-50%, -50%) scale(9);
+    left: 50%;
+    top: 50%;
+    color: white;
+}

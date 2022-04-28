@@ -1,3 +1,7 @@
 <ion-app>
     <ion-router-outlet></ion-router-outlet>
 </ion-app>
+<ng-container *ngIf="workingServ.working">
+    <div class="cont"></div>
+    <ion-spinner name="bubbles"></ion-spinner>
+</ng-container>

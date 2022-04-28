@@ -7,6 +7,7 @@ import { BackgroundMode } from 'capacitor-plugin-background-mode';
 
 import { FileReaderService } from './services/file-reader.service';
 import { DatabaseService } from 'src/app/services/database.service';
+import { BusyService } from './services/busy.service';
 
 @Component({
   selector: 'app-root',
@@ -22,6 +23,7 @@ export class AppComponent {
     private statusBar: StatusBar,
     private toastCtrl: ToastController,
     public storage: Storage,
+    public workingServ: BusyService,
   ) {
     this.initializeApp();
   }

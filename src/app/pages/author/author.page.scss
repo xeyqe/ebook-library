@@ -30,14 +30,6 @@ mat-option {
     max-height: 100px;
 }
 
-.spinner {
-    position: fixed;
-    z-index: 1000;
-    transform: translate(-50%, -50%) scale(9);
-    left: 50%;
-    top: 50%;
-}
-
 .my-item--smaller {
     display: inline-block;
     width: 25%;
