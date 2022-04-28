@@ -1,8 +1,7 @@
 import { Injectable, OnInit } from '@angular/core';
 import { Zip } from '@ionic-native/zip/ngx';
-import { File } from '@ionic-native/file/ngx';
 
-import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Filesystem, Encoding } from '@capacitor/filesystem';
 
 import { DirectoryService } from './directory.service';
 

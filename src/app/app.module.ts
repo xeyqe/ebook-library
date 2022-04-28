@@ -1,13 +1,11 @@
 import { NgModule } from '@angular/core';
 import { RouteReuseStrategy } from '@angular/router';
-import { ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { BrowserModule, HammerModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 import { Zip } from '@ionic-native/zip/ngx';
 import { HTTP } from '@ionic-native/http/ngx';
-import { File } from '@ionic-native/file/ngx';
 import { SQLite } from '@ionic-native/sqlite/ngx';
 import { StatusBar } from '@ionic-native/status-bar/ngx';
 import { Downloader } from '@ionic-native/downloader/ngx';
@@ -17,7 +15,6 @@ import { SplashScreen } from '@ionic-native/splash-screen/ngx';
 import { SQLitePorter } from '@ionic-native/sqlite-porter/ngx';
 import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
 import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
-import { BackgroundMode } from '@ionic-native/background-mode/ngx';
 
 import { EpubService } from './services/epub.service';
 import { DatabaseService } from './services/database.service';
@@ -45,12 +42,10 @@ import { AppComponent } from 'src/app/app.component';
   ],
   providers: [
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
-    BackgroundMode,
     DatabaseService,
     DirectoryService,
     Downloader,
     EpubService,
-    File,
     FileReaderService,
     HTTP,
     JsonDataParserService,
