@@ -1,13 +1,14 @@
 import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { IonContent } from '@ionic/angular';
 import { HTTP } from '@ionic-native/http/ngx';
-import { Dialogs } from '@ionic-native/dialogs/ngx';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { animate, AUTO_STYLE, state, style, transition, trigger } from '@angular/animations';
 
 import { Observable, Subscription } from 'rxjs';
-import { map, startWith } from 'rxjs/operators';
+import { first, map, startWith } from 'rxjs/operators';
+
+import { MatDialog } from '@angular/material/dialog';
 
 import { Capacitor } from '@capacitor/core';
 
@@ -18,6 +19,8 @@ import { FileReaderService } from 'src/app/services/file-reader.service';
 import { WebScraperService } from 'src/app/services/web-scraper.service';
 import { JsonDataParserService } from 'src/app/services/json-data-parser.service';
 import { AUTHOR, WIKIPEDIADATA, BOOKSIMPLIFIED, ONLINEAUTHORLINK, BOOK } from 'src/app/services/interfaces';
+
+import { DialogComponent } from 'src/app/material/dialog/dialog.component';
 
 
 @Component({
@@ -75,7 +78,7 @@ export class AuthorPage implements OnInit, OnDestroy {
 
   constructor(
     private db: DatabaseService,
-    private dialog: Dialogs,
+    private dialog: MatDialog,
     private directoryServ: DirectoryService,
     private fs: FileReaderService,
     private http: HTTP,
@@ -400,16 +403,22 @@ export class AuthorPage implements OnInit, OnDestroy {
   }
 
   async deleteAuthor() {
-    const res = await this.dialog.confirm(
-      'Do you really want to delete this author?\n(Files won\'t be deleted.)',
-      null,
-      ['Ok', 'Cancel']
+    const dialogRef = this.dialog.open(
+      DialogComponent,
+      {
+        data: {
+          message: 'Do you really want to delete this author?\n(Files won\'t be deleted.)',
+          selects: ['Ok', 'Cancel']
+        }
+      }
     );
-    if (res === 1) {
-      this.db.deleteAuthor(this.author.id).then(() => {
-        this.router.navigate(['/authors']);
-      });
-    }
+    dialogRef.afterClosed().pipe(first()).subscribe((selected) => {
+      if (selected === 0) {
+        this.db.deleteAuthor(this.author.id).then(() => {
+          this.router.navigate(['/authors']);
+        });
+      }
+    });
   }
 
   private parseInfobox(data: string) {
@@ -525,7 +534,16 @@ export class AuthorPage implements OnInit, OnDestroy {
         this.authorForm.get('img').setValue(null);
         this.authorChanged = true;
       }).catch(e => {
-        this.dialog.alert('Deleting of pic file failed!', 'Warning', 'OK');
+        this.dialog.open(
+          DialogComponent,
+          {
+            data: {
+              header: 'Warning',
+              message: 'Deleting of pic file failed!',
+              selects: ['Ok']
+            }
+          }
+        );
       });
     } else {
       this.authorForm.get('img').setValue(null);

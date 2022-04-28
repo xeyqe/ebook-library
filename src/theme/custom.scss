@@ -1,15 +1,72 @@
-.white {
-    .mat-select-value, .mat-select-value-text {
-        color: white;
-    }
+@use '@angular/material'as mat;
+
+@include mat.core();
+
+$light-primary: mat.define-palette(mat.$indigo-palette);
+$light-accent: mat.define-palette(mat.$pink-palette);
+$light-theme: mat.define-light-theme((color: (primary: $light-primary,
+            accent: $light-accent,
+        )));
+
+$dark-primary: mat.define-palette(mat.$red-palette);
+$dark-accent: mat.define-palette(mat.$blue-gray-palette);
+$dark-theme: mat.define-dark-theme((color: (primary: $dark-primary,
+            accent: $dark-accent,
+        )));
+
+@include mat.core-theme($dark-theme);
+@include mat.button-theme($dark-theme);
+
+.my-light-theme {
+    @include mat.core-color($light-theme);
+    @include mat.button-color($light-theme);
+}
+
+@include mat.all-component-themes($dark-theme);
+
+.mat-form-field-infix {
+    width: unset !important;
 }
 
 .gray {
-    .mat-select-value, .mat-select-value-text {
+
+    .mat-select-value,
+    .mat-select-value-text {
         color: #545454;
     }
 }
 
-.mat-form-field-infix {
-    width: unset !important;
+body {
+    background-color: black;
+    --ion-color-primary: #ff3838;
+    --ion-color-primary-rgb: 56, 128, 255;
+    --ion-color-primary-contrast: #ffffff;
+    --ion-color-primary-contrast-rgb: 255, 255, 255;
+    --ion-color-primary-shade: #e03131;
+    --ion-color-primary-tint: #ff4c4c;
+    --ion-background-color: black;
+    --ion-text-color: white;
+
+
+    ion-label,
+    .mat-select-value,
+    .mat-select-value-text {
+        color: white;
+    }
+
+
+    ion-searchbar,
+    ion-segment-button {
+        color: unset !important;
+    }
+}
+
+body.my-light-theme {
+    --ion-background-color: white;
+    --ion-text-color: black;
+
+    ion-searchbar,
+    ion-segment-button {
+        color: #000 !important;
+    }
 }

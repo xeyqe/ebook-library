@@ -7,27 +7,33 @@ import { IonicModule } from '@ionic/angular';
 import { InAppBrowser } from '@ionic-native/in-app-browser/ngx';
 
 import { BookPageRoutingModule } from './book-routing.module';
-import { MaterialModule } from 'src/app/material/material.module';
 import { ApplicationPipesModuleModule } from 'src/app/application-pipes-module/application-pipes-module.module';
 
-import { BookPage } from './book.page';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 
 import { NgsContenteditableModule } from '@ng-stack/contenteditable';
 
+import { BookPage } from './book.page';
+
+
 @NgModule({
   imports: [
+    ApplicationPipesModuleModule,
+    BookPageRoutingModule,
     CommonModule,
     FormsModule,
     IonicModule,
-    BookPageRoutingModule,
-    ApplicationPipesModuleModule,
-    MaterialModule,
-    ReactiveFormsModule,
+    MatAutocompleteModule,
+    MatDialogModule,
+    MatFormFieldModule,
     MatInputModule,
-    NgsContenteditableModule,
     MatSelectModule,
+    NgsContenteditableModule,
+    ReactiveFormsModule,
   ],
   providers: [InAppBrowser],
   declarations: [BookPage]

@@ -2,9 +2,14 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
+import { MatInputModule } from '@angular/material/input';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+
 import { IonicModule } from '@ionic/angular';
 
-import { MaterialModule } from 'src/app/material/material.module';
 import { AuthorPageRoutingModule } from 'src/app/pages/author/author-routing.module';
 import { ApplicationPipesModuleModule } from 'src/app/application-pipes-module/application-pipes-module.module';
 
@@ -14,14 +19,18 @@ import { NgsContenteditableModule } from '@ng-stack/contenteditable';
 
 @NgModule({
   imports: [
+    ApplicationPipesModuleModule,
+    AuthorPageRoutingModule,
     CommonModule,
     FormsModule,
-    ReactiveFormsModule,
     IonicModule,
-    AuthorPageRoutingModule,
-    ApplicationPipesModuleModule,
-    MaterialModule,
-    NgsContenteditableModule
+    MatAutocompleteModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    NgsContenteditableModule,
+    ReactiveFormsModule,
   ],
   declarations: [AuthorPage],
 })

@@ -9,7 +9,6 @@ import { Zip } from '@ionic-native/zip/ngx';
 import { HTTP } from '@ionic-native/http/ngx';
 import { File } from '@ionic-native/file/ngx';
 import { SQLite } from '@ionic-native/sqlite/ngx';
-import { Dialogs } from '@ionic-native/dialogs/ngx';
 import { StatusBar } from '@ionic-native/status-bar/ngx';
 import { Downloader } from '@ionic-native/downloader/ngx';
 import { WebView } from '@ionic-native/ionic-webview/ngx';
@@ -28,7 +27,6 @@ import { WebScraperService } from './services/web-scraper.service';
 import { JsonDataParserService } from './services/json-data-parser.service';
 
 import { AppRoutingModule } from 'src/app/app-routing.module';
-import { MaterialModule } from 'src/app/material/material.module';
 
 import { AppComponent } from 'src/app/app.component';
 
@@ -41,8 +39,6 @@ import { AppComponent } from 'src/app/app.component';
     IonicModule.forRoot(),
     AppRoutingModule,
     HttpClientModule,
-    ReactiveFormsModule,
-    MaterialModule,
     BrowserAnimationsModule,
     HammerModule,
     IonicStorageModule.forRoot(),
@@ -51,7 +47,6 @@ import { AppComponent } from 'src/app/app.component';
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
     BackgroundMode,
     DatabaseService,
-    Dialogs,
     DirectoryService,
     Downloader,
     EpubService,

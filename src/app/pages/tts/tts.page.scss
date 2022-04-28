@@ -21,10 +21,6 @@ ion-range-knob {
     color: red;
 }
 
-.white {
-    color: white;
-}
-
 .spinner {
     position: fixed;
     z-index: 1000;
@@ -34,7 +30,6 @@ ion-range-knob {
 }
 
 .header {
-    color: white;
     display: flex;
     justify-content: space-between;
     &__name {

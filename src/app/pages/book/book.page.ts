@@ -3,13 +3,15 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { FormControl, FormGroup } from '@angular/forms';
 
 import { Subscription } from 'rxjs';
+import { first } from 'rxjs/operators';
 
 import { Capacitor } from '@capacitor/core';
 import { Filesystem } from '@capacitor/filesystem';
 
 import { IonContent } from '@ionic/angular';
-import { Dialogs } from '@ionic-native/dialogs/ngx';
 import { InAppBrowser } from '@ionic-native/in-app-browser/ngx';
+
+import { MatDialog } from '@angular/material/dialog';
 
 import { EpubService } from 'src/app/services/epub.service';
 import { DatabaseService } from 'src/app/services/database.service';
@@ -20,6 +22,8 @@ import { WebScraperService } from 'src/app/services/web-scraper.service';
 import { JsonDataParserService } from 'src/app/services/json-data-parser.service';
 
 import { BOOK, ONLINEBOOKLINK, INDEXOFBOOK } from 'src/app/services/interfaces';
+
+import { DialogComponent } from 'src/app/material/dialog/dialog.component';
 
 
 @Component({
@@ -72,7 +76,7 @@ export class BookPage implements OnInit, OnDestroy {
 
   constructor(
     private db: DatabaseService,
-    private dialog: Dialogs,
+    private dialog: MatDialog,
     private dir: DirectoryService,
     private epub: EpubService,
     private fs: FileReaderService,
@@ -211,34 +215,50 @@ export class BookPage implements OnInit, OnDestroy {
   }
 
   async deleteBook() {
-    const res = await this.dialog.confirm(
-      'Do you really want to delete this book?',
-      null,
-      ['Ok', 'Cancel']
-    );
-    if (res === 1) {
-      const bookId = this.book.id;
-      const authorId = this.book.creatorId;
-      try {
-        await this.onRemovePic(this.book.img);
-        await this.removeBookFile();
-      } catch (e) {
-        // nothing
+    const dialogRef = this.dialog.open(
+      DialogComponent,
+      {
+        data: {
+          message: 'Do you really want to delete this book?',
+          selects: ['Ok', 'Cancel']
+        }
       }
-      this.db.deleteBook(bookId, authorId).then(() => {
-        this.router.navigate(['/author', authorId]);
-      });
-    }
+    );
+    dialogRef.afterClosed().pipe(first()).subscribe(async (selected) => {
+      if (selected === 0) {
+        const bookId = this.book.id;
+        const authorId = this.book.creatorId;
+        try {
+          await this.onRemovePic(this.book.img);
+          await this.removeBookFile();
+        } catch (e) {
+          // nothing
+        }
+        this.db.deleteBook(bookId, authorId).then(() => {
+          this.router.navigate(['/author', authorId]);
+        });
+      }
+    });
+
   }
 
-  onRemovePic(img: string) {
+  async onRemovePic(img: string) {
     if (img?.startsWith('/')) {
-      this.fs.removeFile(img).then(() => {
+      await this.fs.removeFile(img).then(() => {
         this.bookForm.get('img').setValue(null);
         this.bookChanged = true;
       }).catch(e => {
         console.error(e);
-        this.dialog.alert('Deleting of pic file failed!', 'Warning', 'OK');
+        this.dialog.open(
+          DialogComponent,
+          {
+            data: {
+              header: 'Warning',
+              message: 'Deleting of pic file failed!',
+              selects: ['Ok']
+            }
+          }
+        );
       });
     } else {
       this.bookForm.get('img').setValue(null);
@@ -248,7 +268,16 @@ export class BookPage implements OnInit, OnDestroy {
 
   private async removeBookFile() {
     await this.fs.removeFile(this.book.path.replace(/.*ebook-library/, '/ebook-library/')[1]).catch(e => {
-      this.dialog.alert('Deleting of book file failed!', 'Warning', 'OK');
+      this.dialog.open(
+        DialogComponent,
+        {
+          data: {
+            header: 'Warning',
+            message: 'Deleting of book file failed!',
+            selects: ['Ok']
+          }
+        }
+      );
     });
   }
 
@@ -470,7 +499,7 @@ export class BookPage implements OnInit, OnDestroy {
 
         if (metadata.imgPath) {
           const destination = this.book.path.substring(0, this.book.path.lastIndexOf('/') + 1) +
-          this.bookForm.get('title').value + metadata.imgPath.substring(metadata.imgPath.lastIndexOf('.'));
+            this.bookForm.get('title').value + metadata.imgPath.substring(metadata.imgPath.lastIndexOf('.'));
           Filesystem.copy({
             from: metadata.imgPath,
             to: destination,

@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { HTTP } from '@ionic-native/http/ngx';
-import { Dialogs } from '@ionic-native/dialogs/ngx';
 
 
 @Injectable({
@@ -11,7 +10,6 @@ export class WebScraperService {
 
   constructor(
     private http: HTTP,
-    private dialog: Dialogs
   ) { }
 
   private async _getHtml(site: string) {
