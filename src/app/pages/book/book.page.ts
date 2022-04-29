@@ -156,7 +156,7 @@ export class BookPage implements OnInit, OnDestroy {
         else if (book[key] === 'finished') value = '100%';
         else if (book[key].includes('/')) {
           const ar = book[key].split('/');
-          value = (+ar[0] / +ar[1]) * 100 + '%';
+          value = Math.floor(+ar[0] / +ar[1] * 100) + '%';
         }
       }
       fc.setValue(value || null);
