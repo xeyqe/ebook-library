@@ -269,4 +269,27 @@ export class FileReaderService implements OnInit {
     return files;
   }
 
+  public async downloadUnknownImg() {
+    await Filesystem.stat({
+      directory: this.dir.dir,
+      path: '/ebook-library/unknown.jpg'
+    }).catch(async () => {
+      const request: DownloadRequest = {
+        uri: 'https://p1.hiclipart.com/preview/584/221/301/sword-art-online-vector-icons-help-unknown-png-icon-thumbnail.jpg',
+        title: 'unknown',
+        description: '',
+        mimeType: '',
+        visibleInDownloadsUi: true,
+        notificationVisibility: NotificationVisibility.VisibleNotifyCompleted,
+        destinationInExternalPublicDir: {
+          dirType: 'ebook-library',
+          subPath: 'unknown.jpg',
+        },
+      };
+      await this.downloader.download(request);
+    });
+  }
+
+
+
 }

@@ -261,7 +261,7 @@ export class AuthorPage implements OnInit, OnDestroy {
     }
   }
 
-  onUpdateAuthor() {
+  async onUpdateAuthor() {
     Object.entries(this.authorForm.controls).forEach(ent => {
       const key = ent[0];
       const val = ent[1].value;
@@ -269,10 +269,14 @@ export class AuthorPage implements OnInit, OnDestroy {
       try {
         ent[1].disable();
       } catch (e) {
-        console.error(key)
+        console.error(key);
         console.error(e);
       }
     });
+    if (!this.author.img) {
+      await this.fs.downloadUnknownImg();
+      this.author.img = '/ebook-library/unknown.jpg';
+    }
     this.db.updateAuthor(this.author).then(() => {
       this.wikiOutputBoolean = false;
       this.authorChanged = false;
@@ -530,7 +534,7 @@ export class AuthorPage implements OnInit, OnDestroy {
 
   onRemovePic() {
     if (this.authorForm.get('img').value.startsWith('/')) {
-      this.fs.removeFile(this.authorForm.get('img').value).then(() => {
+      this.fs.removeFile(this.authorForm.get('img').value).finally(() => {
         this.authorForm.get('img').setValue(null);
         this.authorChanged = true;
       }).catch(e => {
@@ -558,7 +562,7 @@ export class AuthorPage implements OnInit, OnDestroy {
 
   onGetWidth(fcName: string, title: string) {
     return {
-      width: (String(this.authorForm.get(fcName).value).length * 7 + 4) + 'px',
+      width: ((String(this.authorForm.get(fcName).value).length * 7) + 7) + 'px',
       'min-width': ((title.length * 9.5) + 5) + 'px'
     };
   }

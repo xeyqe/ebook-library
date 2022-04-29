@@ -190,6 +190,10 @@ export class BookPage implements OnInit, OnDestroy {
     Object.keys(this.bookForm.controls).forEach(key => {
       if (key !== 'progress') this.book[key] = this.bookForm.get(key).value;
     });
+    if (!this.book.img) {
+      await this.fs.downloadUnknownImg();
+      this.book.img = '/ebook-library/unknown.jpg';
+    }
     this.db.updateBook(this.book).then(() => {
       this.bookChanged = false;
       this.ready2editing = !this.ready2editing;
@@ -244,7 +248,7 @@ export class BookPage implements OnInit, OnDestroy {
 
   async onRemovePic(img: string) {
     if (img?.startsWith('/')) {
-      await this.fs.removeFile(img).then(() => {
+      await this.fs.removeFile(img).finally(() => {
         this.bookForm.get('img').setValue(null);
         this.bookChanged = true;
       }).catch(e => {
@@ -542,8 +546,8 @@ export class BookPage implements OnInit, OnDestroy {
 
   onGetWidth(fcName: string, title: string) {
     return {
-      width: (String(this.bookForm.get(fcName).value).length * 7 + 2) + 'px',
-      'min-width': ((title.length * 9.5) + 5) + 'px'
+      width: ((String(this.bookForm.get(fcName).value).length * 7) + 7) + 'px',
+      'min-width': ((title.length * 9.5)) + 'px'
     };
   }
 
