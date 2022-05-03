@@ -21,7 +21,7 @@ import { FileReaderService } from 'src/app/services/file-reader.service';
 import { WebScraperService } from 'src/app/services/web-scraper.service';
 import { JsonDataParserService } from 'src/app/services/json-data-parser.service';
 
-import { BOOK, ONLINEBOOKLINK, INDEXOFBOOK } from 'src/app/services/interfaces';
+import { BOOK, ONLINEBOOKLINK, INDEXOFBOOK, AUTHOR, ONLINEAUTHORLEGIE } from 'src/app/services/interfaces';
 
 import { DialogComponent } from 'src/app/material/dialog/dialog.component';
 import { BusyService } from 'src/app/services/busy.service';
@@ -43,6 +43,8 @@ export class BookPage implements OnInit, OnDestroy {
   showAble = false;
 
   onlineBookList: ONLINEBOOKLINK[];
+  onlineBookListLegie: ONLINEAUTHORLEGIE[];
+
 
   dontworryiwillnameyoulater: string;
   dontworryiwillnameyoulater2: string;
@@ -352,12 +354,29 @@ export class BookPage implements OnInit, OnDestroy {
     });
   }
 
-  async getBooksList() {
+  async onGetBooksList() {
     const author = await this.db.getAuthor(this.book.creatorId);
-    let authorsName = author.name + ' ' + author.surname;
-    if (authorsName[0] === ' ') {
-      authorsName = authorsName.replace(' ', '');
-    }
+    const dialogRef = this.dialog.open(DialogComponent, {
+      data: {
+        message: 'Choose a source.',
+        selects: [
+          'CZ databaze knih',
+          'CZ legie'
+        ]
+      }
+    });
+    dialogRef.afterClosed().pipe(first()).subscribe((selected) => {
+      if (selected === 0) {
+        this.getBooksList(author);
+      } else if (selected === 1) {
+        this.getBooksListLegie(author);
+      }
+    });
+  }
+
+  private async getBooksList(author: AUTHOR) {
+    const authorsName = [author.name || '', author.surname || ''].join(' ').trim();
+
     if (authorsName.length) {
       this.workingServ.busy();
       const data = await this.webScrapper.getBooksListOfAnyAuthor(this.bookForm.get('title').value);
@@ -379,35 +398,86 @@ export class BookPage implements OnInit, OnDestroy {
     }
   }
 
-  downloadBookInfo(link: string) {
-    this.workingServ.busy();
-
-    this.getBook2(link).then((data) => {
-      if (data) {
-        const noise = '...celý text';
-        data.annotation = data.annotation?.endsWith(noise) ?
-          data.annotation.slice(0, -noise.length) :
-          data.annotation;
-        data.language = data.language && data.language !== 'český' ?
-          null :
-          'cs-CZ';
-        data.genre = data.genre?.toString();
-        [
-          'img', 'title', 'originalTitle', 'genre',
-          'publisher', 'published', 'annotation', 'language',
-          'translator', 'ISBN', 'length', 'serie', 'serieOrder'
-        ].forEach(key => {
-          if (data[key]) {
-            this.bookForm.get(key).setValue(data[key]);
-            if (!this.listsOfValues[key].includes(data[key]))
-              this.listsOfValues[key].push(data[key]);
-          }
-        });
-
-        this.bookChanged = true;
-        this.content.scrollToTop();
+  private async getBooksListLegie(author) {
+    const authorsName = [author.name || '', author.surname || ''].join(' ').trim();
+    const data = await this.webScrapper.getBookByNameLegie(authorsName, this.bookForm.get('title').value);
+    if (!data) return;
+    if (Array.isArray(data)) {
+      if (!data.length && author.lgId) {
+        this.onlineBookListLegie = await this.webScrapper.getBooksOfAuthorLegie(author.lgId);
+      } else {
+        this.onlineBookList = data;
       }
-    }).finally(() => this.workingServ.done());
+    } else {
+      [
+        'img', 'title', 'originalTitle', 'genre',
+        'publisher', 'published', 'annotation', 'language',
+        'translator', 'ISBN', 'length', 'serie', 'serieOrder'
+      ].forEach(key => {
+        if (data[key]) {
+          this.bookForm.get(key).setValue(data[key]);
+          if (!this.listsOfValues[key].includes(data[key]))
+            this.listsOfValues[key].push(data[key]);
+        }
+      });
+
+      this.bookChanged = true;
+      this.content.scrollToTop();
+    }
+  }
+
+  async downloadBookInfo(item: ONLINEBOOKLINK | {
+    title: string,
+    link: string,
+    review: string,
+    lgId: string,
+    dtbkId?: string,
+  }) {
+    if (item.dtbkId) {
+      this.workingServ.busy();
+
+      this.getBook2(item.link).then((data) => {
+        if (data) {
+          const noise = '...celý text';
+          data.annotation = data.annotation?.endsWith(noise) ?
+            data.annotation.slice(0, -noise.length) :
+            data.annotation;
+          data.language = data.language && data.language !== 'český' ?
+            null :
+            'cs-CZ';
+          data.genre = data.genre?.toString();
+          [
+            'img', 'title', 'originalTitle', 'genre',
+            'publisher', 'published', 'annotation', 'language',
+            'translator', 'ISBN', 'length', 'serie', 'serieOrder'
+          ].forEach(key => {
+            if (data[key]) {
+              this.bookForm.get(key).setValue(data[key]);
+              if (!this.listsOfValues[key].includes(data[key]))
+                this.listsOfValues[key].push(data[key]);
+            }
+          });
+          this.bookChanged = true;
+          this.content.scrollToTop();
+        }
+      }).finally(() => this.workingServ.done());
+    } else if (item.lgId) {
+      const data = await this.webScrapper.getBookLegie(item.link);
+      [
+        'img', 'title', 'originalTitle', 'genre',
+        'publisher', 'published', 'annotation', 'language',
+        'translator', 'ISBN', 'length', 'serie', 'serieOrder'
+      ].forEach(key => {
+        if (data[key]) {
+          this.bookForm.get(key).setValue(data[key]);
+          if (!this.listsOfValues[key].includes(data[key]))
+            this.listsOfValues[key].push(data[key]);
+        }
+      });
+      this.bookChanged = true;
+      this.content.scrollToTop();
+      this.workingServ.done();
+    }
   }
 
   async getBook2(url: string): Promise<{

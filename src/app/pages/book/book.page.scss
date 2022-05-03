@@ -99,3 +99,22 @@ mat-select {
         margin-right: .5rem;
     }
 }
+
+.legies {
+    border-bottom: thin double gray;
+    border-top: thin double gray;
+
+    &__serie {
+        text-align: center;
+    }
+
+    &__book {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        h2 {
+            margin-bottom: 0;
+            width: fit-content;
+        }
+    }
+}

@@ -19,7 +19,7 @@
                     <ion-icon *ngIf="!ready2editing" slot="icon-only" name="create"></ion-icon>
                     <ion-icon *ngIf="ready2editing" slot="icon-only" name="close"></ion-icon>
                 </ion-button>
-                <ion-button *ngIf="ready2editing && showAble" (click)="getBooksList()">
+                <ion-button *ngIf="ready2editing && showAble" (click)="onGetBooksList()">
                     <ion-icon slot="icon-only" name="add-circle-sharp"></ion-icon>
                 </ion-button>
 
@@ -233,9 +233,9 @@
             </div>
         </div>
 
-        <div #target *ngIf="ready2editing">
-            <div class="online-item" *ngFor="let item of onlineBookList" (click)="downloadBookInfo(item.link)">
-                <ion-avatar>
+        <div #target *ngIf="ready2editing && onlineBookList?.length">
+            <div class="online-item" *ngFor="let item of onlineBookList" (click)="downloadBookInfo(item)">
+                <ion-avatar *ngIf="item.img">
                     <img [src]="item.img" />
                 </ion-avatar>
                 <div class="ion-text-wrap">
@@ -244,5 +244,16 @@
                 </div>
             </div>
         </div>
+
+        <div #target *ngIf="ready2editing && onlineBookListLegie?.length">
+            <div class="legies" *ngFor="let item of onlineBookListLegie">
+                <h1 class="legies__serie" *ngIf="item.serie?.title">{{ item.serie.title }}</h1>
+                <div *ngFor="let book of item.books" class="legies__book" (click)="downloadBookInfo(book)">
+                    <h2 *ngIf="book.title">{{ book.title }}</h2>
+                    <span *ngIf="book.review">{{ book.review }}</span>
+                </div>
+            </div>
+        </div>
+        
     </form>
 </ion-content>

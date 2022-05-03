@@ -12,6 +12,7 @@ export interface AUTHOR {
   path: string;
   idInJson: string;
   dtbkId: string;
+  lgId: string;
 }
 
 export interface BOOK {
@@ -33,6 +34,8 @@ export interface BOOK {
   img: string;
   serie: string;
   serieOrder: number;
+  dtbkId: string;
+  lgId: string;
 }
 
 export interface BOOKSIMPLIFIED {
@@ -79,13 +82,16 @@ export interface ONLINEAUTHORLINK {
   year: number;
   img: string;
   dtbkId: string;
+  lgId: string;
 }
 
 export interface ONLINEBOOKLINK {
   link: string;
-  img: string;
-  title: string;
-  comment: string;
+  img?: string;
+  title?: string;
+  comment?: string;
+  dtbkId?: string;
+  lgId?: string;
 }
 
 export interface ONLINEBOOK {
@@ -146,4 +152,17 @@ export interface AUTHORJSON {
 export interface CHAPTER {
   id: string;
   src: string;
+}
+
+export interface ONLINEAUTHORLEGIE {
+  serie: {
+    title: string,
+    link: string
+  };
+  books: {
+    title: string,
+    link: string,
+    review: string,
+    lgId: string
+  }[];
 }

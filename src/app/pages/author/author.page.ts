@@ -165,6 +165,7 @@ export class AuthorPage implements OnInit, OnDestroy {
       biography: new FormControl({ value: null, disabled: true }),
       idInJson: new FormControl(),
       dtbkId: new FormControl(),
+      lgId: new FormControl(),
     });
     Object.entries(this.authorForm.controls).forEach(ent => {
       const key = ent[0];
@@ -500,31 +501,88 @@ export class AuthorPage implements OnInit, OnDestroy {
     } else {
       authorsName = this.authorForm.get('name').value + ' ' + this.authorForm.get('surname').value;
     }
+    const dialogRef = this.dialog.open(DialogComponent, {
+      data: {
+        message: 'Choose a source.',
+        selects: [
+          'CZ databaze knih',
+          'CZ legie'
+        ]
+      }
+    });
+    dialogRef.afterClosed().pipe(first()).subscribe((selected) => {
+      if (selected === 0) {
+        this.dtbkGetAuthorList(authorsName);
+      } else if (selected === 1) {
+        this.legieGetAuthorList(authorsName);
+      }
+    });
+  }
+
+  private dtbkGetAuthorList(authorName: string) {
     this.workingServ.busy();
-    this.webScraper.getAuthorsList(authorsName).then((data) => {
+    this.webScraper.getAuthorsList(authorName).then((data) => {
       this.onlineAuthorsList = data;
       this.workingServ.done();
       this.scrollElement(this.target2);
-    });
+    }).finally(() => this.workingServ.done());
+  }
+
+  private legieGetAuthorList(authorName: string) {
+    this.workingServ.busy();
+    this.webScraper.getAuthorsListLegie(authorName).then((data) => {
+      if (data) {
+        if (Array.isArray(data)) {
+          this.onlineAuthorsList = data;
+          this.scrollElement(this.target2);
+        } else {
+          this.authorForm.get('img').setValue(data.img || null);
+          this.authorForm.get('name').setValue(data.name || null);
+          this.authorForm.get('surname').setValue(data.surname || null);
+          this.authorForm.get('birth').setValue(data.birth || null);
+          this.authorForm.get('death').setValue(data.death || null);
+          this.authorForm.get('nationality').setValue(data.nationality || null);
+          this.authorForm.get('biography').setValue(data.biography || null);
+          this.authorForm.get('lgId').setValue(data.lgId || null);
+        }
+        this.workingServ.done();
+      }
+    }).finally(() => this.workingServ.done());
   }
 
   onDownloadAuthorInfo(item: ONLINEAUTHORLINK) {
     this.workingServ.busy();
-    this.webScraper.getAuthor(item.link).then((data) => {
-      if (data) {
-        Object.entries(this.authorForm.controls).forEach(ent => {
-          const key = ent[0];
-          const fc = ent[1];
-          fc.setValue(data[key] || null);
-          if (data[key] && !this.listsOfValues[key].includes(data[key]))
-            this.listsOfValues[key].push(data[key]);
-        });
-        // this.authorForm.get('dtbkId').setValue(item.dtbkId);
-
+    if (item.dtbkId) {
+      this.webScraper.getAuthor(item.link).then((data) => {
+        if (data) {
+          Object.entries(this.authorForm.controls).forEach(ent => {
+            const key = ent[0];
+            const fc = ent[1];
+            fc.setValue(data[key] || null);
+            if (data[key] && !this.listsOfValues[key].includes(data[key]))
+              this.listsOfValues[key].push(data[key]);
+          });
+        }
+      }).finally(() => {
         this.workingServ.done();
         this.content.scrollToTop();
-      }
-    });
+      });
+    } else if (item.lgId) {
+      this.webScraper.getLegieAuthor(item.link).then((data) => {
+        if (data) {
+          Object.entries(this.authorForm.controls).forEach(ent => {
+            const key = ent[0];
+            const fc = ent[1];
+            fc.setValue(data[key] || null);
+            if (data[key] && !this.listsOfValues[key].includes(data[key]))
+              this.listsOfValues[key].push(data[key]);
+          });
+        }
+      }).finally(() => {
+        this.workingServ.done();
+        this.content.scrollToTop();
+      });
+    }
   }
 
   private scrollElement(target: ElementRef) {

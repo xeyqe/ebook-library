@@ -182,12 +182,12 @@
 
         <div #target2 *ngIf="ready2editing">
             <div class="online-item" *ngFor="let item of onlineAuthorsList" (click)="onDownloadAuthorInfo(item)">
-                <ion-avatar>
+                <ion-avatar *ngIf="item.img">
                     <img [src]="item.img" />
                 </ion-avatar>
                 <div class="ion-text-wrap">
-                    <h2>{{ item.name }}</h2>
-                    <p>{{ item.year }}</p>
+                    <h2 *ngIf="item.name || item.surname">{{ (item.name || '')  + ' ' + (item.surname || '')}}</h2>
+                    <p *ngIf="item.year">{{ item.year }}</p>
                 </div>
             </div>
         </div>

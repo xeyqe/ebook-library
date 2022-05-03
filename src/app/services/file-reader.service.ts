@@ -96,6 +96,7 @@ export class FileReaderService implements OnInit {
               path: `/ebook-library/${authorFolder}/`,
               idInJson: null,
               dtbkId: null,
+              lgId: null
             });
             this.db.authorsBooksPaths(authorId).then((paths) => {
               this._booksOfAuthor(`/ebook-library/${authorFolder}/`, authorId, paths);
@@ -172,7 +173,9 @@ export class FileReaderService implements OnInit {
                 rating: null,
                 img: null,
                 serie: null,
-                serieOrder: null
+                serieOrder: null,
+                dtbkId: null,
+                lgId: null
               };
               this.db.addBook(book);
             }

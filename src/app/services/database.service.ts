@@ -20,7 +20,7 @@ import { Platform } from '@ionic/angular';
 export class DatabaseService {
   private database: SQLiteObject;
   private dbReady: BehaviorSubject<boolean> = new BehaviorSubject(false);
-  private version = 4;
+  private version = 5;
 
   authors = new BehaviorSubject<AUTHORSIMPLIFIED[]>([]);
   books = new BehaviorSubject([]);
@@ -171,7 +171,28 @@ export class DatabaseService {
     await this.database.executeSql(
       'ALTER TABLE authors ADD COLUMN dtbkId TEXT', []
     ).catch(e => {
-      console.error('adding dtbkId failed');
+      console.error('adding dtbkId to authors failed');
+      throw new Error(JSON.stringify(e));
+    });
+  }
+
+  private async updateDB4To5() {
+    await this.database.executeSql(
+      'ALTER TABLE authors ADD COLUMN lgId TEXT', []
+    ).catch(e => {
+      console.error('adding lgId to authors failed');
+      throw new Error(JSON.stringify(e));
+    });
+    await this.database.executeSql(
+      'ALTER TABLE books ADD COLUMN lgId TEXT', []
+    ).catch(e => {
+      console.error('adding lgId to books failed');
+      throw new Error(JSON.stringify(e));
+    });
+    await this.database.executeSql(
+      'ALTER TABLE books ADD COLUMN dtbkId TEXT', []
+    ).catch(e => {
+      console.error('adding dtbkId to books failed');
       throw new Error(JSON.stringify(e));
     });
   }
@@ -259,12 +280,13 @@ export class DatabaseService {
       author.img,
       author.rating,
       author.path,
-      author.dtbkId
+      author.dtbkId,
+      author.lgId,
     ];
     const output = await this.database.executeSql(
       `INSERT INTO authors
-          (name, surname, pseudonym, nationality, birth, death, biography, img, rating, path, dtbkId)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (name, surname, pseudonym, nationality, birth, death, biography, img, rating, path, dtbkId, lgId)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       data
     ).catch(e => {
       console.error('addAuthor failed!');
@@ -298,6 +320,7 @@ export class DatabaseService {
       path: data.rows.item(0).path,
       idInJson: data.rows.item(0).idInJson,
       dtbkId: data.rows.item(0).dtbkId,
+      lgId: data.rows.item(0).lgId,
     };
   }
 
@@ -375,6 +398,8 @@ export class DatabaseService {
           img: data.rows.item(i).img,
           serie: data.rows.item(i).serie,
           serieOrder: data.rows.item(i).serieOrder,
+          dtbkId: data.rows.item(i).dtbkId,
+          lgId: data.rows.item(i).lgId,
         });
       }
     }
@@ -402,6 +427,8 @@ export class DatabaseService {
       img: data.rows.item(0).img,
       serie: data.rows.item(0).serie,
       serieOrder: data.rows.item(0).serieOrder,
+      dtbkId: data.rows.item(0).dtbkId,
+      lgId: data.rows.item(0).lgId,
     };
   }
 
@@ -432,12 +459,14 @@ export class DatabaseService {
       author.path,
       author.idInJson,
       author.dtbkId,
+      author.lgId,
     ];
 
     await this.database.executeSql(
       `UPDATE authors SET name = ?,
           surname = ?, pseudonym = ?, nationality = ?, birth = ?, death = ?,
-          biography = ?, img = ?, rating = ?, path = ?, idInJson = ?, dtbkId = ? WHERE id = ${author.id}`,
+          biography = ?, img = ?, rating = ?, path = ?, idInJson = ?,
+          dtbkId = ?, lgId = ? WHERE id = ${author.id}`,
       data
     );
     const simpl = {
@@ -474,12 +503,14 @@ export class DatabaseService {
       book.progress,
       book.rating,
       book.img,
+      book.dtbkId,
+      book.lgId,
     ];
     try {
       const output = await this.database.executeSql(
         `INSERT INTO books (title, creatorId, originalTitle, annotation, publisher, published, genre,
-        lenght, language, translator, ISBN, path, progress, rating, img)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        lenght, language, translator, ISBN, path, progress, rating, img, dtbkId, lgId)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         data
       );
       const books = this.books.getValue();
@@ -526,7 +557,9 @@ export class DatabaseService {
       book.rating,
       book.img,
       book.serie,
-      book.serieOrder
+      book.serieOrder,
+      book.dtbkId,
+      book.lgId,
     ];
     await this.database.executeSql(
       `UPDATE books SET title = ?,
@@ -544,7 +577,9 @@ export class DatabaseService {
           rating = ?,
           img = ?,
           serie = ?,
-          serieOrder = ?
+          serieOrder = ?,
+          dtbkId = ?,
+          lgId = ?
           WHERE id = ${book.id}`,
       data
     );
