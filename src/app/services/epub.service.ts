@@ -77,7 +77,8 @@ export class EpubService implements OnInit {
       let imgPath: string;
 
       try {
-        const id = xml.getElementsByTagName('metadata')[0].querySelector('[name="cover"]').getAttribute('content');
+        const id = xml.getElementsByTagName('metadata')[0].querySelector('[name="cover"]').getAttribute('content')
+          .replace('.', '\\.').replace(':', '\\:');
         imgPath = this.path2ChaptersDir + '/' + xml.querySelector('#' + id).getAttribute('href');
       } catch {
         const elms = xml.querySelectorAll('[id*="cover"]');
