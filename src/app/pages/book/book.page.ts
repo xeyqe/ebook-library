@@ -44,6 +44,7 @@ export class BookPage implements OnInit, OnDestroy {
 
   onlineBookList: ONLINEBOOKLINK[];
   onlineBookListLegie: ONLINEAUTHORLEGIE[];
+  onlineShortStoriesListLegie: { title: string, link: string, lgId: string, review: string }[];
 
 
   dontworryiwillnameyoulater: string;
@@ -146,6 +147,8 @@ export class BookPage implements OnInit, OnDestroy {
       annotation: new FormControl({ value: null, disabled: true }),
       serie: new FormControl({ value: null, disabled: true }),
       serieOrder: new FormControl({ value: null, disabled: true }),
+      lgId: new FormControl(),
+      dtbkId: new FormControl(),
     });
     this.listsOfValues = {} as any;
     Object.entries(this.bookForm.controls).forEach(ent => {
@@ -393,21 +396,23 @@ export class BookPage implements OnInit, OnDestroy {
           this.onlineBookList = data;
         }
       }
+      this.target.nativeElement.scrollIntoView();
       this.workingServ.done();
-      this.scrollElement();
     }
   }
 
-  private async getBooksListLegie(author) {
+  private async getBooksListLegie(author: AUTHOR) {
     const authorsName = [author.name || '', author.surname || ''].join(' ').trim();
     const data = await this.webScrapper.getBookByNameLegie(authorsName, this.bookForm.get('title').value);
     if (!data) return;
     if (Array.isArray(data)) {
       if (!data.length && author.lgId) {
         this.onlineBookListLegie = await this.webScrapper.getBooksOfAuthorLegie(author.lgId);
+        this.onlineShortStoriesListLegie = await this.webScrapper.getShortStoriesOfAuthorLegie(author.lgId);
       } else {
         this.onlineBookList = data;
       }
+      this.target.nativeElement.scrollIntoView();
     } else {
       [
         'img', 'title', 'originalTitle', 'genre',
@@ -432,7 +437,7 @@ export class BookPage implements OnInit, OnDestroy {
     review: string,
     lgId: string,
     dtbkId?: string,
-  }) {
+  } | { title: string, link: string, lgId: string, review: string, dtbkId?: string }) {
     if (item.dtbkId) {
       this.workingServ.busy();
 
@@ -478,6 +483,19 @@ export class BookPage implements OnInit, OnDestroy {
       this.content.scrollToTop();
       this.workingServ.done();
     }
+  }
+
+  async downloadShortStoryInfo(item) {
+    this.workingServ.busy();
+    try {
+      const shortStory = await this.webScrapper.getShortStoryLegie(item.link);
+      Object.keys(shortStory).forEach(key => {
+        this.bookForm.get(key).setValue(shortStory[key]);
+      });
+    } catch (e) { }
+    this.bookChanged = true;
+    this.content.scrollToTop();
+    this.workingServ.done();
   }
 
   async getBook2(url: string): Promise<{
@@ -595,10 +613,6 @@ export class BookPage implements OnInit, OnDestroy {
         }
       }
     });
-  }
-
-  private scrollElement() {
-    this.content.scrollToPoint(0, this.target.nativeElement.offsetTop, 500);
   }
 
   onSwitchPic() {

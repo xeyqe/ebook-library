@@ -254,6 +254,15 @@
                 </div>
             </div>
         </div>
-        
+
+        <div #target *ngIf="ready2editing && onlineShortStoriesListLegie?.length">
+            <h1 class="legies__serie">Short stories</h1>
+            <div class="legies" *ngFor="let item of onlineShortStoriesListLegie">
+                <div class="legies__book" (click)="downloadShortStoryInfo(item)">
+                    <h2 *ngIf="item.title">{{ item.title }}</h2>
+                    <span *ngIf="item.review">{{ item.review }}</span>
+                </div>
+            </div>
+        </div>
     </form>
 </ion-content>

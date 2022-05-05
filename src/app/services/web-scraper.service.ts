@@ -309,6 +309,29 @@ export class WebScraperService {
     return ar;
   }
 
+  public async getShortStoriesOfAuthorLegie(
+    lgId: string
+  ): Promise<{ title: string, link: string, lgId: string, review: string }[]> {
+    const url = `https://www.legie.info/autor/${lgId}/povidky#zalozky`;
+    const data = await this._getHtml(url);
+    const shortStories: { title: string, link: string, lgId: string, review: string }[] = [];
+    data.querySelectorAll('#detail a').forEach((a: HTMLLinkElement) => {
+      const shortStory = this.getShortStoryFromLink(a);
+      shortStories.push(shortStory);
+    });
+    return shortStories;
+  }
+
+  private getShortStoryFromLink(a: HTMLLinkElement): { title: string, link: string, lgId: string, review: string } {
+    const output = {
+      title: a.textContent || null,
+      link: a.href || null,
+      lgId: a.href?.substring(a.href.lastIndexOf('/') + 1) || null,
+      review: a.nextSibling.nodeName === '#text' ? a.nextSibling.textContent : null
+    };
+    return output;
+  }
+
   public async getBookByNameLegie(authorsName: string, bookName: string) {
     const url = `https://www.legie.info/index.php?search_text=${bookName}&search_autor_kp=${authorsName}&search_ignorovat_casopisy=on&omezeni=ksp`;
     const data = await this._getHtml(url);
@@ -396,6 +419,51 @@ export class WebScraperService {
         });
       } else if (p.textContent.includes('kniha patří do světa: ') && !output.serie) {
         output.serie = p.querySelector('a')?.textContent || null;
+      }
+    });
+    return output;
+  }
+
+  public async getShortStoryLegie(url: string): Promise<{
+    title: string,
+    originalTitle: string,
+    translator: string,
+    img: string,
+    lgId: string,
+  }> {
+    const data = await this._getHtml(url);
+    return { ...this.getShortStoryFromDoc(data), lgId: url.substring(url.lastIndexOf('/') + 1) };
+  }
+
+  private getShortStoryFromDoc(data: Document): {
+    title: string,
+    originalTitle: string,
+    translator: string,
+    img: string,
+  } {
+    const output = {
+      title: data.querySelector('#nazev_povidky').textContent,
+      originalTitle: null,
+      translator: null,
+      img: (data.querySelector('#pro_obal img') as HTMLImageElement)?.src || null
+    };
+    data.querySelector('#jine_nazvy').childNodes.forEach(el => {
+      if (el.nodeName === '#text') {
+        if (el.textContent.includes('originální název: ')) {
+          output.originalTitle = el.textContent.substring('originální název: '.length);
+        } else if (el.textContent.includes('originál vyšel: ')) {
+          const match = el.textContent.match(/\d{4}/);
+          if (match) output.originalTitle += ', ' + match[0];
+        }
+      }
+    });
+    data.querySelector('#anotace').childNodes.forEach(el => {
+      if (el.textContent.includes('Překlad:')) {
+        el.childNodes.forEach(innerEl => {
+          if (innerEl.nodeName === '#text' && innerEl.textContent.startsWith('\n● ')) {
+            output.translator = innerEl.textContent.substring(3);
+          }
+        });
       }
     });
     return output;
