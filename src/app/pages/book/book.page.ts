@@ -384,7 +384,7 @@ export class BookPage implements OnInit, OnDestroy {
       this.workingServ.busy();
       const data = await this.webScrapper.getBooksListOfAnyAuthor(this.bookForm.get('title').value);
       if (author.dtbkId) {
-        const authorsBooks = author.dtbkId ? await this.webScrapper.getBooksListOfAuthorById(author.dtbkId) : [];
+        const authorsBooks = await this.webScrapper.getBooksListOfAuthorById(author.dtbkId);
         this.onlineBookList = data.filter(bk => authorsBooks.some(abk => abk.link === bk.link));
         this.onlineBookList = this.onlineBookList.length ? this.onlineBookList : authorsBooks;
       } else {
@@ -396,7 +396,7 @@ export class BookPage implements OnInit, OnDestroy {
           this.onlineBookList = data;
         }
       }
-      this.target.nativeElement.scrollIntoView();
+      this.target?.nativeElement.scrollIntoView();
       this.workingServ.done();
     }
   }
@@ -412,7 +412,7 @@ export class BookPage implements OnInit, OnDestroy {
       } else {
         this.onlineBookList = data;
       }
-      this.target.nativeElement.scrollIntoView();
+      this.target?.nativeElement.scrollIntoView();
     } else {
       [
         'img', 'title', 'originalTitle', 'genre',
@@ -437,7 +437,7 @@ export class BookPage implements OnInit, OnDestroy {
     review: string,
     lgId: string,
     dtbkId?: string,
-  } | { title: string, link: string, lgId: string, review: string, dtbkId?: string }) {
+  }) {
     if (item.dtbkId) {
       this.workingServ.busy();
 
@@ -445,16 +445,17 @@ export class BookPage implements OnInit, OnDestroy {
         if (data) {
           const noise = '...celý text';
           data.annotation = data.annotation?.endsWith(noise) ?
-            data.annotation.slice(0, -noise.length) :
-            data.annotation;
+          data.annotation.slice(0, -noise.length) :
+          data.annotation;
           data.language = data.language && data.language !== 'český' ?
-            null :
-            'cs-CZ';
+          null :
+          'cs-CZ';
           data.genre = data.genre?.toString();
+          this.bookForm.get('dtbkId').setValue(item.lgId);
           [
             'img', 'title', 'originalTitle', 'genre',
             'publisher', 'published', 'annotation', 'language',
-            'translator', 'ISBN', 'length', 'serie', 'serieOrder'
+            'translator', 'ISBN', 'length', 'serie', 'serieOrder', 'dtbkId'
           ].forEach(key => {
             if (data[key]) {
               this.bookForm.get(key).setValue(data[key]);
@@ -467,6 +468,7 @@ export class BookPage implements OnInit, OnDestroy {
         }
       }).finally(() => this.workingServ.done());
     } else if (item.lgId) {
+      this.bookForm.get('lgId').setValue(item.lgId);
       const data = await this.webScrapper.getBookLegie(item.link);
       [
         'img', 'title', 'originalTitle', 'genre',
@@ -641,6 +643,7 @@ export class BookPage implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.subs?.forEach(sub => sub?.unsubscribe());
+    this.workingServ.done();
   }
 
 }

@@ -635,5 +635,6 @@ export class AuthorPage implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.subs?.forEach(sub => sub?.unsubscribe());
+    this.workingServ.done();
   }
 }

@@ -5,9 +5,10 @@ import { StatusBar } from '@ionic-native/status-bar/ngx';
 import { Platform, ToastController } from '@ionic/angular';
 import { BackgroundMode } from 'capacitor-plugin-background-mode';
 
+import { BusyService } from './services/busy.service';
 import { FileReaderService } from './services/file-reader.service';
 import { DatabaseService } from 'src/app/services/database.service';
-import { BusyService } from './services/busy.service';
+
 
 @Component({
   selector: 'app-root',

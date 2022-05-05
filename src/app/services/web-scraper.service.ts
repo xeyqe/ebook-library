@@ -112,6 +112,7 @@ export class WebScraperService {
     img: string,
     title: string,
     comment: string,
+    dtbkId: string,
   }[]> {
     const doc = await this._getHtml(url);
     const pages = doc.querySelector('.pager')?.childElementCount || 0;
@@ -129,15 +130,18 @@ export class WebScraperService {
     img: string,
     title: string,
     comment: string,
+    dtbkId: string,
   }[] {
     const parsedList = [];
     const list = doc.querySelectorAll('#tabcontent .new2');
     list.forEach(item => {
+      const link = item.querySelector('a').href;
       parsedList.push({
-        link: item.querySelector('a').href,
+        link,
         img: (item.previousElementSibling.querySelector('img') as HTMLImageElement).src,
         title: item.querySelector('a').textContent,
-        comment: item.querySelector('.pozn.odl').textContent
+        comment: item.querySelector('.pozn.odl').textContent,
+        dtbkId: link.substring(link.lastIndexOf('/') + 1)
       });
     });
     return parsedList;
