@@ -80,7 +80,7 @@ mat-form-field, .marged {
 
 .reduced {
     max-height: 10rem;
-}
+}   
 
 mat-select {
     width: 5rem;
@@ -117,4 +117,8 @@ mat-select {
             width: fit-content;
         }
     }
+}
+
+.buttons {
+    margin-top: .5rem;
 }

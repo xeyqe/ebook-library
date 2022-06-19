@@ -1,11 +1,14 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { FormControl, FormGroup } from '@angular/forms';
 
+import { Platform } from '@ionic/angular';
 import { Storage } from '@ionic/storage-angular';
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
 
 import { Subscription } from 'rxjs';
 
+import { BusyService } from 'src/app/services/busy.service';
 import { EpubService } from 'src/app/services/epub.service';
 import { DatabaseService } from 'src/app/services/database.service';
 import { FileReaderService } from 'src/app/services/file-reader.service';
@@ -24,6 +27,7 @@ export class TtsPage implements OnInit, OnDestroy {
   speed = 30;
 
   fontSize = '20px';
+  contHeight = '70px';
   authorName = '';
   textsLength = 0;
 
@@ -38,25 +42,46 @@ export class TtsPage implements OnInit, OnDestroy {
 
   extension = 'txt';
 
-  language = 'en_US';
+  language: string;
+  languages: string[];
+  voices: { [lang: string]: { voiceURI: string, name: string }[] };
+  voice: string;
+  engines: { name: string, label: string, icon: number }[];
 
   initialized = false;
   isWorking = false;
 
+  private isRewinding: boolean;
+  private stopRewind: boolean;
+
   private subs: Subscription[] = [];
+  myForm: FormGroup;
+  interval: ReturnType<typeof setTimeout>;
+  inBg: boolean;
 
 
   constructor(
-    private route: ActivatedRoute,
-    private fs: FileReaderService,
     private db: DatabaseService,
-    private strg: Storage,
     private epubService: EpubService,
+    private fs: FileReaderService,
+    private platform: Platform,
+    private route: ActivatedRoute,
+    private strg: Storage,
+    private working: BusyService,
   ) { }
 
   ngOnInit() {
     this.initVariablesFromStorage();
     this.initVariablesFromDatabase();
+    if (!this.spritzBoolean) {
+      this.initSpeechOptions();
+    }
+    this.subs.push(this.platform.resume.subscribe(() => {
+      this.inBg = false;
+    }));
+    this.subs.push(this.platform.pause.subscribe(() => {
+      this.inBg = true;
+    }));
   }
 
   private initVariablesFromStorage() {
@@ -97,6 +122,7 @@ export class TtsPage implements OnInit, OnDestroy {
         this.strg.get('fs').then((val) => {
           if (val) {
             this.fontSize = val;
+            this.contHeight = (+val.replace('px', '') * 3 + 10) + 'px';
           }
         });
       }
@@ -116,9 +142,9 @@ export class TtsPage implements OnInit, OnDestroy {
           this.path = book.path;
           this.title = book.title;
 
-          if (book.language) {
-            this.language = book.language;
-          }
+          // if (book.language) {
+          //   this.language = book.language;
+          // }
 
           this.extension = book.path.substring(book.path.lastIndexOf('.') + 1);
 
@@ -146,6 +172,76 @@ export class TtsPage implements OnInit, OnDestroy {
         });
       }
     }));
+  }
+
+  private async initSpeechOptions() {
+    let loadedValue = await this.db.getValue('tts');
+    let engine: string;
+    if (loadedValue) {
+      loadedValue = JSON.parse(loadedValue);
+    } else {
+      loadedValue = {};
+      const defaults = await TextToSpeech.getDefaults();
+      engine = defaults.engine;
+      loadedValue.engine = defaults.engine;
+      loadedValue.language = defaults.language;
+      loadedValue.voice = defaults.voice;
+    }
+    this.voice = loadedValue.voice;
+    this.language = loadedValue.language;
+
+    this.myForm = new FormGroup({
+      engine: new FormControl(loadedValue?.engine),
+      language: new FormControl(loadedValue?.language),
+      voice: new FormControl(loadedValue?.voice),
+    });
+
+    if (loadedValue && loadedValue.engine !== engine)
+      await TextToSpeech.switchEngine({ engineName: loadedValue.engine });
+
+    this.subs.push(this.myForm.valueChanges.subscribe(() => {
+      this.db.saveValue('tts', JSON.stringify(this.myForm.value));
+      if (this.isSpeaking) {
+        this.stopSpeaking();
+      }
+    }));
+
+    this.subs.push(this.myForm.get('voice').valueChanges.subscribe(voice => {
+      this.voice = voice;
+    }));
+    this.subs.push(this.myForm.get('engine').valueChanges.subscribe(async engine => {
+      this.working.busy();
+      TextToSpeech.switchEngine({ engineName: engine }).catch(e => console.error(e)).finally(async () => {
+        await this.setLangsVoicesLists();
+        this.myForm.get('language').setValue(this.languages[0]);
+        this.myForm.get('voice').setValue(this.voices[this.languages[0]] ? this.voices[this.languages[0]][0]?.voiceURI : null);
+        this.working.done();
+      });
+    }));
+    this.subs.push(this.myForm.get('language').valueChanges.subscribe(language => {
+      this.language = language;
+      this.myForm.get('voice').setValue(this.voices[language]?.length ? this.voices[language][0]?.voiceURI : null);
+    }));
+
+    this.setLangsVoicesLists();
+
+    TextToSpeech.getSupportedEngines().then(engines => {
+      this.engines = engines.engines;
+    });
+  }
+
+  private async setLangsVoicesLists() {
+    await TextToSpeech.getSupportedLanguages().then(langs => {
+      this.languages = langs.languages.sort();
+    });
+    await TextToSpeech.getSupportedVoices().then(voices => {
+      this.voices = {};
+      voices.voices.forEach(voice => {
+        if (!this.voices[voice.lang])
+          this.voices[voice.lang] = [];
+        this.voices[voice.lang].push({ voiceURI: voice.voiceURI, name: voice.name });
+      });
+    });
   }
 
   private getTexts(): Promise<string[]> {
@@ -225,6 +321,7 @@ export class TtsPage implements OnInit, OnDestroy {
 
   speak() {
     if (this.texts) {
+      if (!this.working.isSpeaking) this.working.isSpeaking = true;
       this.isSpeaking = true;
       this.saveAuthorTitle();
       let text2Speak = '';
@@ -239,21 +336,26 @@ export class TtsPage implements OnInit, OnDestroy {
         this.texts[this.progress + add2Progress] &&
         text2Speak.length + this.texts[this.progress + add2Progress].length < this.speakingLengthLimit
       );
-
-      TextToSpeech.speak({
+      const params = {
         text: text2Speak,
         lang: this.language,
         rate: this.speed / 10,
-      }).then((_) => {
+      };
+      if (this.voice) params[`voice`] = this.voice;
+      this.progress++;
+
+      TextToSpeech.speak(params).then((_) => {
         if (this.progress < this.texts.length) {
           this.changeProgress(this.progress + add2Progress);
           // this.db.updateBookProgress(this.bookId, this.progress + '/' + this.texts.length);
           this.speak();
         } else {
+          this.working.isSpeaking = false;
           this.isSpeaking = false;
           this.saveAuthorTitle();
         }
       }).catch((reason) => {
+        this.working.isSpeaking = false;
         this.isSpeaking = false;
         this.saveAuthorTitle();
         console.error('tts speak failed: ');
@@ -283,28 +385,51 @@ export class TtsPage implements OnInit, OnDestroy {
     }
   }
 
-  backward() {
-    if (!this.progress) {
-      this.progress = 0;
-    }
-    if (this.spritzBoolean && this.progress > 0) {
-      this.progress -= 1;
-    } else {
-      this.changeProgress(this.progress - 1);
-    }
-    this.stopStartSpeaking();
+  private async wait(milliseconds: number): Promise<void> {
+    return new Promise<void>(resolve => {
+      setTimeout(() => {
+        resolve();
+      }, milliseconds);
+    });
   }
 
-  forward() {
-    if (!this.progress) {
-      this.progress = 0;
+  onStartRewinding(n: 0 | 1) {
+    if (this.isRewinding) {
+      this.stopRewind = true;
     }
-    if (this.spritzBoolean && this.progress < this.texts.length - 1) {
-      this.progress += 1;
-    } else {
-      this.changeProgress(this.progress + 1);
+    this.isRewinding = true;
+    this.interval = setTimeout(async () => {
+      this.interval = null;
+
+      while (this.progress > 0 && this.progress < this.textsLength) {
+        if (this.stopRewind) {
+          this.stopRewind = false;
+          this.isRewinding = false;
+          break;
+        }
+        await this.wait(1);
+        this.progress = n ? this.progress + 1 : this.progress - 1;
+      }
+
+      this.isRewinding = false;
+    }, 200);
+  }
+
+  onStopRewinding(n: 0 | 1) {
+    if (this.isRewinding) {
+      if (this.interval) {
+        clearInterval(this.interval);
+        this.stopRewind = true;
+        if (n) {
+          this.progress = this.progress + 1 > this.textsLength ? this.textsLength : this.progress + 1;
+        } else {
+          this.progress = this.progress - 1 < 0 ? 0 : this.progress - 1;
+        }
+        this.stopStartSpeaking();
+      } else {
+        this.stopRewind = true;
+      }
     }
-    this.stopStartSpeaking();
   }
 
   changeProgress(progress: number) {
@@ -342,9 +467,7 @@ export class TtsPage implements OnInit, OnDestroy {
     this.setProgress2DB();
     if (!this.spritzBoolean) {
       if (this.isSpeaking) {
-        this.stopSpeaking().then(() => {
-          this.speak();
-        });
+        this.stopSpeaking();
       }
     } else {
       if (this.isSpeaking) {
@@ -358,6 +481,7 @@ export class TtsPage implements OnInit, OnDestroy {
 
   private stopSpeaking(): Promise<any> {
     this.isSpeaking = false;
+    this.working.isSpeaking = false;
     this.saveAuthorTitle();
     return TextToSpeech.stop();
   }
@@ -453,6 +577,7 @@ export class TtsPage implements OnInit, OnDestroy {
       num += 0.1;
     }
     this.fontSize = num + 'px';
+    this.contHeight = (num * 3 + 10) + 'px';
     this.strg.set('fs', this.fontSize);
   }
 
@@ -467,6 +592,7 @@ export class TtsPage implements OnInit, OnDestroy {
   }
 
   changeSpeed(str: string) {
+    if (!this.spritzBoolean && this.isSpeaking) this.stopSpeaking();
     const speed = this.speed;
     if (str === '-') {
       if (this.spritzBoolean) {
@@ -502,6 +628,7 @@ export class TtsPage implements OnInit, OnDestroy {
   // }
 
   ngOnDestroy() {
+    this.working.done();
     this.subs?.forEach(sub => sub?.unsubscribe());
     this.setProgress2DB();
   }

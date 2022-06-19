@@ -62,9 +62,7 @@ export class EpubService implements OnInit {
       path: '',
     });
 
-    return this.zip.unzip(uri.uri + relativePath2EpubFile, uri.uri + '/ebook-library/epub',
-      (progress) => console.log('Unzipping, ' + Math.round((progress.loaded / progress.total) * 100) + '%')
-    );
+    return this.zip.unzip(uri.uri + relativePath2EpubFile, uri.uri + '/ebook-library/epub');
   }
 
   private getMetadata(opfText: string): Promise<METADATA> {

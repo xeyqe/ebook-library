@@ -135,13 +135,13 @@ export class WebScraperService {
     const parsedList = [];
     const list = doc.querySelectorAll('#tabcontent .new2');
     list.forEach(item => {
-      const link = item.querySelector('a').href;
+      const link = item.querySelector('a')?.href;
       parsedList.push({
         link,
-        img: (item.previousElementSibling.querySelector('img') as HTMLImageElement).src,
-        title: item.querySelector('a').textContent,
-        comment: item.querySelector('.pozn.odl').textContent,
-        dtbkId: link.substring(link.lastIndexOf('/') + 1)
+        img: (item.previousElementSibling.querySelector('img') as HTMLImageElement)?.src,
+        title: item.querySelector('a')?.textContent,
+        comment: item.querySelector('.pozn.odl')?.textContent,
+        dtbkId: link?.substring(link.lastIndexOf('/') + 1)
       });
     });
     return parsedList;
@@ -307,6 +307,7 @@ export class WebScraperService {
           review: el.lastChild.textContent,
           lgId: a.href.substring(a.href.lastIndexOf('/') + 1)
         };
+        if (!ar.length) ar.push({ serie: null, books: [] });
         ar[ar.length - 1].books.push(book);
       }
     });
@@ -318,12 +319,206 @@ export class WebScraperService {
   ): Promise<{ title: string, link: string, lgId: string, review: string }[]> {
     const url = `https://www.legie.info/autor/${lgId}/povidky#zalozky`;
     const data = await this._getHtml(url);
+    if (!data.querySelector('#detail h3')) return;
     const shortStories: { title: string, link: string, lgId: string, review: string }[] = [];
     data.querySelectorAll('#detail a').forEach((a: HTMLLinkElement) => {
       const shortStory = this.getShortStoryFromLink(a);
       shortStories.push(shortStory);
     });
     return shortStories;
+  }
+
+  public async getAuthorsListCBDB(author: string): Promise<{
+    link: string,
+    img: string,
+    name: string,
+    date: string,
+    cbdbId: string,
+  }[]> {
+    const url = `https://www.cbdb.cz/hledat?text=${author}&whisper_type=&whisper_id=&ok=%EF%80%82`;
+    const data = await this._getHtml(url);
+    const array = Array.from(data.querySelectorAll('#search_result_box_authors .search_graphic td'));
+    const output = [];
+    array.forEach(td => {
+      let date = td.querySelector('.search_graphic_content')?.childNodes[4]?.textContent?.trim()?.replace('*', '') || null;
+      date = date === '\n\t\t\t\t\t\t\t' ? null : date;
+      const cbdbId = td.querySelector('.search_graphic_content a')?.getAttribute('href') || null;
+      output.push({
+        link: 'https://www.cbdb.cz/' + cbdbId,
+        img: 'https://www.cbdb.cz' + td.querySelector('.search_img')?.getAttribute('src') || null,
+        name: td.querySelector('.search_graphic_content a')?.textContent || null,
+        date,
+        cbdbId
+      });
+    });
+    return output;
+  }
+
+  public async getCBDBBooks(title: string): Promise<{
+    main: {
+      link: string,
+      title: string,
+      originalTitle: string,
+      img: string,
+      author: string,
+      cbdbId: string,
+      authorCbdbId: string
+    }[],
+    foreign: {
+      img: string,
+      link: string,
+      title: string,
+      flag: string,
+      author: string,
+      cbdbId: string,
+      authorCbdbId: string
+    }[],
+    partly: {
+      img: string,
+      link: string,
+      title: string,
+      originTitle: string,
+      author: string,
+      cbdbId: string,
+      authorCbdbId: string
+    }[]
+  }> {
+    const url = `https://www.cbdb.cz/hledat?text=${title}&whisper_type=&whisper_id=&ok=%EF%80%82`;
+    const data = await this._getHtml(url);
+
+    const array = Array.from(data.querySelectorAll('#search_result_box_books .search_graphic td'));
+    const main = array.map(td => {
+      const aa = data.querySelectorAll('.search_graphic_content a');
+      const link = (aa[0] as HTMLLinkElement)?.href || '';
+      const img = data.querySelector('#author_photo img')?.getAttribute('src');
+      return {
+        link,
+        title: aa[0]?.textContent || null,
+        originalTitle: data.querySelector('.search_graphic_content div')?.textContent || null,
+        img: img ? 'https://www.cbdb.cz' + img : null,
+        author: aa[1]?.textContent || null,
+        cbdbId: link?.replace('https://www.cbdb.cz/', ''),
+        authorCbdbId: (aa[1] as HTMLLinkElement)?.href || null
+      };
+    });
+
+    const foreign = Array.from(data.querySelectorAll('.search_text')[0]?.querySelectorAll('tr'))?.map(tr => {
+      const _col2 = tr.querySelector('.search_col2');
+      const link = _col2.querySelector('a')?.href || null;
+
+      return {
+        img: (tr.querySelector('.search_col1 img') as HTMLImageElement).src,
+        link,
+        title: _col2.querySelector('a')?.textContent || null,
+        flag: (_col2.querySelector('.search_flag') as HTMLImageElement)?.src || null,
+        author: Array.from(tr.querySelectorAll('td'))?.pop()?.querySelector('a')?.textContent || null,
+        cbdbId: link?.replace('https://www.cbdb.cz/', ''),
+        authorCbdbId: Array.from(tr.querySelectorAll('td'))?.pop()?.querySelector('a')?.href || null
+      };
+    });
+    const partly = Array.from(data.querySelectorAll('.search_text')[1]?.querySelectorAll('tr'))?.map(tr => {
+      const _col2 = tr.querySelector('.search_col2');
+      const link = _col2.querySelector('a')?.href || null;
+
+      return {
+        img: (tr.querySelector('.search_col1 img') as HTMLImageElement).src,
+        link,
+        title: _col2?.textContent?.replace('\n', '') || null,
+        originTitle: tr.querySelector('.search_col3')?.textContent || null,
+        author: Array.from(tr.querySelectorAll('td'))?.pop()?.querySelector('a')?.textContent || null,
+        cbdbId: link?.replace('https://www.cbdb.cz/', ''),
+        authorCbdbId: Array.from(tr.querySelectorAll('td'))?.pop()?.querySelector('a')?.href || null
+      };
+    });
+    return { main, foreign, partly };
+  }
+
+  public async getCBDBBooksOfAuthor(cbdbId: string): Promise<{
+    img: string,
+    rating: string,
+    title: string,
+    link: string,
+  }[]> {
+    const url = `https://www.cbdb.cz/${cbdbId}?show=knihy`;
+    const data = await this._getHtml(url);
+    const output = Array.from(data.querySelectorAll('.grlist_item'))?.map(el => {
+      return {
+        img: el.querySelector('img') ? `https://www.cbdb.cz/${el.querySelector('img')?.getAttribute('src')}` : null,
+        rating: el.querySelector('.author_book_rating_0')?.textContent || null,
+        title: el.querySelector('b')?.textContent + ' ' + el.querySelector('.smaller')?.textContent,
+        link: el.querySelector('b') ? `https://www.cbdb.cz/${el.querySelector('b')?.parentElement?.getAttribute('href')}` : null
+      };
+    });
+    return output;
+  }
+
+  public async getCBDBBookDetails(link: string): Promise<{
+    serie: string,
+    serieOrder: number,
+    genre: string,
+    ISBN: string,
+    length: number,
+    img: string,
+    originalTitle: string,
+    annotation: string,
+    publisher: string,
+    published: number,
+    cbdbId: string;
+  }> {
+    const data = await this._getHtml(link);
+    const strong = Array.from(data.querySelectorAll('.book_info_item'))?.find(el => {
+      return el.textContent?.includes('Originální název:');
+    })?.querySelector('strong');
+    const ofSerie = data.childNodes[0]?.textContent?.includes('. kniha v sérii');
+
+    const book = {
+      serie: ofSerie ? data.childNodes[1]?.textContent : null,
+      serieOrder: ofSerie ? +data.childNodes[0]?.textContent?.replace(/[^\d]/g, '') : null,
+      genre: Array.from(data.querySelectorAll('[itemprop="genre"]'))?.map(el => el?.textContent)?.join(', ') || null,
+      ISBN: data.querySelector('.book_info_item [itemprop="isbn"]')?.textContent || null,
+      length: +data.querySelector('.book_info_item [itemprop="numberOfPages"]')?.textContent || null,
+      img: data.querySelector('#book_photo_box img') ?
+        'https://www.cbdb.cz/' + data.querySelector('#book_photo_box img').getAttribute('src') :
+        null,
+      originalTitle: strong ? `${strong.textContent} (${strong.nextSibling?.textContent?.replace(/[^\d]+/g, '')})` : null,
+      annotation: data.querySelector('#book_annotation')?.textContent || null,
+      publisher: data.querySelector('.book_info_item [href*="nakladatelstvi-"]')?.textContent || null,
+      published: +data.querySelector('.book_info_item [href*="nakladatelstvi-"]')
+        ?.nextSibling?.textContent?.replace(/[^\d]/g, '') || null,
+      cbdbId: link.substring(link.lastIndexOf('/') + 1)
+    };
+    return book;
+  }
+
+  public async getAuthorCBDB(cbdbId: string): Promise<{
+    name: string,
+    surname: string,
+    birth: string,
+    death: string,
+    nationality: string,
+    biography: string,
+    img: string,
+    cbdbId: string,
+  }> {
+    const url = `https://www.cbdb.cz/${cbdbId}`;
+    const data = await this._getHtml(url);
+    const _name = data.querySelector('#content [itemprop="name"]')?.textContent;
+    const birth = data.querySelector('[itemprop="birthDate"]')?.textContent;
+    const death = data.querySelector('[itemprop="deathDate"]')?.textContent;
+
+    const author = {
+      name: _name.substring(0, _name.lastIndexOf(' ')),
+      surname: _name.substring(_name.lastIndexOf(' ') + 1),
+      birth: birth?.substring(birth.lastIndexOf('.') + 1) || null,
+      death: death?.substring(death.lastIndexOf('.') + 1) || null,
+      nationality: data.querySelector('[itemprop="birthPlace"]')?.textContent || null,
+      biography: data.querySelector('#author_lifestory')?.textContent || null,
+      img: data.querySelector('#author_photo img') ?
+        'https://www.cbdb.cz/' + data.querySelector('#author_photo img')?.getAttribute('src') :
+        null,
+      cbdbId
+    };
+    return author;
   }
 
   private getShortStoryFromLink(a: HTMLLinkElement): { title: string, link: string, lgId: string, review: string } {
@@ -433,6 +628,7 @@ export class WebScraperService {
     originalTitle: string,
     translator: string,
     img: string,
+    genre: string,
     lgId: string,
   }> {
     const data = await this._getHtml(url);
@@ -444,14 +640,16 @@ export class WebScraperService {
     originalTitle: string,
     translator: string,
     img: string,
+    genre: string,
   } {
     const output = {
       title: data.querySelector('#nazev_povidky').textContent,
       originalTitle: null,
       translator: null,
-      img: (data.querySelector('#pro_obal img') as HTMLImageElement)?.src || null
+      img: (data.querySelector('#pro_obal img') as HTMLImageElement)?.src || null,
+      genre: null
     };
-    data.querySelector('#jine_nazvy').childNodes.forEach(el => {
+    data.querySelector('#jine_nazvy')?.childNodes?.forEach(el => {
       if (el.nodeName === '#text') {
         if (el.textContent.includes('originální název: ')) {
           output.originalTitle = el.textContent.substring('originální název: '.length);
@@ -461,7 +659,7 @@ export class WebScraperService {
         }
       }
     });
-    data.querySelector('#anotace').childNodes.forEach(el => {
+    data.querySelector('#anotace')?.childNodes?.forEach(el => {
       if (el.textContent.includes('Překlad:')) {
         el.childNodes.forEach(innerEl => {
           if (innerEl.nodeName === '#text' && innerEl.textContent.startsWith('\n● ')) {
@@ -470,6 +668,10 @@ export class WebScraperService {
         });
       }
     });
+    const pp = Array.from(data.querySelector('#povidka_info')?.childNodes)?.filter(nd => nd.nodeName === 'P');
+    const genreEl = pp.find(p => p?.textContent?.startsWith('Kategorie: '));
+    output.genre = genreEl?.textContent?.substring('Kategorie: '.length) || null;
+
     return output;
   }
 

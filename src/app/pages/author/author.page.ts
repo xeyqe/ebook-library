@@ -51,6 +51,14 @@ export class AuthorPage implements OnInit, OnDestroy {
   jsonOfAuthorsIndex;
   fullHeight = false;
   onlineAuthorsList: ONLINEAUTHORLINK[];
+  onlineAuthorsListLegie: ONLINEAUTHORLINK[];
+  onlineAuthorsListCBDB: {
+    link: string;
+    img: string;
+    name: string;
+    date: string;
+    cbdbId: string;
+  }[];
   showAble = false;
 
   filteredOptions: Observable<any[]>;
@@ -166,6 +174,7 @@ export class AuthorPage implements OnInit, OnDestroy {
       idInJson: new FormControl(),
       dtbkId: new FormControl(),
       lgId: new FormControl(),
+      cbdbId: new FormControl(),
     });
     Object.entries(this.authorForm.controls).forEach(ent => {
       const key = ent[0];
@@ -506,7 +515,8 @@ export class AuthorPage implements OnInit, OnDestroy {
         message: 'Choose a source.',
         selects: [
           'CZ databaze knih',
-          'CZ legie'
+          'CZ legie',
+          'CZ cbdb'
         ]
       }
     });
@@ -515,6 +525,8 @@ export class AuthorPage implements OnInit, OnDestroy {
         this.dtbkGetAuthorList(authorsName);
       } else if (selected === 1) {
         this.legieGetAuthorList(authorsName);
+      } else if (selected === 2) {
+        this.cbdbGetAuthorList(authorsName);
       }
     });
   }
@@ -533,21 +545,30 @@ export class AuthorPage implements OnInit, OnDestroy {
     this.webScraper.getAuthorsListLegie(authorName).then((data) => {
       if (data) {
         if (Array.isArray(data)) {
-          this.onlineAuthorsList = data;
+          this.onlineAuthorsListLegie = data;
           this.scrollElement(this.target2);
         } else {
-          this.authorForm.get('img').setValue(data.img || null);
-          this.authorForm.get('name').setValue(data.name || null);
-          this.authorForm.get('surname').setValue(data.surname || null);
-          this.authorForm.get('birth').setValue(data.birth || null);
-          this.authorForm.get('death').setValue(data.death || null);
-          this.authorForm.get('nationality').setValue(data.nationality || null);
-          this.authorForm.get('biography').setValue(data.biography || null);
-          this.authorForm.get('lgId').setValue(data.lgId || null);
+          ['img', 'name', 'surname', 'birth', 'death', 'nationality', 'biography', 'lgId'].forEach(key => {
+            this.authorForm.get(key).setValue(data[key] || null);
+            if (data[key] && !this.listsOfValues[key].includes(data[key]))
+              this.listsOfValues[key].push(data[key]);
+          });
         }
         this.workingServ.done();
       }
     }).finally(() => this.workingServ.done());
+  }
+
+  private cbdbGetAuthorList(author: string) {
+    this.workingServ.busy();
+    this.webScraper.getAuthorsListCBDB(author).then(data => {
+      if (data) {
+        this.onlineAuthorsListCBDB = data;
+        this.scrollElement(this.target2);
+      }
+    }).finally(() => {
+      this.workingServ.done();
+    });
   }
 
   onDownloadAuthorInfo(item: ONLINEAUTHORLINK) {
@@ -558,7 +579,7 @@ export class AuthorPage implements OnInit, OnDestroy {
           Object.entries(this.authorForm.controls).forEach(ent => {
             const key = ent[0];
             const fc = ent[1];
-            fc.setValue(data[key] || null);
+            if (key !== 'lgId') fc.setValue(data[key] || null);
             if (data[key] && !this.listsOfValues[key].includes(data[key]))
               this.listsOfValues[key].push(data[key]);
           });
@@ -583,6 +604,25 @@ export class AuthorPage implements OnInit, OnDestroy {
         this.content.scrollToTop();
       });
     }
+  }
+
+  onDownloadAuthorInfoCBDB(cbdbId: string) {
+    this.workingServ.busy();
+    this.webScraper.getAuthorCBDB(cbdbId).then(author => {
+      console.log(author)
+      if (author) {
+        Object.entries(this.authorForm.controls).forEach(ent => {
+          const key = ent[0];
+          const fc = ent[1];
+          fc.setValue(author[key] || null);
+          if (author[key] && !this.listsOfValues[key].includes(author[key]))
+            this.listsOfValues[key].push(author[key]);
+        });
+      }
+    }).finally(() => {
+      this.content.scrollToTop();
+      this.workingServ.done();
+    });
   }
 
   private scrollElement(target: ElementRef) {

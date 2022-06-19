@@ -13,6 +13,7 @@ export interface AUTHOR {
   idInJson: string;
   dtbkId: string;
   lgId: string;
+  cbdbId: string;
 }
 
 export interface BOOK {
@@ -36,6 +37,7 @@ export interface BOOK {
   serieOrder: number;
   dtbkId: string;
   lgId: string;
+  cbdbId: string;
 }
 
 export interface BOOKSIMPLIFIED {

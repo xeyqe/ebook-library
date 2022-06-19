@@ -13,7 +13,6 @@ import { WebView } from '@ionic-native/ionic-webview/ngx';
 import { IonicStorageModule } from '@ionic/storage-angular';
 import { SplashScreen } from '@ionic-native/splash-screen/ngx';
 import { SQLitePorter } from '@ionic-native/sqlite-porter/ngx';
-import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
 import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
 
 import { EpubService } from './services/epub.service';
@@ -37,8 +36,8 @@ import { AppComponent } from 'src/app/app.component';
     AppRoutingModule,
     HttpClientModule,
     BrowserAnimationsModule,
-    HammerModule,
     IonicStorageModule.forRoot(),
+    HammerModule,
   ],
   providers: [
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
@@ -53,7 +52,6 @@ import { AppComponent } from 'src/app/app.component';
     SQLite,
     SQLitePorter,
     StatusBar,
-    TextToSpeech,
     WebScraperService,
     WebView,
     Zip,

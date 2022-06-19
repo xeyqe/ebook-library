@@ -52,27 +52,32 @@ export class AppComponent {
         this.hwBackButtonFunction();
       });
       this.platform.resume.subscribe(() => {
-        BackgroundMode.disable();
+        if (this.workingServ.isSpeaking) {
+          this.workingServ.inBg = true;
+          console.warn('BackgroundMode disabled')
+          BackgroundMode.disable();
+        }
       });
       this.platform.pause.subscribe(() => {
-        this.db.getValue('isSpeaking').then(value => {
-          if (value) {
-            BackgroundMode.enable();
-            this.db.getValue('author').then(author => {
-              this.db.getValue('title').then(title => {
-                BackgroundMode.setSettings({
-                  title: author,
-                  text: title,
-                  icon: 'ic_launcher',
-                  color: 'F14F4D',
-                  resume: true,
-                  hidden: false,
-                  bigText: true
-                });
+        if (this.workingServ.isSpeaking) {
+          this.workingServ.inBg = false;
+          console.warn('BackgroundMode enabled')
+          BackgroundMode.enable();
+          this.db.getValue('author').then(author => {
+            this.db.getValue('title').then(title => {
+              BackgroundMode.setSettings({
+                title: author,
+                text: title,
+                icon: 'ic_launcher',
+                color: 'F14F4D',
+                resume: true,
+                hidden: false,
+                bigText: true
               });
             });
-          }
-        });
+          });
+        }
+
       });
     });
   }

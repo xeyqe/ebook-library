@@ -9,5 +9,8 @@
 			"splashFullScreen": true,
 			"showSpinner": true
 		}
+	},
+	"android": {
+		"hideLogs": true
 	}
 }

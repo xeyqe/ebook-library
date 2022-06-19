@@ -20,7 +20,7 @@ import { Platform } from '@ionic/angular';
 export class DatabaseService {
   private database: SQLiteObject;
   private dbReady: BehaviorSubject<boolean> = new BehaviorSubject(false);
-  private version = 5;
+  private version = 6;
 
   authors = new BehaviorSubject<AUTHORSIMPLIFIED[]>([]);
   books = new BehaviorSubject([]);
@@ -197,6 +197,21 @@ export class DatabaseService {
     });
   }
 
+  private async updateDB5To6() {
+    await this.database.executeSql(
+      'ALTER TABLE authors ADD COLUMN cbdbId TEXT', []
+    ).catch(e => {
+      console.error('adding cbdbId to authors failed');
+      throw new Error(JSON.stringify(e));
+    });
+    await this.database.executeSql(
+      'ALTER TABLE books ADD COLUMN cbdbId TEXT', []
+    ).catch(e => {
+      console.error('adding cbdbId to books failed');
+      throw new Error(JSON.stringify(e));
+    });
+  }
+
   public exportDB(): Promise<any> {
     return this.sqlitePorter.exportDbToJson(this.database).catch(e => {
       console.error('exportDbToJson failed!');
@@ -282,11 +297,12 @@ export class DatabaseService {
       author.path,
       author.dtbkId,
       author.lgId,
+      author.cbdbId,
     ];
     const output = await this.database.executeSql(
       `INSERT INTO authors
-          (name, surname, pseudonym, nationality, birth, death, biography, img, rating, path, dtbkId, lgId)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (name, surname, pseudonym, nationality, birth, death, biography, img, rating, path, dtbkId, lgId, cbdbId)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       data
     ).catch(e => {
       console.error('addAuthor failed!');
@@ -321,6 +337,7 @@ export class DatabaseService {
       idInJson: data.rows.item(0).idInJson,
       dtbkId: data.rows.item(0).dtbkId,
       lgId: data.rows.item(0).lgId,
+      cbdbId: data.rows.item(0).cbdbId,
     };
   }
 
@@ -400,6 +417,7 @@ export class DatabaseService {
           serieOrder: data.rows.item(i).serieOrder,
           dtbkId: data.rows.item(i).dtbkId,
           lgId: data.rows.item(i).lgId,
+          cbdbId: data.rows.item(i).cbdbId,
         });
       }
     }
@@ -429,6 +447,7 @@ export class DatabaseService {
       serieOrder: data.rows.item(0).serieOrder,
       dtbkId: data.rows.item(0).dtbkId,
       lgId: data.rows.item(0).lgId,
+      cbdbId: data.rows.item(0).cbdbId,
     };
   }
 
@@ -460,13 +479,14 @@ export class DatabaseService {
       author.idInJson,
       author.dtbkId,
       author.lgId,
+      author.cbdbId,
     ];
 
     await this.database.executeSql(
       `UPDATE authors SET name = ?,
           surname = ?, pseudonym = ?, nationality = ?, birth = ?, death = ?,
           biography = ?, img = ?, rating = ?, path = ?, idInJson = ?,
-          dtbkId = ?, lgId = ? WHERE id = ${author.id}`,
+          dtbkId = ?, lgId = ?, cbdbId = ? WHERE id = ${author.id}`,
       data
     );
     const simpl = {
@@ -505,12 +525,13 @@ export class DatabaseService {
       book.img,
       book.dtbkId,
       book.lgId,
+      book.cbdbId,
     ];
     try {
       const output = await this.database.executeSql(
         `INSERT INTO books (title, creatorId, originalTitle, annotation, publisher, published, genre,
-        lenght, language, translator, ISBN, path, progress, rating, img, dtbkId, lgId)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        lenght, language, translator, ISBN, path, progress, rating, img, dtbkId, lgId, cbdbId)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         data
       );
       const books = this.books.getValue();
@@ -560,6 +581,7 @@ export class DatabaseService {
       book.serieOrder,
       book.dtbkId,
       book.lgId,
+      book.cbdbId,
     ];
     await this.database.executeSql(
       `UPDATE books SET title = ?,
@@ -579,7 +601,8 @@ export class DatabaseService {
           serie = ?,
           serieOrder = ?,
           dtbkId = ?,
-          lgId = ?
+          lgId = ?,
+          cbdbId = ?
           WHERE id = ${book.id}`,
       data
     );

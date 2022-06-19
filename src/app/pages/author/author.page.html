@@ -190,6 +190,21 @@
                     <p *ngIf="item.year">{{ item.year }}</p>
                 </div>
             </div>
+            <div class="online-item" *ngFor="let item of onlineAuthorsListLegie" (click)="onDownloadAuthorInfo(item)">
+                <div class="ion-text-wrap">
+                    <h2 *ngIf="item.name || item.surname">{{ (item.name || '')  + ' ' + (item.surname || '')}}</h2>
+                    <p *ngIf="item.year">{{ item.year }}</p>
+                </div>
+            </div>
+            <div class="online-item" *ngFor="let item of onlineAuthorsListCBDB" (click)="onDownloadAuthorInfoCBDB(item.cbdbId)">
+                <ion-avatar *ngIf="item.img">
+                    <img [src]="item.img" />
+                </ion-avatar>
+                <div class="ion-text-wrap">
+                    <h2 *ngIf="item.name">{{ item.name }}</h2>
+                    <p *ngIf="item.date">{{ item.date }}</p>
+                </div>
+            </div>
         </div>
     </form>
 </ion-content>

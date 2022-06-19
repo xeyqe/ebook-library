@@ -32,6 +32,7 @@ ion-range-knob {
 .header {
     display: flex;
     justify-content: space-between;
+    margin-top: .5rem;
     &__name {
         flex-basis: 49%;
         flex-direction: column;
@@ -44,4 +45,9 @@ ion-range-knob {
         display: flex;
         align-items: center;
     }
+}
+
+form {
+    display: flex;
+    flex-direction: column;
 }

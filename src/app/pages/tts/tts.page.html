@@ -1,5 +1,6 @@
-<ion-header>
-    <ion-toolbar>
+<ng-container *ngIf="!inBg">
+    <ion-header>
+        <ion-toolbar>
             <div class="header">
                 <div class="header__name">
                     <span>{{ authorName }}</span>
@@ -15,71 +16,106 @@
                     </ion-button>
                 </div>
             </div>
-    </ion-toolbar>
-</ion-header>
-
-<ion-content (pinchout)="increaseFontSize()" (pinchin)="decreaseFontSize()">
-    <div *ngIf="spritzBoolean" [style.fontSize]="fontSize" [style.lineHeight]="fontSize">
-        <ion-row>
-            <ion-col size="2"></ion-col>
-            <ion-col size="10">
-                <ion-label class="red" style="float: left;">|</ion-label>
-            </ion-col>
-        </ion-row>
-
-        <ion-row>
-            <ion-col class="col" size="2">
-                <ion-label class="right">{{ spritzPreText }}</ion-label>
-            </ion-col>
-
-            <ion-col class="col" size="9">
-                <ion-label class="red">{{ spritzRedText }}</ion-label>
-                <ion-label>{{ spritzPostText }}</ion-label>
-            </ion-col>
-        </ion-row>
-
-        <ion-row>
-            <ion-col size="2"></ion-col>
-            <ion-col size="10">
-                <ion-label class="red" style="float: left;">|</ion-label>
-            </ion-col>
-        </ion-row>
-    </div>
-    <ion-textarea readonly="true">{{ sentense }}</ion-textarea>
-    <ion-spinner class="spinner" name="bubbles" *ngIf="isWorking"></ion-spinner>
-</ion-content>
-
-<!-- <ion-footer> -->
-<ion-row class="ion-align-items-center ion-justify-content-center">
-    <ion-label class="white" *ngIf="progress">
-        {{ progress | number: '1.0-0' }}
-    </ion-label>
-    <ion-label class="white" *ngIf="!progress">
-        0
-    </ion-label>
-
+        </ion-toolbar>
+    </ion-header>
+    
+    <ion-content (pinchout)="increaseFontSize()" (pinchin)="decreaseFontSize()">
+        <div *ngIf="spritzBoolean" class="spritz-cont" [style.fontSize]="fontSize" [style.lineHeight]="fontSize"
+            [style.height]="contHeight">
+            <ion-row>
+                <ion-col></ion-col>
+                <ion-col>
+                    <ion-label class="red" style="float: left;">|</ion-label>
+                </ion-col>
+            </ion-row>
+    
+            <ion-row [style.height]="fontSize">
+                <ion-col class="col">
+                    <ion-label class="right">{{ spritzPreText }}</ion-label>
+                </ion-col>
+    
+                <ion-col class="col">
+                    <ion-label class="red">{{ spritzRedText }}</ion-label>
+                    <ion-label>{{ spritzPostText }}</ion-label>
+                </ion-col>
+            </ion-row>
+    
+            <ion-row>
+                <ion-col></ion-col>
+                <ion-col>
+                    <ion-label class="red" style="float: left;">|</ion-label>
+                </ion-col>
+            </ion-row>
+        </div>
+        <ion-textarea readonly="true" [style.fontSize]="fontSize" [style.lineHeight]="fontSize">
+            {{ sentense }}
+        </ion-textarea>
+        <ion-spinner class="spinner" name="bubbles" *ngIf="isWorking"></ion-spinner>
+    </ion-content>
+    
+    <form [formGroup]="myForm" *ngIf="myForm">
+        <mat-form-field *ngIf="engines?.length">
+            <mat-label class="red">Engine</mat-label>
+            <mat-select interface="popover" formControlName="engine">
+                <mat-option *ngFor="let engine of engines" [value]="engine.name">
+                    {{ engine.label }}
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
+    
+        <mat-form-field *ngIf="languages?.length">
+            <mat-label class="red">Language</mat-label>
+            <mat-select interface="popover" formControlName="language">
+                <mat-option *ngFor="let language of languages" [value]="language">
+                    {{ language }}
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
+    
+        <mat-form-field *ngIf="voices && language && voices[language]?.length">
+            <mat-label class="red">Voice</mat-label>
+            <mat-select interface="popover" formControlName="voice">
+                <mat-option *ngFor="let voice of voices[language]" [value]="voice.voiceURI">
+                    {{ voice.voiceURI }}
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
+    </form>
+    
+    <!-- <ion-footer> -->
+    <ion-row class="ion-align-items-center ion-justify-content-center">
+        <ion-label class="white" *ngIf="progress">
+            {{ progress | number: '1.0-0' }}
+        </ion-label>
+        <ion-label class="white" *ngIf="!progress">
+            0
+        </ion-label>
+    
+        <ion-item>
+            <ion-button (pointerdown)="onStartRewinding(0)" (pointerup)="onStartRewinding(0)"
+                (touchend)="onStopRewinding(0)">
+                <ion-icon slot="icon-only" name="play-back-sharp"></ion-icon>
+            </ion-button>
+    
+            <ion-button [disabled]="!initialized" (click)="onOff()">
+                <ion-icon slot="icon-only" name="play-sharp" *ngIf="!isSpeaking"></ion-icon>
+                <ion-icon slot="icon-only" name="pause-sharp" *ngIf="isSpeaking"></ion-icon>
+            </ion-button>
+    
+            <ion-button (pointerdown)="onStartRewinding(1)" (pointerup)="onStartRewinding(1)"
+                (touchend)="onStopRewinding(1)">
+                <ion-icon slot="icon-only" name="play-forward-sharp"></ion-icon>
+            </ion-button>
+        </ion-item>
+    
+        <ion-label class="white" *ngIf="textsLength">
+            {{ textsLength | number: '1.0-0' }}
+        </ion-label>
+    </ion-row>
+    
     <ion-item>
-        <ion-button (click)="backward()">
-            <ion-icon slot="icon-only" name="play-back-sharp"></ion-icon>
-        </ion-button>
-
-        <ion-button [disabled]="!initialized" (click)="onOff()">
-            <ion-icon slot="icon-only" name="play-sharp" *ngIf="!isSpeaking"></ion-icon>
-            <ion-icon slot="icon-only" name="pause-sharp" *ngIf="isSpeaking"></ion-icon>
-        </ion-button>
-
-        <ion-button (click)="forward()">
-            <ion-icon slot="icon-only" name="play-forward-sharp"></ion-icon>
-        </ion-button>
+        <ion-range *ngIf="textsLength" [value]="progress" min="0" [max]="textsLength" step="1" color="primary"
+            style="height: 0px;" (ionChange)="changeProgress($event.detail.value)" (touchend)="stopStartSpeaking()">
+        </ion-range>
     </ion-item>
-
-    <ion-label class="white" *ngIf="textsLength">
-        {{ textsLength | number: '1.0-0' }}
-    </ion-label>
-</ion-row>
-
-<ion-item>
-    <ion-range *ngIf="textsLength" [value]="progress" min="0" [max]="textsLength" step="1" color="primary"
-        style="height: 0px;" (ionChange)="changeProgress($event.detail.value)" (touchend)="stopStartSpeaking()">
-    </ion-range>
-</ion-item>
+</ng-container>

@@ -5,7 +5,7 @@
             <ion-col *ngIf="ready2editing">
                 <ion-button (click)="deleteBook()">delete</ion-button>
             </ion-col>
-            <div *ngIf="dontworryiwillnameyoulater && dontworryiwillnameyoulater2 && book">
+            <div *ngIf="dontworryiwillnameyoulater && dontworryiwillnameyoulater2 && book" class="buttons">
                 <ion-button *ngIf="!ready2editing" [routerLink]="['/', 'tts', dontworryiwillnameyoulater]">
                     <ion-icon slot="icon-only" name="megaphone"></ion-icon>
                 </ion-button>
@@ -36,8 +36,7 @@
     <form [formGroup]="bookForm" *ngIf="book && bookForm">
         <div *ngIf="ready2editing || bookForm.get('img').value" class="pic-container">
             <div class="bu-change-pic" *ngIf="bookForm.get('img').value && ready2editing">
-                <ion-button *ngIf="!bookForm.get('img').value.startsWith('/')"
-                    (click)="downloadPicture()">
+                <ion-button *ngIf="!bookForm.get('img').value.startsWith('/')" (click)="downloadPicture()">
                     <ion-icon slot="icon-only" name="download-sharp"></ion-icon>
                 </ion-button>
                 <ion-button (click)="onRemovePic(bookForm.get('img').value)">
@@ -233,7 +232,10 @@
             </div>
         </div>
 
-        <div #target *ngIf="ready2editing && onlineBookList?.length">
+        <div #target
+            *ngIf="ready2editing &&
+            (onlineAllBooksList?.length || onlineBookList?.length || onlineBookListLegie?.length ||
+             onlineShortStoriesListLegie?.length || onlineBookListOfAuthorCBDB?.length || onlineBookListCBDB)">
             <div class="online-item" *ngFor="let item of onlineBookList" (click)="downloadBookInfo(item)">
                 <ion-avatar *ngIf="item.img">
                     <img [src]="item.img" />
@@ -243,9 +245,16 @@
                     <p>{{ item.comment }}</p>
                 </div>
             </div>
-        </div>
 
-        <div #target *ngIf="ready2editing && onlineBookListLegie?.length">
+            <div class="online-item" *ngFor="let item of onlineAllBooksList" (click)="downloadBookInfo(item)">
+                <ion-avatar *ngIf="item.img">
+                    <img [src]="item.img" />
+                </ion-avatar>
+                <div class="ion-text-wrap">
+                    <h2>{{ item.title }}</h2>
+                    <p>{{ item.comment }}</p>
+                </div>
+            </div>
             <div class="legies" *ngFor="let item of onlineBookListLegie">
                 <h1 class="legies__serie" *ngIf="item.serie?.title">{{ item.serie.title }}</h1>
                 <div *ngFor="let book of item.books" class="legies__book" (click)="downloadBookInfo(book)">
@@ -253,14 +262,36 @@
                     <span *ngIf="book.review">{{ book.review }}</span>
                 </div>
             </div>
-        </div>
-
-        <div #target *ngIf="ready2editing && onlineShortStoriesListLegie?.length">
-            <h1 class="legies__serie">Short stories</h1>
+            <h1 class="legies__serie" *ngIf="onlineShortStoriesListLegie?.length">Short stories</h1>
             <div class="legies" *ngFor="let item of onlineShortStoriesListLegie">
                 <div class="legies__book" (click)="downloadShortStoryInfo(item)">
                     <h2 *ngIf="item.title">{{ item.title }}</h2>
                     <span *ngIf="item.review">{{ item.review }}</span>
+                </div>
+            </div>
+
+            <div class="cbdb" *ngIf="onlineBookListCBDB">
+                <div *ngFor="let dt of ['main', 'foreign', 'partly']">
+                    <div *ngFor="let book of onlineBookListCBDB[dt]" (click)="downloadBookInfoCBDB(book.link)">
+                        <ion-avatar *ngIf="book.img">
+                            <img [src]="book.img" />
+                        </ion-avatar>
+                        <ion-avatar *ngIf="book.flag">
+                            <img [src]="book.flag" />
+                        </ion-avatar>
+                        <h2 *ngIf="book.title">{{ book.title }}</h2>
+                        <span *ngIf="book.author">{{ book.author }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="legies" *ngIf="onlineBookListOfAuthorCBDB?.length">
+                <div *ngFor="let book of onlineBookListOfAuthorCBDB" (click)="downloadBookInfoCBDB(book.link)">
+                    <ion-avatar *ngIf="book.img">
+                        <img [src]="book.img" />
+                    </ion-avatar>
+                    <h2 *ngIf="book.title">{{ book.title }}</h2>
+                    <span *ngIf="book.rating">{{ book.rating }}</span>
                 </div>
             </div>
         </div>

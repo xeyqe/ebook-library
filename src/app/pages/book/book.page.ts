@@ -13,7 +13,9 @@ import { InAppBrowser } from '@ionic-native/in-app-browser/ngx';
 
 import { MatDialog } from '@angular/material/dialog';
 
+import { BookService } from './book.service';
 import { EpubService } from 'src/app/services/epub.service';
+import { BusyService } from 'src/app/services/busy.service';
 import { DatabaseService } from 'src/app/services/database.service';
 import { NonusedPicsService } from '../author/nonused-pics.service';
 import { DirectoryService } from 'src/app/services/directory.service';
@@ -24,7 +26,6 @@ import { JsonDataParserService } from 'src/app/services/json-data-parser.service
 import { BOOK, ONLINEBOOKLINK, INDEXOFBOOK, AUTHOR, ONLINEAUTHORLEGIE } from 'src/app/services/interfaces';
 
 import { DialogComponent } from 'src/app/material/dialog/dialog.component';
-import { BusyService } from 'src/app/services/busy.service';
 
 
 @Component({
@@ -43,9 +44,47 @@ export class BookPage implements OnInit, OnDestroy {
   showAble = false;
 
   onlineBookList: ONLINEBOOKLINK[];
+  onlineAllBooksList: ONLINEBOOKLINK[];
+
   onlineBookListLegie: ONLINEAUTHORLEGIE[];
   onlineShortStoriesListLegie: { title: string, link: string, lgId: string, review: string }[];
 
+  onlineBookListCBDB: {
+    main: {
+      img: string,
+      link: string,
+      title: string,
+      originalTitle: string,
+      author: string,
+      cbdbId: string,
+      authorCbdbId: string
+    }[],
+    foreign: {
+      img: string,
+      link: string,
+      title: string,
+      author: string,
+      cbdbId: string,
+      authorCbdbId: string
+      flag: string,
+    }[],
+    partly: {
+      img: string,
+      link: string,
+      title: string,
+      originTitle: string,
+      author: string,
+      cbdbId: string,
+      authorCbdbId: string
+    }[]
+  };
+
+  onlineBookListOfAuthorCBDB: {
+    img: string;
+    rating: string;
+    title: string;
+    link: string;
+  }[];
 
   dontworryiwillnameyoulater: string;
   dontworryiwillnameyoulater2: string;
@@ -77,6 +116,7 @@ export class BookPage implements OnInit, OnDestroy {
   @ViewChild('target') target: ElementRef;
 
   constructor(
+    private bookServ: BookService,
     private db: DatabaseService,
     private dialog: MatDialog,
     private dir: DirectoryService,
@@ -102,6 +142,7 @@ export class BookPage implements OnInit, OnDestroy {
             this.fileName = data.title;
             this.book = data;
             console.log(this.book)
+            this.fillOnlineData(data.creatorId);
             this.imgPreLink = this.dir.imgPreLink;
             this.updateOldImgs(data.img);
             this.initializeBookForm(data);
@@ -119,6 +160,14 @@ export class BookPage implements OnInit, OnDestroy {
       }));
       this.showAble = this.webScrapper.showAble;
     });
+  }
+
+  private fillOnlineData(creatorId: number): void {
+    if (this.bookServ.onlineData && this.bookServ.onlineData[creatorId]) {
+      this.onlineAllBooksList = this.bookServ.onlineData[creatorId].onlineAllBooksList;
+      this.onlineBookListLegie = this.bookServ.onlineData[creatorId].onlineBookListLegie;
+      this.onlineShortStoriesListLegie = this.bookServ.onlineData[creatorId].onlineShortStoriesListLegie;
+    }
   }
 
   private async updateOldImgs(img: string) {
@@ -149,6 +198,7 @@ export class BookPage implements OnInit, OnDestroy {
       serieOrder: new FormControl({ value: null, disabled: true }),
       lgId: new FormControl(),
       dtbkId: new FormControl(),
+      cbdbId: new FormControl(),
     });
     this.listsOfValues = {} as any;
     Object.entries(this.bookForm.controls).forEach(ent => {
@@ -276,7 +326,7 @@ export class BookPage implements OnInit, OnDestroy {
   }
 
   private async removeBookFile() {
-    await this.fs.removeFile(this.book.path.replace(/.*ebook-library/, '/ebook-library/')[1]).catch(e => {
+    await this.fs.removeFile(this.book.path.replace(/.*ebook-library/, '/ebook-library/')).catch(e => {
       this.dialog.open(
         DialogComponent,
         {
@@ -364,7 +414,8 @@ export class BookPage implements OnInit, OnDestroy {
         message: 'Choose a source.',
         selects: [
           'CZ databaze knih',
-          'CZ legie'
+          'CZ legie',
+          'CZ cbdb'
         ]
       }
     });
@@ -373,6 +424,8 @@ export class BookPage implements OnInit, OnDestroy {
         this.getBooksList(author);
       } else if (selected === 1) {
         this.getBooksListLegie(author);
+      } else if (selected === 2) {
+        this.getBooksListCBDB(author);
       }
     });
   }
@@ -385,8 +438,8 @@ export class BookPage implements OnInit, OnDestroy {
       const data = await this.webScrapper.getBooksListOfAnyAuthor(this.bookForm.get('title').value);
       if (author.dtbkId) {
         const authorsBooks = await this.webScrapper.getBooksListOfAuthorById(author.dtbkId);
+        this.onlineAllBooksList = authorsBooks;
         this.onlineBookList = data.filter(bk => authorsBooks.some(abk => abk.link === bk.link));
-        this.onlineBookList = this.onlineBookList.length ? this.onlineBookList : authorsBooks;
       } else {
         this.onlineBookList = data.filter(dt => dt.comment.includes(author.surname));
         if (!this.onlineBookList.length && !author.pseudonym) {
@@ -396,8 +449,10 @@ export class BookPage implements OnInit, OnDestroy {
           this.onlineBookList = data;
         }
       }
-      this.target?.nativeElement.scrollIntoView();
       this.workingServ.done();
+      setTimeout(() => {
+        this.target?.nativeElement.scrollIntoView();
+      });
     }
   }
 
@@ -431,6 +486,15 @@ export class BookPage implements OnInit, OnDestroy {
     }
   }
 
+  private async getBooksListCBDB(author: AUTHOR) {
+    this.workingServ.busy();
+    this.onlineBookListCBDB = await this.webScrapper.getCBDBBooks(this.book.title);
+    if (author.cbdbId) {
+      this.onlineBookListOfAuthorCBDB = await this.webScrapper.getCBDBBooksOfAuthor(author.cbdbId);
+    }
+    this.workingServ.done();
+  }
+
   async downloadBookInfo(item: ONLINEBOOKLINK | {
     title: string,
     link: string,
@@ -445,11 +509,11 @@ export class BookPage implements OnInit, OnDestroy {
         if (data) {
           const noise = '...celý text';
           data.annotation = data.annotation?.endsWith(noise) ?
-          data.annotation.slice(0, -noise.length) :
-          data.annotation;
+            data.annotation.slice(0, -noise.length) :
+            data.annotation;
           data.language = data.language && data.language !== 'český' ?
-          null :
-          'cs-CZ';
+            null :
+            'cs-CZ';
           data.genre = data.genre?.toString();
           this.bookForm.get('dtbkId').setValue(item.lgId);
           [
@@ -492,12 +556,31 @@ export class BookPage implements OnInit, OnDestroy {
     try {
       const shortStory = await this.webScrapper.getShortStoryLegie(item.link);
       Object.keys(shortStory).forEach(key => {
-        this.bookForm.get(key).setValue(shortStory[key]);
+        this.bookForm.get(key)?.setValue(shortStory[key]);
       });
     } catch (e) { }
     this.bookChanged = true;
     this.content.scrollToTop();
     this.workingServ.done();
+  }
+
+  async downloadBookInfoCBDB(link: string) {
+    const data = await this.webScrapper.getCBDBBookDetails(link);
+    [
+      'serie', 'serieOrder', 'genre', 'ISBN', 'length',
+      'img', 'originalTitle', 'annotation',
+      'publisher', 'published', 'cbdbId'
+    ].forEach(key => {
+      if (data[key]) {
+        this.bookForm.get(key).setValue(data[key]);
+        if (!this.listsOfValues[key].includes(data[key]))
+          this.listsOfValues[key].push(data[key]);
+      } else {
+        this.bookForm.get(key).setValue(null);
+      }
+    });
+    this.bookChanged = true;
+    this.content.scrollToTop();
   }
 
   async getBook2(url: string): Promise<{
@@ -642,6 +725,15 @@ export class BookPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.bookServ.onlineData = null;
+    if (this.onlineAllBooksList || this.onlineBookListLegie || this.onlineShortStoriesListLegie) {
+      this.bookServ.onlineData = {};
+      this.bookServ.onlineData[this.book.creatorId] = {
+        onlineAllBooksList: this.onlineAllBooksList,
+        onlineBookListLegie: this.onlineBookListLegie,
+        onlineShortStoriesListLegie: this.onlineShortStoriesListLegie,
+      };
+    }
     this.subs?.forEach(sub => sub?.unsubscribe());
     this.workingServ.done();
   }
