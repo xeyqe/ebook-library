@@ -11,7 +11,10 @@ const config: CapacitorConfig = {
         splashFullScreen: true,
         showSpinner: true,
     }
-}
+  },
+  android: {
+    hideLogs: true
+  }
 };
 
 export default config;
