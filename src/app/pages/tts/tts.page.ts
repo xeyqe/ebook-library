@@ -342,7 +342,6 @@ export class TtsPage implements OnInit, OnDestroy {
         rate: this.speed / 10,
       };
       if (this.voice) params[`voice`] = this.voice;
-      this.progress++;
 
       TextToSpeech.speak(params).then((_) => {
         if (this.progress < this.texts.length) {
@@ -394,6 +393,8 @@ export class TtsPage implements OnInit, OnDestroy {
   }
 
   onStartRewinding(n: 0 | 1) {
+    this.isSpeaking = true;
+    this.onOff();
     if (this.isRewinding) {
       this.stopRewind = true;
     }

@@ -92,8 +92,7 @@
         </ion-label>
     
         <ion-item>
-            <ion-button (pointerdown)="onStartRewinding(0)" (pointerup)="onStartRewinding(0)"
-                (touchend)="onStopRewinding(0)">
+            <ion-button (pointerdown)="onStartRewinding(0)" (pointerup)="onStopRewinding(0)">
                 <ion-icon slot="icon-only" name="play-back-sharp"></ion-icon>
             </ion-button>
     
@@ -102,8 +101,7 @@
                 <ion-icon slot="icon-only" name="pause-sharp" *ngIf="isSpeaking"></ion-icon>
             </ion-button>
     
-            <ion-button (pointerdown)="onStartRewinding(1)" (pointerup)="onStartRewinding(1)"
-                (touchend)="onStopRewinding(1)">
+            <ion-button (pointerdown)="onStartRewinding(1)" (pointerup)="onStopRewinding(1)">
                 <ion-icon slot="icon-only" name="play-forward-sharp"></ion-icon>
             </ion-button>
         </ion-item>
