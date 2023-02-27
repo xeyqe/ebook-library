@@ -11,7 +11,7 @@ import { Filesystem } from '@capacitor/filesystem';
 import { IonContent } from '@ionic/angular';
 import { InAppBrowser } from '@ionic-native/in-app-browser/ngx';
 
-import { MatDialog } from '@angular/material/dialog';
+import { MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
 
 import { BookService } from './book.service';
 import { EpubService } from 'src/app/services/epub.service';

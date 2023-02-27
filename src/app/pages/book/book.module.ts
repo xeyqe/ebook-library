@@ -9,11 +9,11 @@ import { InAppBrowser } from '@ionic-native/in-app-browser/ngx';
 import { BookPageRoutingModule } from './book-routing.module';
 import { ApplicationPipesModuleModule } from 'src/app/application-pipes-module/application-pipes-module.module';
 
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatDialogModule } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatLegacyInputModule as MatInputModule } from '@angular/material/legacy-input';
+import { MatLegacySelectModule as MatSelectModule } from '@angular/material/legacy-select';
+import { MatLegacyDialogModule as MatDialogModule } from '@angular/material/legacy-dialog';
+import { MatLegacyFormFieldModule as MatFormFieldModule } from '@angular/material/legacy-form-field';
+import { MatLegacyAutocompleteModule as MatAutocompleteModule } from '@angular/material/legacy-autocomplete';
 
 import { NgsContenteditableModule } from '@ng-stack/contenteditable';
 

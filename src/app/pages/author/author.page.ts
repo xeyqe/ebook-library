@@ -8,7 +8,7 @@ import { animate, AUTO_STYLE, state, style, transition, trigger } from '@angular
 import { Observable, Subscription } from 'rxjs';
 import { first, map, startWith } from 'rxjs/operators';
 
-import { MatDialog } from '@angular/material/dialog';
+import { MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
 
 import { Capacitor } from '@capacitor/core';
 
