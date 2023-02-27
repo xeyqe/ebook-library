@@ -17,7 +17,7 @@ import { FileReaderService } from './../../services/file-reader.service';
 import { DialogComponent } from 'src/app/material/dialog/dialog.component';
 
 import { BOOKSIMPLIFIED, AUTHORSIMPLIFIED } from 'src/app/services/interfaces';
-import { FormControl } from '@angular/forms';
+import { UntypedFormControl } from '@angular/forms';
 import { BusyService } from 'src/app/services/busy.service';
 
 
@@ -43,7 +43,7 @@ export class AuthorsPage implements OnInit, OnDestroy {
 
   private subs: Subscription[] = [];
   imgPreLink: string;
-  searchFc: FormControl;
+  searchFc: UntypedFormControl;
 
 
   constructor(
@@ -55,7 +55,7 @@ export class AuthorsPage implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.searchFc = new FormControl();
+    this.searchFc = new UntypedFormControl();
     this.subs.push(this.db.getDatabaseState().subscribe(async (ready) => {
       if (ready) {
         this.imgPreLink = this.dir.imgPreLink;

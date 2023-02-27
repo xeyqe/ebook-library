@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { FormControl, FormGroup } from '@angular/forms';
+import { UntypedFormControl, UntypedFormGroup } from '@angular/forms';
 
 import { Platform } from '@ionic/angular';
 import { Storage } from '@ionic/storage-angular';
@@ -55,7 +55,7 @@ export class TtsPage implements OnInit, OnDestroy {
   private stopRewind: boolean;
 
   private subs: Subscription[] = [];
-  myForm: FormGroup;
+  myForm: UntypedFormGroup;
   interval: ReturnType<typeof setTimeout>;
   inBg: boolean;
 
@@ -190,10 +190,10 @@ export class TtsPage implements OnInit, OnDestroy {
     this.voice = loadedValue.voice;
     this.language = loadedValue.language;
 
-    this.myForm = new FormGroup({
-      engine: new FormControl(loadedValue?.engine),
-      language: new FormControl(loadedValue?.language),
-      voice: new FormControl(loadedValue?.voice),
+    this.myForm = new UntypedFormGroup({
+      engine: new UntypedFormControl(loadedValue?.engine),
+      language: new UntypedFormControl(loadedValue?.language),
+      voice: new UntypedFormControl(loadedValue?.voice),
     });
 
     if (loadedValue && loadedValue.engine !== engine)

@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { IonContent } from '@ionic/angular';
 import { HTTP } from '@ionic-native/http/ngx';
-import { FormControl, FormGroup } from '@angular/forms';
+import { UntypedFormControl, UntypedFormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { animate, AUTO_STYLE, state, style, transition, trigger } from '@angular/animations';
 
@@ -62,7 +62,7 @@ export class AuthorPage implements OnInit, OnDestroy {
   showAble = false;
 
   filteredOptions: Observable<any[]>;
-  authorForm: FormGroup;
+  authorForm: UntypedFormGroup;
   listsOfValues: {
     img: any[],
     name: any[],
@@ -162,19 +162,19 @@ export class AuthorPage implements OnInit, OnDestroy {
 
   private initializeForm(author: AUTHOR) {
     this.listsOfValues = {} as any;
-    this.authorForm = new FormGroup({
-      img: new FormControl({ value: null, disabled: true }),
-      name: new FormControl({ value: null, disabled: true }),
-      surname: new FormControl({ value: null, disabled: true }),
-      pseudonym: new FormControl({ value: null, disabled: true }),
-      nationality: new FormControl({ value: null, disabled: true }),
-      birth: new FormControl({ value: null, disabled: true }),
-      death: new FormControl({ value: null, disabled: true }),
-      biography: new FormControl({ value: null, disabled: true }),
-      idInJson: new FormControl(),
-      dtbkId: new FormControl(),
-      lgId: new FormControl(),
-      cbdbId: new FormControl(),
+    this.authorForm = new UntypedFormGroup({
+      img: new UntypedFormControl({ value: null, disabled: true }),
+      name: new UntypedFormControl({ value: null, disabled: true }),
+      surname: new UntypedFormControl({ value: null, disabled: true }),
+      pseudonym: new UntypedFormControl({ value: null, disabled: true }),
+      nationality: new UntypedFormControl({ value: null, disabled: true }),
+      birth: new UntypedFormControl({ value: null, disabled: true }),
+      death: new UntypedFormControl({ value: null, disabled: true }),
+      biography: new UntypedFormControl({ value: null, disabled: true }),
+      idInJson: new UntypedFormControl(),
+      dtbkId: new UntypedFormControl(),
+      lgId: new UntypedFormControl(),
+      cbdbId: new UntypedFormControl(),
     });
     Object.entries(this.authorForm.controls).forEach(ent => {
       const key = ent[0];

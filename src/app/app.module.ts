@@ -28,34 +28,33 @@ import { AppComponent } from 'src/app/app.component';
 
 
 @NgModule({
-  declarations: [AppComponent],
-  entryComponents: [],
-  imports: [
-    BrowserModule,
-    IonicModule.forRoot(),
-    AppRoutingModule,
-    HttpClientModule,
-    BrowserAnimationsModule,
-    IonicStorageModule.forRoot(),
-    HammerModule,
-  ],
-  providers: [
-    { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
-    DatabaseService,
-    DirectoryService,
-    Downloader,
-    EpubService,
-    FileReaderService,
-    HTTP,
-    JsonDataParserService,
-    SplashScreen,
-    SQLite,
-    SQLitePorter,
-    StatusBar,
-    WebScraperService,
-    WebView,
-    Zip,
-  ],
-  bootstrap: [AppComponent]
+    declarations: [AppComponent],
+    imports: [
+        BrowserModule,
+        IonicModule.forRoot(),
+        AppRoutingModule,
+        HttpClientModule,
+        BrowserAnimationsModule,
+        IonicStorageModule.forRoot(),
+        HammerModule,
+    ],
+    providers: [
+        { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
+        DatabaseService,
+        DirectoryService,
+        Downloader,
+        EpubService,
+        FileReaderService,
+        HTTP,
+        JsonDataParserService,
+        SplashScreen,
+        SQLite,
+        SQLitePorter,
+        StatusBar,
+        WebScraperService,
+        WebView,
+        Zip,
+    ],
+    bootstrap: [AppComponent]
 })
 export class AppModule { }

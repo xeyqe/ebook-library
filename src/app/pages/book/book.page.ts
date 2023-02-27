@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FormControl, FormGroup } from '@angular/forms';
+import { UntypedFormControl, UntypedFormGroup } from '@angular/forms';
 
 import { Subscription } from 'rxjs';
 import { first } from 'rxjs/operators';
@@ -90,7 +90,7 @@ export class BookPage implements OnInit, OnDestroy {
   dontworryiwillnameyoulater2: string;
 
   private subs: Subscription[] = [];
-  bookForm: FormGroup;
+  bookForm: UntypedFormGroup;
   listsOfValues: {
     img: any[],
     title: any[],
@@ -180,25 +180,25 @@ export class BookPage implements OnInit, OnDestroy {
   }
 
   private initializeBookForm(book: BOOK) {
-    this.bookForm = new FormGroup({
-      img: new FormControl({ value: null, disabled: true }),
-      title: new FormControl({ value: null, disabled: true }),
-      originalTitle: new FormControl({ value: null, disabled: true }),
-      genre: new FormControl({ value: null, disabled: true }),
-      ISBN: new FormControl({ value: null, disabled: true }),
-      publisher: new FormControl({ value: null, disabled: true }),
-      published: new FormControl({ value: null, disabled: true }),
-      language: new FormControl({ value: null, disabled: true }),
-      translator: new FormControl({ value: null, disabled: true }),
-      length: new FormControl({ value: null, disabled: true }),
-      progress: new FormControl({ value: null, disabled: true }),
-      rating: new FormControl({ value: null, disabled: true }),
-      annotation: new FormControl({ value: null, disabled: true }),
-      serie: new FormControl({ value: null, disabled: true }),
-      serieOrder: new FormControl({ value: null, disabled: true }),
-      lgId: new FormControl(),
-      dtbkId: new FormControl(),
-      cbdbId: new FormControl(),
+    this.bookForm = new UntypedFormGroup({
+      img: new UntypedFormControl({ value: null, disabled: true }),
+      title: new UntypedFormControl({ value: null, disabled: true }),
+      originalTitle: new UntypedFormControl({ value: null, disabled: true }),
+      genre: new UntypedFormControl({ value: null, disabled: true }),
+      ISBN: new UntypedFormControl({ value: null, disabled: true }),
+      publisher: new UntypedFormControl({ value: null, disabled: true }),
+      published: new UntypedFormControl({ value: null, disabled: true }),
+      language: new UntypedFormControl({ value: null, disabled: true }),
+      translator: new UntypedFormControl({ value: null, disabled: true }),
+      length: new UntypedFormControl({ value: null, disabled: true }),
+      progress: new UntypedFormControl({ value: null, disabled: true }),
+      rating: new UntypedFormControl({ value: null, disabled: true }),
+      annotation: new UntypedFormControl({ value: null, disabled: true }),
+      serie: new UntypedFormControl({ value: null, disabled: true }),
+      serieOrder: new UntypedFormControl({ value: null, disabled: true }),
+      lgId: new UntypedFormControl(),
+      dtbkId: new UntypedFormControl(),
+      cbdbId: new UntypedFormControl(),
     });
     this.listsOfValues = {} as any;
     Object.entries(this.bookForm.controls).forEach(ent => {
