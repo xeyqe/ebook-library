@@ -8,7 +8,7 @@ import { Encoding, Filesystem } from '@capacitor/filesystem';
 import { Subscription } from 'rxjs';
 import { first, debounceTime } from 'rxjs/operators';
 
-import { SplashScreen } from '@capacitor/splash-screen';
+import { SplashScreen } from '@ionic-native/splash-screen/ngx';
 
 import { DatabaseService } from './../../services/database.service';
 import { DirectoryService } from 'src/app/services/directory.service';
@@ -52,6 +52,7 @@ export class AuthorsPage implements OnInit, OnDestroy {
     private dir: DirectoryService,
     private fr: FileReaderService,
     private workingServ: BusyService,
+    private splashScreen: SplashScreen,
   ) { }
 
   ngOnInit() {
@@ -98,7 +99,7 @@ export class AuthorsPage implements OnInit, OnDestroy {
       this.books = this.db.getAllBooks().getValue();
       if (!this.books.length)  this.db.loadBooks('started');
     }
-    SplashScreen.hide();
+    this.splashScreen.hide();
   }
 
   changeSelectedChar(type: string, whichOne: 'authors' | 'books') {
@@ -145,12 +146,12 @@ export class AuthorsPage implements OnInit, OnDestroy {
       {
         data: {
           message: 'Choose a file to import.',
-          selects: files.map(fl => fl.replace('ebook-library/', '')),
+          selects: files.map(fl => fl.name),
         }
       }
     );
     dialogRef.afterClosed().pipe(first()).subscribe((selected) => {
-      this.importJson2DB(files[selected]);
+      this.importJson2DB(files[selected].uri);
     });
   }
 

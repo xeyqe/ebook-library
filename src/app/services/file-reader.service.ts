@@ -2,7 +2,7 @@ import { Injectable, OnInit } from '@angular/core';
 
 import { Downloader, DownloadRequest, NotificationVisibility } from '@ionic-native/downloader/ngx';
 
-import { Filesystem, Encoding } from '@capacitor/filesystem';
+import { Filesystem, Encoding, FileInfo } from '@capacitor/filesystem';
 
 import { WebView } from '@ionic-native/ionic-webview/ngx';
 
@@ -35,7 +35,7 @@ export class FileReaderService implements OnInit {
         directory: this.dir.dir,
         path: ''
       }).then(item => {
-        if (item.files.includes('ebook-library')) resolve();
+        if (item.files.some(it => it.name === 'ebook-library')) resolve();
         else {
           return Filesystem.mkdir({
             directory: this.dir.dir,
@@ -71,7 +71,7 @@ export class FileReaderService implements OnInit {
         });
         const folders = [];
         for (const item of foldersFiles.files) {
-          if (!await this.dir.isFile(`ebook-library/${item}`) && item !== 'epub')
+          if (item.type === 'directory' && item.name !== 'epub')
             folders.push(item);
         }
         for (const authorFolder of folders) {
@@ -132,8 +132,8 @@ export class FileReaderService implements OnInit {
     });
     const foundFiles = [];
     for (const file of item.files) {
-      if (await this.dir.isFile(`${path}${file}`)) {
-        const extension = file.substring(file.lastIndexOf('.') + 1);
+      if (file.type === 'file') {
+        const extension = file.name.substring(file.name.lastIndexOf('.') + 1);
         if (!['txt', 'epub'].includes(extension)) {
           foundFiles.push(path + file);
         }
@@ -149,13 +149,13 @@ export class FileReaderService implements OnInit {
       path: folderPath
     }).then(async item => {
       for (const file of item.files) {
-        if (await this.dir.isFile(`${folderPath}${file}`)) {
-          const extension = file.substring(file.lastIndexOf('.') + 1);
+        if (file.type === 'file') {
+          const extension = file.name.substring(file.name.lastIndexOf('.') + 1);
           if (extension === 'txt' || extension === 'epub') {
             if (!paths.includes(`${folderPath}${file}`)) {
               let book: BOOK;
               const id = authorId;
-              const name = file.substring(0, file.lastIndexOf('.'));
+              const name = file.name.substring(0, file.name.lastIndexOf('.'));
               book = {
                 id: null,
                 title: name,
@@ -265,12 +265,12 @@ export class FileReaderService implements OnInit {
     });
   }
 
-  public async getDBJsons(): Promise<string[]> {
+  public async getDBJsons(): Promise<FileInfo[]> {
     const data = await Filesystem.readdir({
       directory: this.dir.dir,
       path: 'ebook-library'
     });
-    const files = data.files.filter(fl => /db.*\.json/.test(fl)).map(fl => 'ebook-library/' + fl);
+    const files = data.files.filter(fl => /db.*\.json/.test(fl.name));
     return files;
   }
 

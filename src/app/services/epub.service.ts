@@ -27,8 +27,8 @@ export class EpubService implements OnInit {
         path
       }).then(async (items) => {
         for (const file of items.files) {
-          if (await this.dir.isFile(`${path}/${file}`)) {
-            if (file.substring(file.lastIndexOf('.') + 1) === optOrNcx) {
+          if (file.type === 'file') {
+            if (file.name.substring(file.name.lastIndexOf('.') + 1) === optOrNcx) {
               const p2c = path + '/' + file;
               this.path2ChaptersDir = p2c.substring(0, p2c.lastIndexOf('/'));
               resolve(new Promise(resol => {
@@ -194,7 +194,7 @@ export class EpubService implements OnInit {
         directory: this.dir.dir,
         path: 'ebook-library'
       }).then(item => {
-        if (item.files.includes('epub')) {
+        if (item.files.some(inf => inf.type === 'directory' && inf.name === 'epub')) {
           Filesystem.rmdir({
             directory: this.dir.dir,
             path: 'ebook-library/epub',

@@ -34,17 +34,17 @@ export class DirectoryService {
     return this._imgPreLink;
   }
 
-  public isFile(path: string): Promise<boolean> {
-    return new Promise<boolean>((resolve, reject) => {
-      Filesystem.stat({
-        directory: this._dir,
-        path
-      }).then(stats => {
-        resolve(stats.type === 'file');
-      }).catch(e => {
-        console.error(path)
-        console.error(e)
-      })
-    });
-  }
+  // public isFile(path: string): Promise<boolean> {
+  //   return new Promise<boolean>((resolve, reject) => {
+  //     Filesystem.stat({
+  //       directory: this._dir,
+  //       path
+  //     }).then(stats => {
+  //       resolve(stats.type === 'file');
+  //     }).catch(e => {
+  //       console.error(path)
+  //       console.error(e)
+  //     })
+  //   });
+  // }
 }
