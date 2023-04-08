@@ -36,7 +36,7 @@
     <form [formGroup]="bookForm" *ngIf="book && bookForm">
         <div *ngIf="ready2editing || bookForm.get('img').value" class="pic-container">
             <div class="bu-change-pic" *ngIf="bookForm.get('img').value && ready2editing">
-                <ion-button *ngIf="!bookForm.get('img').value.startsWith('/')" (click)="downloadPicture()">
+                <ion-button *ngIf="bookForm.get('img').value && !bookForm.get('img').value.startsWith('/')" (click)="downloadPicture()">
                     <ion-icon slot="icon-only" name="download-sharp"></ion-icon>
                 </ion-button>
                 <ion-button (click)="onRemovePic(bookForm.get('img').value)">
@@ -53,11 +53,11 @@
         </div>
 
         <div class="flexed">
-            <mat-form-field *ngIf="bookForm.get('serie').value || ready2editing">
+            <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.get('serie').value || ready2editing" id="serie">
                 <mat-label class="red">Serie</mat-label>
                 <input type="text" formControlName="serie" matInput [matAutocomplete]="autoSerie"
-                    [ngClass]="ready2editing ? 'white' : 'gray'" [ngStyle]="onGetWidth('serie', 'Serie')">
-                <mat-autocomplete #autoSerie="matAutocomplete" [panelWidth]="'auto'">
+                    [ngClass]="ready2editing ? 'white' : 'gray'">
+                <mat-autocomplete #autoSerie="matAutocomplete" panelWidth="auto">
                     <ng-container *ngFor="let serie of listsOfValues.serie">
                         <mat-option *ngIf="bookForm.get('serie').value !== serie" [value]="serie">
                             {{ serie }}
@@ -66,10 +66,10 @@
                 </mat-autocomplete>
             </mat-form-field>
 
-            <mat-form-field *ngIf="bookForm.get('serieOrder').value || ready2editing">
+            <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.get('serieOrder').value || ready2editing" id="serieOrder">
                 <mat-label class="red">Serie order</mat-label>
                 <input type="text" formControlName="serieOrder" matInput [matAutocomplete]="autoSerieOrder"
-                    [ngClass]="ready2editing ? 'white' : 'gray'" [ngStyle]="onGetWidth('serieOrder', 'Serie order')">
+                    [ngClass]="ready2editing ? 'white' : 'gray'">
                 <mat-autocomplete #autoSerieOrder="matAutocomplete" [panelWidth]="'auto'">
                     <ng-container *ngFor="let serieOrder of listsOfValues.serieOrder">
                         <mat-option *ngIf="bookForm.get('serieOrder').value !== serieOrder" [value]="serieOrder">
@@ -79,10 +79,10 @@
                 </mat-autocomplete>
             </mat-form-field>
 
-            <mat-form-field *ngIf="bookForm.get('title').value || ready2editing">
+            <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.get('title').value || ready2editing" id="title">
                 <mat-label class="red">Title</mat-label>
                 <input type="text" formControlName="title" matInput [matAutocomplete]="autoTitle"
-                    [ngClass]="ready2editing ? 'white' : 'gray'" [ngStyle]="onGetWidth('title', 'Title')">
+                    [ngClass]="ready2editing ? 'white' : 'gray'">
                 <mat-autocomplete #autoTitle="matAutocomplete" [panelWidth]="'auto'">
                     <ng-container *ngFor="let title of listsOfValues.title">
                         <mat-option *ngIf="bookForm.get('title').value !== title" [value]="title">
@@ -92,7 +92,7 @@
                 </mat-autocomplete>
             </mat-form-field>
 
-            <!-- <mat-form-field *ngIf="jsonBooks && ready2editing">
+            <!-- <mat-form-field subscriptSizing="dynamic" *ngIf="jsonBooks && ready2editing">
                 <mat-label class="red">Choose an option</mat-label>
                 <mat-select (selectionChange)="getBookData($event.value)">
                     <mat-option *ngFor="let book of jsonBooks" [value]="book.index">
@@ -101,11 +101,10 @@
                 </mat-select>
             </mat-form-field> -->
 
-            <mat-form-field *ngIf="bookForm.get('originalTitle').value || ready2editing">
+            <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.get('originalTitle').value || ready2editing" id="originalTitle">
                 <mat-label class="red">Original title</mat-label>
                 <input type="text" formControlName="originalTitle" matInput [matAutocomplete]="autoOriginalTitle"
-                    [ngClass]="ready2editing ? 'white' : 'gray'"
-                    [ngStyle]="onGetWidth('originalTitle', 'Original title')">
+                    [ngClass]="ready2editing ? 'white' : 'gray'">
                 <mat-autocomplete #autoOriginalTitle="matAutocomplete" [panelWidth]="'auto'">
                     <ng-container *ngFor="let originalTitle of listsOfValues.originalTitle">
                         <mat-option *ngIf="bookForm.get('originalTitle').value !== originalTitle"
@@ -116,10 +115,10 @@
                 </mat-autocomplete>
             </mat-form-field>
 
-            <mat-form-field *ngIf="bookForm.get('genre').value || ready2editing">
+            <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.get('genre').value || ready2editing" id="genre">
                 <mat-label class="red">Genre</mat-label>
                 <input type="text" formControlName="genre" matInput [matAutocomplete]="autoGenre"
-                    [ngClass]="ready2editing ? 'white' : 'gray'" [ngStyle]="onGetWidth('genre', 'Genre_')">
+                    [ngClass]="ready2editing ? 'white' : 'gray'">
                 <mat-autocomplete #autoGenre="matAutocomplete" [panelWidth]="'auto'">
                     <ng-container *ngFor="let genre of listsOfValues.genre">
                         <mat-option *ngIf="bookForm.get('genre').value !== genre" [value]="genre">
@@ -129,10 +128,10 @@
                 </mat-autocomplete>
             </mat-form-field>
 
-            <mat-form-field *ngIf="bookForm.get('ISBN').value || ready2editing">
+            <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.get('ISBN').value || ready2editing" id="ISBN">
                 <mat-label class="red">ISBN</mat-label>
                 <input type="text" formControlName="ISBN" matInput [matAutocomplete]="autoISBN"
-                    [ngClass]="ready2editing ? 'white' : 'gray'" [ngStyle]="onGetWidth('ISBN', 'ISBN_')">
+                    [ngClass]="ready2editing ? 'white' : 'gray'">
                 <mat-autocomplete #autoISBN="matAutocomplete" [panelWidth]="'auto'">
                     <ng-container *ngFor="let ISBN of listsOfValues.ISBN">
                         <mat-option *ngIf="bookForm.get('ISBN').value !== ISBN" [value]="ISBN">
@@ -142,10 +141,10 @@
                 </mat-autocomplete>
             </mat-form-field>
 
-            <mat-form-field *ngIf="bookForm.get('publisher').value || ready2editing">
+            <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.get('publisher').value || ready2editing" id="publisher">
                 <mat-label class="red">Publisher</mat-label>
                 <input type="text" formControlName="publisher" matInput [matAutocomplete]="autoPublisher"
-                    [ngClass]="ready2editing ? 'white' : 'gray'" [ngStyle]="onGetWidth('publisher', 'Publisher')">
+                    [ngClass]="ready2editing ? 'white' : 'gray'">
                 <mat-autocomplete #autoPublisher="matAutocomplete" [panelWidth]="'auto'">
                     <ng-container *ngFor="let publisher of listsOfValues.publisher">
                         <mat-option *ngIf="bookForm.get('publisher').value !== publisher" [value]="publisher">
@@ -155,10 +154,10 @@
                 </mat-autocomplete>
             </mat-form-field>
 
-            <mat-form-field *ngIf="bookForm.get('published').value || ready2editing">
+            <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.get('published').value || ready2editing" style="flex-basis: 85px;">
                 <mat-label class="red">Published</mat-label>
                 <input type="number" formControlName="published" matInput [matAutocomplete]="autoPublished"
-                    [ngClass]="ready2editing ? 'white' : 'gray'" [ngStyle]="onGetWidth('published', 'Published')">
+                    [ngClass]="ready2editing ? 'white' : 'gray'">
                 <mat-autocomplete #autoPublished="matAutocomplete" [panelWidth]="'auto'">
                     <ng-container *ngFor="let published of listsOfValues.published">
                         <mat-option *ngIf="bookForm.get('published').value !== +published" [value]="+published">
@@ -168,7 +167,7 @@
                 </mat-autocomplete>
             </mat-form-field>
 
-            <mat-form-field *ngIf="bookForm.get('language').value || ready2editing">
+            <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.get('language').value || ready2editing" style="flex-basis: 103px;">
                 <mat-label class="red">Language</mat-label>
                 <mat-select interface="popover" formControlName="language" [ngClass]="ready2editing ? 'white' : 'gray'">
                     <mat-option value="cs-CZ">Česky</mat-option>
@@ -178,10 +177,10 @@
                 </mat-select>
             </mat-form-field>
 
-            <mat-form-field *ngIf="bookForm.get('translator').value || ready2editing">
+            <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.get('translator').value || ready2editing" id="translator">
                 <mat-label class="red">Tranlator</mat-label>
                 <input type="text" formControlName="translator" matInput [matAutocomplete]="autoTranslator"
-                    [ngClass]="ready2editing ? 'white' : 'gray'" [ngStyle]="onGetWidth('translator', 'Tranlator')">
+                    [ngClass]="ready2editing ? 'white' : 'gray'">
                 <mat-autocomplete #autoTranslator="matAutocomplete" [panelWidth]="'auto'">
                     <ng-container *ngFor="let translator of listsOfValues.translator">
                         <mat-option *ngIf="bookForm.get('translator').value !== translator" [value]="translator">
@@ -191,10 +190,10 @@
                 </mat-autocomplete>
             </mat-form-field>
 
-            <mat-form-field *ngIf="bookForm.get('length').value || ready2editing">
+            <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.get('length').value || ready2editing" id="pages">
                 <mat-label class="red">Pages</mat-label>
                 <input type="number" formControlName="length" matInput [matAutocomplete]="autoPages"
-                    [ngClass]="ready2editing ? 'white' : 'gray'" [ngStyle]="onGetWidth('length', 'Pages')">
+                    [ngClass]="ready2editing ? 'white' : 'gray'">
                 <mat-autocomplete #autoPages="matAutocomplete" [panelWidth]="'auto'">
                     <ng-container *ngFor="let pages of listsOfValues.length">
                         <mat-option *ngIf="bookForm.get('length').value !== pages" [value]="pages">
@@ -204,12 +203,12 @@
                 </mat-autocomplete>
             </mat-form-field>
 
-            <mat-form-field *ngIf="bookForm.get('progress').value || ready2editing">
+            <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.get('progress').value || ready2editing">
                 <mat-label class="red">Progress</mat-label>
                 <input class="gray" disabled [value]="bookForm.get('progress').value" matInput>
             </mat-form-field>
 
-            <mat-form-field *ngIf="bookForm.get('rating').value || ready2editing">
+            <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.get('rating').value || ready2editing" style="flex-basis: 100px;">
                 <mat-label class="red">Rating</mat-label>
                 <mat-select interface="popover" formControlName="rating" [ngClass]="ready2editing ? 'white' : 'gray'">
                     <mat-option [value]="0">0</mat-option>
@@ -232,8 +231,7 @@
             </div>
         </div>
 
-        <div #target
-            *ngIf="ready2editing &&
+        <div #target *ngIf="ready2editing &&
             (onlineAllBooksList?.length || onlineBookList?.length || onlineBookListLegie?.length ||
              onlineShortStoriesListLegie?.length || onlineBookListOfAuthorCBDB?.length || onlineBookListCBDB)">
             <div class="online-item" *ngFor="let item of onlineBookList" (click)="downloadBookInfo(item)">

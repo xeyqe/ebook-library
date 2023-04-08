@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { UntypedFormControl, UntypedFormGroup } from '@angular/forms';
+import { FormControl, FormGroup } from '@angular/forms';
 
 import { Platform } from '@ionic/angular';
 import { Storage } from '@ionic/storage-angular';
@@ -55,7 +55,11 @@ export class TtsPage implements OnInit, OnDestroy {
   private stopRewind: boolean;
 
   private subs: Subscription[] = [];
-  myForm: UntypedFormGroup;
+  myForm: FormGroup<{
+    engine: FormControl<string>,
+    language: FormControl<string>,
+    voice: FormControl<string>,
+  }>;
   interval: ReturnType<typeof setTimeout>;
   inBg: boolean;
 
@@ -71,25 +75,36 @@ export class TtsPage implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.initVariablesFromStorage();
-    this.initVariablesFromDatabase();
-    if (!this.spritzBoolean) {
-      this.initSpeechOptions();
+    try {
+      console.log('ngOnInit')
+      this.initVariablesFromStorage();
+      this.initVariablesFromDatabase();
+      if (!this.spritzBoolean) {
+        this.initSpeechOptions();
+      }
+      this.subs.push(this.platform.resume.subscribe(() => {
+        this.inBg = false;
+      }));
+      this.subs.push(this.platform.pause.subscribe(() => {
+        this.inBg = true;
+      }));
+      console.log('ngOnInit end')
+    } catch (e) {
+      console.error(`ngOnInit`)
+      console.error(e)
     }
-    this.subs.push(this.platform.resume.subscribe(() => {
-      this.inBg = false;
-    }));
-    this.subs.push(this.platform.pause.subscribe(() => {
-      this.inBg = true;
-    }));
   }
 
   private initVariablesFromStorage() {
+    try {
     let oldBookId: string;
     this.route.paramMap.subscribe((params) => {
       let bookId = params.get('id');
       this.db.getValue('as').then((num) => {
         oldBookId = num;
+      }).catch(e => {
+        console.error(`this.db.getValue('as') failed`)
+        console.error(e);
       });
       this.db.saveValue('as', bookId);
       if (bookId[bookId.length - 1] === '0') {
@@ -124,6 +139,9 @@ export class TtsPage implements OnInit, OnDestroy {
             this.fontSize = val;
             this.contHeight = (+val.replace('px', '') * 3 + 10) + 'px';
           }
+        }).catch(e => {
+          console.error(`this.strg.get('fs') failed`)
+          console.error(e)
         });
       }
 
@@ -133,10 +151,16 @@ export class TtsPage implements OnInit, OnDestroy {
       bookId = bookId.substring(0, bookId.length - 1);
       this.id = parseInt(bookId, 10);
     });
+  } catch (e) {
+    console.error(`initVariablesFromStorage failed`)
+    console.error(e)
+  }
   }
 
   private initVariablesFromDatabase() {
+    try {
     this.subs.push(this.db.getDatabaseState().subscribe((ready) => {
+      console.log(`ready: ${ready}`)
       if (ready) {
         this.db.getBook(this.id).then((book) => {
           this.path = book.path;
@@ -163,7 +187,7 @@ export class TtsPage implements OnInit, OnDestroy {
           });
 
           this.db.getAuthor(book.creatorId).then((author) => {
-            this.authorName = author.name + ' ' + author.surname;
+            this.authorName = (author.name || '') + ' ' + (author.surname || '');
           });
           this.initialized = true;
         }).catch((e) => {
@@ -172,6 +196,10 @@ export class TtsPage implements OnInit, OnDestroy {
         });
       }
     }));
+  } catch (e) {
+    console.error(`initVariablesFromDatabase`)
+    console.error(e)
+  }
   }
 
   private async initSpeechOptions() {
@@ -190,10 +218,10 @@ export class TtsPage implements OnInit, OnDestroy {
     this.voice = loadedValue.voice;
     this.language = loadedValue.language;
 
-    this.myForm = new UntypedFormGroup({
-      engine: new UntypedFormControl(loadedValue?.engine),
-      language: new UntypedFormControl(loadedValue?.language),
-      voice: new UntypedFormControl(loadedValue?.voice),
+    this.myForm = new FormGroup({
+      engine: new FormControl(loadedValue?.engine),
+      language: new FormControl(loadedValue?.language),
+      voice: new FormControl(loadedValue?.voice),
     });
 
     if (loadedValue && loadedValue.engine !== engine)
@@ -342,8 +370,9 @@ export class TtsPage implements OnInit, OnDestroy {
         rate: this.speed / 10,
       };
       if (this.voice) params[`voice`] = this.voice;
-
-      TextToSpeech.speak(params).then((_) => {
+      console.log('params')
+      console.log(params)
+      TextToSpeech.speak(params).then(() => {
         if (this.progress < this.texts.length) {
           this.changeProgress(this.progress + add2Progress);
           // this.db.updateBookProgress(this.bookId, this.progress + '/' + this.texts.length);

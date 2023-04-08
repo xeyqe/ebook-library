@@ -1,5 +1,5 @@
-import { Injectable, OnInit } from '@angular/core';
-import { Zip } from '@ionic-native/zip/ngx';
+import { Injectable } from '@angular/core';
+import { Zip } from '@awesome-cordova-plugins/zip/ngx';
 
 import { Filesystem, Encoding } from '@capacitor/filesystem';
 
@@ -11,45 +11,41 @@ import { METADATA, CHAPTER } from 'src/app/services/interfaces';
 @Injectable({
   providedIn: 'root',
 })
-export class EpubService implements OnInit {
+export class EpubService {
   private path2ChaptersDir: string;
   constructor(
     private dir: DirectoryService,
-    private zip: Zip
+    private zip: Zip,
   ) { }
 
-  ngOnInit() { }
-
   private async getOpfNcxText(path: string, optOrNcx: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      Filesystem.readdir({
-        directory: this.dir.dir,
-        path
-      }).then(async (items) => {
-        for (const file of items.files) {
-          if (file.type === 'file') {
-            if (file.name.substring(file.name.lastIndexOf('.') + 1) === optOrNcx) {
-              const p2c = path + '/' + file;
-              this.path2ChaptersDir = p2c.substring(0, p2c.lastIndexOf('/'));
-              resolve(new Promise(resol => {
-                Filesystem.readFile({
-                  directory: this.dir.dir,
-                  path: `${path}/${file}`,
-                  encoding: Encoding.UTF8
-                }).then(resp => resol(resp.data));
-              }));
-            }
-          } else {
-            resolve(this.getOpfNcxText(`${path}/${file}`, 'opf'));
-          }
-        }
-      }).catch(e => {
-        console.error('getOpfNcxText failed');
-        console.error(this.dir.dir)
-        console.error(path)
-        console.error(e);
-      });
+    const items = await Filesystem.readdir({
+      directory: this.dir.dir,
+      path
     });
+    for (const file of items.files) {
+      if (file.type === 'file') {
+        if (file.name.substring(file.name.lastIndexOf('.') + 1) === optOrNcx) {
+          const p2c = path + '/' + file.name;
+          this.path2ChaptersDir = p2c.substring(0, p2c.lastIndexOf('/'));
+          const resp = await Filesystem.readFile({
+            directory: this.dir.dir,
+            path: `${path}/${file.name}`,
+            encoding: Encoding.UTF8
+          });
+          return resp.data;
+        }
+      }
+    }
+
+    for (const file of items.files) {
+      if (file.type === 'directory') {
+        const text = await this.getOpfNcxText(`${path}/${file.name}`, 'opf');
+        if (text) return text;
+      }
+    }
+
+
   }
 
   private async unzipEpub(relativePath2EpubFile: string): Promise<number> {
@@ -57,12 +53,22 @@ export class EpubService implements OnInit {
       directory: this.dir.dir,
       path: 'ebook-library/epub',
     });
-    const uri = await Filesystem.getUri({
+    const source = await Filesystem.getUri({
       directory: this.dir.dir,
-      path: '',
+      path: relativePath2EpubFile,
     });
 
-    return this.zip.unzip(uri.uri + relativePath2EpubFile, uri.uri + '/ebook-library/epub');
+    const dest = await Filesystem.getUri({
+      directory: this.dir.dir,
+      path: '/ebook-library/epub',
+    });
+
+    try {
+      return this.zip.unzip(source.uri, dest.uri);
+    } catch (e) {
+      console.error('hovna2')
+      console.error(e)
+    }
   }
 
   private getMetadata(opfText: string): Promise<METADATA> {
@@ -216,14 +222,23 @@ export class EpubService implements OnInit {
     return new Promise(async (resolve, reject) => {
       await this.prepareFolder();
 
-      await this.unzipEpub(path2EpubFile).then(async unziped => {
-        if (unziped === 0) {
-          await this.getOpfNcxText('ebook-library/epub', 'opf').then(async resp => {
-            this.getMetadata(resp).then(metadata => {
-              resolve(metadata);
-            });
-          });
-        }
+      let unzipped: number;
+      try {
+        unzipped = await this.unzipEpub(path2EpubFile);
+      } catch (e) {
+        console.error('getMetadataFromEpub unzipped failed');
+      }
+      if (unzipped === -1) return Promise.reject();
+      let text: string;
+      try {
+        text = await this.getOpfNcxText('ebook-library/epub', 'opf');
+      } catch (e) {
+        console.error('getMetadataFromEpub getOpfNcxText failed');
+        console.error(e);
+        throw e;
+      }
+      this.getMetadata(text).then(metadata => {
+        resolve(metadata);
       });
     });
   }
@@ -232,19 +247,41 @@ export class EpubService implements OnInit {
     const output: string[] = [];
     await this.prepareFolder();
 
-    const unziped = await this.unzipEpub(path2EpubFile);
-    if (unziped !== 0) return Promise.reject();
-    await this.getOpfNcxText('ebook-library/epub', 'opf');
-    const chapters = await this.getChapters();
-    for (const chapter of chapters) {
-      const texts = await this.getTextFromEpub(chapter.src);
-      for (const text of texts) {
-        if (text) {
-          output.push(text);
-        }
-      }
+    let unziped: number
+    try {
+      unziped = await this.unzipEpub(path2EpubFile);
+    } catch (e) {
+      console.error('unzipEpub')
+      console.error(e)
+    }
+    if (unziped === -1) return Promise.reject();
+    try {
+      await this.getOpfNcxText('ebook-library/epub', 'opf');
+    } catch (e) {
+      console.error('getOpfNcxText')
+      console.error(e)
     }
 
+    let chapters: CHAPTER[]
+    try {
+      chapters = await this.getChapters();
+    } catch (e) {
+      console.error('this.getChapters')
+      console.error(e)
+    }
+    for (const chapter of chapters) {
+      try {
+        const texts = await this.getTextFromEpub(chapter.src);
+        for (const text of texts) {
+          if (text) {
+            output.push(text);
+          }
+        }
+      } catch (e) {
+        console.error('getTextFromEpub')
+        console.error(e)
+      }
+    }
     return output;
   }
 }

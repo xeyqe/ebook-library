@@ -2,14 +2,14 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
-import { MatLegacyInputModule as MatInputModule } from '@angular/material/legacy-input';
-import { MatLegacyDialogModule as MatDialogModule } from '@angular/material/legacy-dialog';
-import { MatLegacySelectModule as MatSelectModule } from '@angular/material/legacy-select';
-import { MatLegacyFormFieldModule as MatFormFieldModule } from '@angular/material/legacy-form-field';
-import { MatLegacyAutocompleteModule as MatAutocompleteModule } from '@angular/material/legacy-autocomplete';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 
 import { IonicModule } from '@ionic/angular';
 
+import { DialogModule } from 'src/app/material/dialog/dialog.module';
 import { AuthorPageRoutingModule } from 'src/app/pages/author/author-routing.module';
 import { ApplicationPipesModuleModule } from 'src/app/application-pipes-module/application-pipes-module.module';
 
@@ -25,7 +25,7 @@ import { NgsContenteditableModule } from '@ng-stack/contenteditable';
     FormsModule,
     IonicModule,
     MatAutocompleteModule,
-    MatDialogModule,
+    DialogModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,

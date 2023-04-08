@@ -168,3 +168,22 @@ export interface ONLINEAUTHORLEGIE {
     lgId: string
   }[];
 }
+
+export interface DBJSON {
+	data: {
+		inserts: {
+			authors: AUTHOR[],
+			books: BOOK[],
+			dbInfo: {
+				version: number
+			}
+		}
+	},
+	structure: {
+		tables: {
+			authors: string,
+			books: string,
+			dbInfo: string
+		}
+	}
+}

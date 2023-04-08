@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HTTP } from '@ionic-native/http/ngx';
+import { HTTP } from '@awesome-cordova-plugins/http/ngx';
 import { ONLINEAUTHORLEGIE } from './interfaces';
 
 
@@ -355,36 +355,57 @@ export class WebScraperService {
   }
 
   public async getCBDBBooks(title: string): Promise<{
-    main: {
-      link: string,
-      title: string,
+    list?: {
+      main: {
+        link: string,
+        title: string,
+        originalTitle: string,
+        img: string,
+        author: string,
+        cbdbId: string,
+        authorCbdbId: string
+      }[],
+      foreign: {
+        img: string,
+        link: string,
+        title: string,
+        flag: string,
+        author: string,
+        cbdbId: string,
+        authorCbdbId: string
+      }[],
+      partly: {
+        img: string,
+        link: string,
+        title: string,
+        originTitle: string,
+        author: string,
+        cbdbId: string,
+        authorCbdbId: string
+      }[]
+    },
+    book?: {
+      serie: string,
+      serieOrder: number,
+      genre: string,
+      ISBN: string,
+      length: number,
+      img: string,
       originalTitle: string,
-      img: string,
-      author: string,
-      cbdbId: string,
-      authorCbdbId: string
-    }[],
-    foreign: {
-      img: string,
-      link: string,
-      title: string,
-      flag: string,
-      author: string,
-      cbdbId: string,
-      authorCbdbId: string
-    }[],
-    partly: {
-      img: string,
-      link: string,
-      title: string,
-      originTitle: string,
-      author: string,
-      cbdbId: string,
-      authorCbdbId: string
-    }[]
+      annotation: string,
+      publisher: string,
+      published: number,
+      cbdbId: string;
+    }
   }> {
     const url = `https://www.cbdb.cz/hledat?text=${title}&whisper_type=&whisper_id=&ok=%EF%80%82`;
     const data = await this._getHtml(url);
+    console.log(data)
+    if (data.querySelector('[itemprop]')) {
+      return {
+        book: await this.getCBDBBookDetails(url)
+      };
+    }
 
     const array = Array.from(data.querySelectorAll('#search_result_box_books .search_graphic td'));
     const main = array.map(td => {
@@ -401,6 +422,8 @@ export class WebScraperService {
         authorCbdbId: (aa[1] as HTMLLinkElement)?.href || null
       };
     });
+    console.log(array)
+    console.log(main)
 
     const foreign = Array.from(data.querySelectorAll('.search_text')[0]?.querySelectorAll('tr'))?.map(tr => {
       const _col2 = tr.querySelector('.search_col2');
@@ -416,6 +439,7 @@ export class WebScraperService {
         authorCbdbId: Array.from(tr.querySelectorAll('td'))?.pop()?.querySelector('a')?.href || null
       };
     });
+    console.log(foreign)
     const partly = Array.from(data.querySelectorAll('.search_text')[1]?.querySelectorAll('tr'))?.map(tr => {
       const _col2 = tr.querySelector('.search_col2');
       const link = _col2.querySelector('a')?.href || null;
@@ -430,7 +454,8 @@ export class WebScraperService {
         authorCbdbId: Array.from(tr.querySelectorAll('td'))?.pop()?.querySelector('a')?.href || null
       };
     });
-    return { main, foreign, partly };
+    console.log(partly)
+    return { list: { main, foreign, partly }};
   }
 
   public async getCBDBBooksOfAuthor(cbdbId: string): Promise<{

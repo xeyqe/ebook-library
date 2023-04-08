@@ -1,6 +1,6 @@
-import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, OnDestroy, Renderer2 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { UntypedFormControl, UntypedFormGroup } from '@angular/forms';
+import { FormControl, FormGroup } from '@angular/forms';
 
 import { Subscription } from 'rxjs';
 import { first } from 'rxjs/operators';
@@ -9,9 +9,9 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem } from '@capacitor/filesystem';
 
 import { IonContent } from '@ionic/angular';
-import { InAppBrowser } from '@ionic-native/in-app-browser/ngx';
+import { InAppBrowser } from '@awesome-cordova-plugins/in-app-browser/ngx';
 
-import { MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
+import { MatDialog } from '@angular/material/dialog';
 
 import { BookService } from './book.service';
 import { EpubService } from 'src/app/services/epub.service';
@@ -90,7 +90,26 @@ export class BookPage implements OnInit, OnDestroy {
   dontworryiwillnameyoulater2: string;
 
   private subs: Subscription[] = [];
-  bookForm: UntypedFormGroup;
+  bookForm: FormGroup<{
+    img: FormControl<string>,
+    title: FormControl<string>,
+    originalTitle: FormControl<string>,
+    genre: FormControl<string>,
+    ISBN: FormControl<string>,
+    publisher: FormControl<string>,
+    published: FormControl<number>,
+    language: FormControl<string>,
+    translator: FormControl<string>,
+    length: FormControl<number>,
+    progress: FormControl<string>,
+    rating: FormControl<number>,
+    annotation: FormControl<string>,
+    serie: FormControl<string>,
+    serieOrder: FormControl<number>,
+    lgId: FormControl<string>,
+    dtbkId: FormControl<string>,
+    cbdbId: FormControl<string>,
+  }>;
   listsOfValues: {
     img: any[],
     title: any[],
@@ -129,6 +148,7 @@ export class BookPage implements OnInit, OnDestroy {
     private router: Router,
     private webScrapper: WebScraperService,
     private workingServ: BusyService,
+    private renderer: Renderer2,
   ) { }
 
   ngOnInit() {
@@ -139,6 +159,7 @@ export class BookPage implements OnInit, OnDestroy {
       this.subs.push(this.db.getDatabaseState().subscribe((ready) => {
         if (ready) {
           this.db.getBook(id).then((data) => {
+            console.log(data)
             this.fileName = data.title;
             this.book = data;
             console.log(this.book)
@@ -151,7 +172,15 @@ export class BookPage implements OnInit, OnDestroy {
             this.dontworryiwillnameyoulater = this.book.id + '0';
             this.dontworryiwillnameyoulater2 = this.book.id + '1';
             if (this.picsServ.pics?.length)
-              this.listsOfValues.img = [...this.listsOfValues.img, this.picsServ.pics];
+              this.listsOfValues.img = [...this.listsOfValues.img, ...this.picsServ.pics];
+            setTimeout(() => {
+              Object.keys(this.bookForm.controls).forEach(key => {
+                this.updateSize(key);
+                this.subs.push(this.bookForm.controls[key].valueChanges.subscribe(() => {
+                  this.updateSize(key);
+                }));
+              });
+            }, 1000);
           }).catch((e) => {
             console.error('getBook failed: ');
             console.error(e);
@@ -160,6 +189,27 @@ export class BookPage implements OnInit, OnDestroy {
       }));
       this.showAble = this.webScrapper.showAble;
     });
+  }
+
+  private updateSize(key: string) {
+    try {
+      const field = document.querySelector(`#${key}`);
+      if (!field) return;
+      console.log(key)
+      const input = field.querySelector('input');
+      const label = field.querySelector('.mdc-floating-label');
+      input.size = this.bookForm.controls[key].value ? String(this.bookForm.controls[key].value).length + 1 : 1;
+      const width = Math.min(window.innerWidth, Math.max(label.getBoundingClientRect().width + 20, input.getBoundingClientRect().width));
+      this.renderer.setStyle(field, 'flex-basis', `${Math.floor(width)}px`);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  protected delayedUpdateSize(key: string) {
+    setTimeout(() => {
+      this.updateSize(key);
+    }, 200);
   }
 
   private fillOnlineData(creatorId: number): void {
@@ -180,25 +230,25 @@ export class BookPage implements OnInit, OnDestroy {
   }
 
   private initializeBookForm(book: BOOK) {
-    this.bookForm = new UntypedFormGroup({
-      img: new UntypedFormControl({ value: null, disabled: true }),
-      title: new UntypedFormControl({ value: null, disabled: true }),
-      originalTitle: new UntypedFormControl({ value: null, disabled: true }),
-      genre: new UntypedFormControl({ value: null, disabled: true }),
-      ISBN: new UntypedFormControl({ value: null, disabled: true }),
-      publisher: new UntypedFormControl({ value: null, disabled: true }),
-      published: new UntypedFormControl({ value: null, disabled: true }),
-      language: new UntypedFormControl({ value: null, disabled: true }),
-      translator: new UntypedFormControl({ value: null, disabled: true }),
-      length: new UntypedFormControl({ value: null, disabled: true }),
-      progress: new UntypedFormControl({ value: null, disabled: true }),
-      rating: new UntypedFormControl({ value: null, disabled: true }),
-      annotation: new UntypedFormControl({ value: null, disabled: true }),
-      serie: new UntypedFormControl({ value: null, disabled: true }),
-      serieOrder: new UntypedFormControl({ value: null, disabled: true }),
-      lgId: new UntypedFormControl(),
-      dtbkId: new UntypedFormControl(),
-      cbdbId: new UntypedFormControl(),
+    this.bookForm = new FormGroup({
+      img: new FormControl({ value: null, disabled: true }),
+      title: new FormControl({ value: null, disabled: true }),
+      originalTitle: new FormControl({ value: null, disabled: true }),
+      genre: new FormControl({ value: null, disabled: true }),
+      ISBN: new FormControl({ value: null, disabled: true }),
+      publisher: new FormControl({ value: null, disabled: true }),
+      published: new FormControl({ value: null, disabled: true }),
+      language: new FormControl({ value: null, disabled: true }),
+      translator: new FormControl({ value: null, disabled: true }),
+      length: new FormControl({ value: null, disabled: true }),
+      progress: new FormControl({ value: null, disabled: true }),
+      rating: new FormControl({ value: null, disabled: true }),
+      annotation: new FormControl({ value: null, disabled: true }),
+      serie: new FormControl({ value: null, disabled: true }),
+      serieOrder: new FormControl({ value: null, disabled: true }),
+      lgId: new FormControl(),
+      dtbkId: new FormControl(),
+      cbdbId: new FormControl(),
     });
     this.listsOfValues = {} as any;
     Object.entries(this.bookForm.controls).forEach(ent => {
@@ -214,7 +264,7 @@ export class BookPage implements OnInit, OnDestroy {
           value = Math.floor(+ar[0] / +ar[1] * 100) + '%';
         }
       }
-      fc.setValue(value || null);
+      fc.setValue((value || null) as never);
     });
     this.removeNotWorkingImg(book.img);
   }
@@ -264,7 +314,7 @@ export class BookPage implements OnInit, OnDestroy {
   editable() {
     Object.entries(this.bookForm.controls).forEach(ent => {
       const key = ent[0];
-      ent[1].setValue(this.book[key]);
+      ent[1].setValue(this.book[key] as never);
     });
     this.ready2editing = !this.ready2editing;
     Object.entries(this.bookForm.controls).forEach(ent => {
@@ -326,18 +376,29 @@ export class BookPage implements OnInit, OnDestroy {
   }
 
   private async removeBookFile() {
-    await this.fs.removeFile(this.book.path.replace(/.*ebook-library/, '/ebook-library/')).catch(e => {
-      this.dialog.open(
-        DialogComponent,
-        {
-          data: {
-            header: 'Warning',
-            message: 'Deleting of book file failed!',
-            selects: ['Ok']
+    const path2File = this.book.path.replace(/.*ebook-library/, '/ebook-library/');
+    let deletable: boolean;
+    try {
+      deletable = !await this.db.isBookFileUsedInDifferentBook(path2File, this.book.id);
+    } catch (e) {
+      console.error(e);
+    }
+    if (deletable) {
+      try {
+        await this.fs.removeFile(path2File)
+      } catch (e) {
+        this.dialog.open(
+          DialogComponent,
+          {
+            data: {
+              header: 'Warning',
+              message: 'Deleting of book file failed!',
+              selects: ['Ok']
+            }
           }
-        }
-      );
-    });
+        );
+      }
+    }
   }
 
   getAuthorsBooks() {
@@ -488,7 +549,26 @@ export class BookPage implements OnInit, OnDestroy {
 
   private async getBooksListCBDB(author: AUTHOR) {
     this.workingServ.busy();
-    this.onlineBookListCBDB = await this.webScrapper.getCBDBBooks(this.book.title);
+    const data = await this.webScrapper.getCBDBBooks(this.book.title);
+    console.log(data)
+    if (data.list) this.onlineBookListCBDB = data.list;
+    else {
+      [
+        'serie', 'serieOrder', 'genre', 'ISBN', 'length',
+        'img', 'originalTitle', 'annotation',
+        'publisher', 'published', 'cbdbId'
+      ].forEach(key => {
+        if (data.book[key]) {
+          this.bookForm.get(key).setValue(data.book[key]);
+          if (!this.listsOfValues[key].includes(data.book[key]))
+            this.listsOfValues[key].push(data.book[key]);
+        } else {
+          this.bookForm.get(key).setValue(null);
+        }
+      });
+      this.bookChanged = true;
+      this.content.scrollToTop();
+    }
     if (author.cbdbId) {
       this.onlineBookListOfAuthorCBDB = await this.webScrapper.getCBDBBooksOfAuthor(author.cbdbId);
     }
@@ -701,11 +781,28 @@ export class BookPage implements OnInit, OnDestroy {
   }
 
   onSwitchPic() {
-    if (this.listsOfValues.img.length < 2) return;
-    let index = this.listsOfValues.img.indexOf(this.bookForm.get('img').value);
-    index = index === -1 ? 0 : (index + 1) % this.listsOfValues.img.length;
-    const img = this.listsOfValues.img[index];
-    this.bookForm.get('img').setValue(img);
+    if (!this.listsOfValues.img.length) return;
+    if (this.listsOfValues.img.length === 1 && this.bookForm.get('img').value) return;
+    if (this.listsOfValues.img.includes(this.bookForm.get('img').value)) {
+      let index = this.listsOfValues.img.indexOf(this.bookForm.get('img').value);
+      index = (index + 1) % this.listsOfValues.img.length;
+      this.bookForm.get('img').setValue(this.listsOfValues.img[index]);
+    } else {
+      this.bookForm.get('img').setValue(this.listsOfValues.img[0]);
+    }
+    // try {
+    //   console.log(this.listsOfValues.img)
+    //   if (this.listsOfValues.img.length) return;
+    //   if (this.listsOfValues.img.length === 1 && this.bookForm.get('img').value) return;
+    //   let index: number = this.listsOfValues.img.indexOf(this.bookForm.get('img').value);
+    //   index = ((index + 1) % this.listsOfValues.img.length);
+    //   const img = this.listsOfValues.img[index];
+    //   console.log(`img: ${img}`)
+    //   this.bookForm.get('img').setValue(img);
+    //   console.log(`this.bookForm.get('img'): ${this.bookForm.get('img').value}`)
+    // } catch (e) {
+    //   console.error(e)
+    // }
   }
 
   onReduceHeight() {

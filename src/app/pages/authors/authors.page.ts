@@ -1,15 +1,17 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { FormControl } from '@angular/forms';
 
-import { MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
+import { MatDialog } from '@angular/material/dialog';
 
 import { Capacitor } from '@capacitor/core';
+import { SplashScreen } from '@capacitor/splash-screen';
 import { Encoding, Filesystem } from '@capacitor/filesystem';
+import { FileChooser } from '@awesome-cordova-plugins/file-chooser/ngx';
 
 import { Subscription } from 'rxjs';
 import { first, debounceTime } from 'rxjs/operators';
 
-import { SplashScreen } from '@ionic-native/splash-screen/ngx';
-
+import { BusyService } from 'src/app/services/busy.service';
 import { DatabaseService } from './../../services/database.service';
 import { DirectoryService } from 'src/app/services/directory.service';
 import { FileReaderService } from './../../services/file-reader.service';
@@ -17,8 +19,7 @@ import { FileReaderService } from './../../services/file-reader.service';
 import { DialogComponent } from 'src/app/material/dialog/dialog.component';
 
 import { BOOKSIMPLIFIED, AUTHORSIMPLIFIED } from 'src/app/services/interfaces';
-import { UntypedFormControl } from '@angular/forms';
-import { BusyService } from 'src/app/services/busy.service';
+import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
 
 
 @Component({
@@ -43,20 +44,21 @@ export class AuthorsPage implements OnInit, OnDestroy {
 
   private subs: Subscription[] = [];
   imgPreLink: string;
-  searchFc: UntypedFormControl;
+  searchFc: FormControl<string>;
 
 
   constructor(
     private db: DatabaseService,
     private dialog: MatDialog,
     private dir: DirectoryService,
+    private fileChooser: FileChooser,
+    private filePath: FilePath,
     private fr: FileReaderService,
     private workingServ: BusyService,
-    private splashScreen: SplashScreen,
   ) { }
 
   ngOnInit() {
-    this.searchFc = new UntypedFormControl();
+    this.searchFc = new FormControl();
     this.subs.push(this.db.getDatabaseState().subscribe(async (ready) => {
       if (ready) {
         this.imgPreLink = this.dir.imgPreLink;
@@ -97,9 +99,9 @@ export class AuthorsPage implements OnInit, OnDestroy {
       if (!this.authors.length) this.db.loadAuthors(this.selectedCharacter);
     } else {
       this.books = this.db.getAllBooks().getValue();
-      if (!this.books.length)  this.db.loadBooks('started');
+      if (!this.books.length) this.db.loadBooks('started');
     }
-    this.splashScreen.hide();
+    SplashScreen.hide();
   }
 
   changeSelectedChar(type: string, whichOne: 'authors' | 'books') {
@@ -132,7 +134,7 @@ export class AuthorsPage implements OnInit, OnDestroy {
     );
     dialogRef.afterClosed().pipe(first()).subscribe((selected) => {
       if (selected === 0) {
-        this.exportDB();
+        this.exportDB().finally(() => this.workingServ.done());
       } else if (selected === 1) {
         this.selectWhat2Import();
       }
@@ -151,7 +153,9 @@ export class AuthorsPage implements OnInit, OnDestroy {
       }
     );
     dialogRef.afterClosed().pipe(first()).subscribe((selected) => {
-      this.importJson2DB(files[selected].uri);
+      console.log(selected)
+      if (selected === undefined) return;
+      this.importJson2DB(`/ebook-library/` + files[selected].name);
     });
   }
 
@@ -161,10 +165,8 @@ export class AuthorsPage implements OnInit, OnDestroy {
     const version = await this.db.getVersion();
     await this.fr.write2File(JSON.stringify(json), version).catch(e => {
       console.error('write2File failed!');
-      this.workingServ.done();
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
-    this.workingServ.done();
   }
 
   private async importJson2DB(path: string) {
@@ -174,7 +176,8 @@ export class AuthorsPage implements OnInit, OnDestroy {
       path,
       encoding: Encoding.UTF8
     });
-    await this.db.importDB(json.data);
+    await this.exportDB();
+    await this.db.importDB(json.data, this.where2Search || 'A');
     this.workingServ.done();
   }
 
@@ -192,6 +195,27 @@ export class AuthorsPage implements OnInit, OnDestroy {
     } else {
       this.db.loadBooks(this.selectedCharacter as any);
     }
+  }
+
+  protected async chooseAFile() {
+    let nativePath: string;
+    try {
+      nativePath = await this.fileChooser.open();
+    } catch (e) {
+      console.error('fileChooser failed');
+      console.error(e);
+      throw e;
+    }
+    let path: string;
+    try {
+      path = await this.filePath.resolveNativePath(nativePath);
+    } catch (e) {
+      console.error('resolveNativePath failed');
+      console.error(e);
+      throw e;
+    }
+    console.log(nativePath);
+    console.log(path);
   }
 
   ngOnDestroy() {

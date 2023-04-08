@@ -5,13 +5,6 @@ const config: CapacitorConfig = {
   appName: 'ebook-library',
   webDir: 'www',
   bundledWebRuntime: false,
-  plugins: {
-    SplashScreen: {
-        launchAutoHide: false,
-        splashFullScreen: true,
-        showSpinner: true,
-    }
-  },
   android: {
     hideLogs: true
   }

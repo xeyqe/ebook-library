@@ -74,7 +74,7 @@ mat-form-field, .marged {
     justify-content: space-between;
 
     & > * {
-        flex-basis: content;
+        flex-grow: 1;
     }
 }
 
@@ -121,4 +121,13 @@ mat-select {
 
 .buttons {
     margin-top: .5rem;
+}
+
+.mat-mdc-form-field-infix {
+    width: unset;
+}
+
+.mdc-text-field__input {
+    width: unset;
+    max-width: calc(100vw - .5rem);
 }

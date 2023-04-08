@@ -4,16 +4,21 @@ import { HttpClientModule } from '@angular/common/http';
 import { BrowserModule, HammerModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
-import { Zip } from '@ionic-native/zip/ngx';
-import { HTTP } from '@ionic-native/http/ngx';
-import { SQLite } from '@ionic-native/sqlite/ngx';
-import { StatusBar } from '@ionic-native/status-bar/ngx';
-import { Downloader } from '@ionic-native/downloader/ngx';
-import { WebView } from '@ionic-native/ionic-webview/ngx';
 import { IonicStorageModule } from '@ionic/storage-angular';
-import { SplashScreen } from '@ionic-native/splash-screen/ngx';
-import { SQLitePorter } from '@ionic-native/sqlite-porter/ngx';
 import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
+
+import { Zip } from '@awesome-cordova-plugins/zip/ngx';
+import { HTTP } from '@awesome-cordova-plugins/http/ngx';
+import { SQLite } from '@awesome-cordova-plugins/sqlite/ngx';
+import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
+import { StatusBar } from '@awesome-cordova-plugins/status-bar/ngx';
+import { Downloader } from '@awesome-cordova-plugins/downloader/ngx';
+import { WebView } from '@awesome-cordova-plugins/ionic-webview/ngx';
+import { FileChooser } from '@awesome-cordova-plugins/file-chooser/ngx';
+import { SplashScreen } from '@awesome-cordova-plugins/splash-screen/ngx';
+import { SQLitePorter } from '@awesome-cordova-plugins/sqlite-porter/ngx';
+import { BackgroundMode } from '@awesome-cordova-plugins/background-mode/ngx';
+import { AndroidPermissions } from '@awesome-cordova-plugins/android-permissions/ngx';
 
 import { EpubService } from './services/epub.service';
 import { DatabaseService } from './services/database.service';
@@ -40,12 +45,16 @@ import { AppComponent } from 'src/app/app.component';
     ],
     providers: [
         { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
+        BackgroundMode,
         DatabaseService,
         DirectoryService,
         Downloader,
         EpubService,
+        FileChooser,
+        FilePath,
         FileReaderService,
         HTTP,
+        AndroidPermissions,
         JsonDataParserService,
         SplashScreen,
         SQLite,

@@ -1,7 +1,6 @@
 {
   "name": "ebook-library",
   "integrations": {
-    "cordova": {},
     "capacitor": {}
   },
   "type": "angular"

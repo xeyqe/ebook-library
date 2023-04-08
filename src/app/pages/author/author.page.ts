@@ -1,18 +1,20 @@
-import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, OnDestroy, Renderer2 } from '@angular/core';
 import { IonContent } from '@ionic/angular';
-import { HTTP } from '@ionic-native/http/ngx';
-import { UntypedFormControl, UntypedFormGroup } from '@angular/forms';
+import { HTTP } from '@awesome-cordova-plugins/http/ngx';
+import { FormControl, FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { animate, AUTO_STYLE, state, style, transition, trigger } from '@angular/animations';
 
 import { Observable, Subscription } from 'rxjs';
 import { first, map, startWith } from 'rxjs/operators';
 
-import { MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
+import { MatDialog } from '@angular/material/dialog';
+import { MatFormField } from '@angular/material/form-field';
 
 import { Capacitor } from '@capacitor/core';
 
 import { NonusedPicsService } from './nonused-pics.service';
+import { BusyService } from 'src/app/services/busy.service';
 import { DatabaseService } from 'src/app/services/database.service';
 import { DirectoryService } from 'src/app/services/directory.service';
 import { FileReaderService } from 'src/app/services/file-reader.service';
@@ -21,7 +23,6 @@ import { JsonDataParserService } from 'src/app/services/json-data-parser.service
 import { AUTHOR, WIKIPEDIADATA, BOOKSIMPLIFIED, ONLINEAUTHORLINK, BOOK } from 'src/app/services/interfaces';
 
 import { DialogComponent } from 'src/app/material/dialog/dialog.component';
-import { BusyService } from 'src/app/services/busy.service';
 
 
 @Component({
@@ -62,16 +63,29 @@ export class AuthorPage implements OnInit, OnDestroy {
   showAble = false;
 
   filteredOptions: Observable<any[]>;
-  authorForm: UntypedFormGroup;
+  authorForm: FormGroup<{
+    img: FormControl<string>,
+    name: FormControl<string>,
+    surname: FormControl<string>,
+    pseudonym: FormControl<string>,
+    nationality: FormControl<string>,
+    birth: FormControl<number>,
+    death: FormControl<number>,
+    biography: FormControl<string>,
+    idInJson: FormControl<string>,
+    dtbkId: FormControl<string>,
+    lgId: FormControl<string>,
+    cbdbId: FormControl<string>,
+  }>;
   listsOfValues: {
-    img: any[],
-    name: any[],
-    surname: any[],
-    pseudonym: any[],
-    nationality: any[],
-    birth: any[],
-    death: any[],
-    biography: any[],
+    img: string[],
+    name: string[],
+    surname: string[],
+    pseudonym: string[],
+    nationality: string[],
+    birth: number[],
+    death: number[],
+    biography: string[],
   };
   _textAreaReduced = true;
   imgPreLink: string;
@@ -91,6 +105,7 @@ export class AuthorPage implements OnInit, OnDestroy {
     private http: HTTP,
     private jsonServ: JsonDataParserService,
     private picsServ: NonusedPicsService,
+    private renderer: Renderer2,
     private route: ActivatedRoute,
     private router: Router,
     private webScraper: WebScraperService,
@@ -107,6 +122,7 @@ export class AuthorPage implements OnInit, OnDestroy {
         next: (ready) => {
           if (ready) {
             this.db.getAuthor(id).then((data) => {
+              console.log(data)
               this.author = data;
               console.log(this.author)
               this.imgPreLink = this.directoryServ.imgPreLink;
@@ -116,6 +132,7 @@ export class AuthorPage implements OnInit, OnDestroy {
 
               this.db.getBooksOfAuthor(id).then(() => {
                 this.subs.push(this.db.getBooks().subscribe((books) => {
+                  console.log(books)
                   this.updateOldBooksImgs(books);
                   this.takeCareOfSeries(books);
                   this.loadUnusedPics([...books.map(bk => bk.img), this.author.img]);
@@ -124,6 +141,11 @@ export class AuthorPage implements OnInit, OnDestroy {
                 console.error('getBooksOfAuthor failed: ');
                 console.error(e);
               });
+              setTimeout(() => {
+                Object.keys(this.authorForm.controls).forEach(key => {
+                  this.updateSize(key);
+                });
+              }, 1000);
             }).catch((e) => {
               console.error('getAuthor failed: ');
               console.error(e);
@@ -162,34 +184,59 @@ export class AuthorPage implements OnInit, OnDestroy {
 
   private initializeForm(author: AUTHOR) {
     this.listsOfValues = {} as any;
-    this.authorForm = new UntypedFormGroup({
-      img: new UntypedFormControl({ value: null, disabled: true }),
-      name: new UntypedFormControl({ value: null, disabled: true }),
-      surname: new UntypedFormControl({ value: null, disabled: true }),
-      pseudonym: new UntypedFormControl({ value: null, disabled: true }),
-      nationality: new UntypedFormControl({ value: null, disabled: true }),
-      birth: new UntypedFormControl({ value: null, disabled: true }),
-      death: new UntypedFormControl({ value: null, disabled: true }),
-      biography: new UntypedFormControl({ value: null, disabled: true }),
-      idInJson: new UntypedFormControl(),
-      dtbkId: new UntypedFormControl(),
-      lgId: new UntypedFormControl(),
-      cbdbId: new UntypedFormControl(),
+    this.authorForm = new FormGroup({
+      img: new FormControl({ value: null, disabled: true }),
+      name: new FormControl({ value: null, disabled: true }),
+      surname: new FormControl({ value: null, disabled: true }),
+      pseudonym: new FormControl({ value: null, disabled: true }),
+      nationality: new FormControl({ value: null, disabled: true }),
+      birth: new FormControl({ value: null, disabled: true }),
+      death: new FormControl({ value: null, disabled: true }),
+      biography: new FormControl({ value: null, disabled: true }),
+      idInJson: new FormControl(),
+      dtbkId: new FormControl(),
+      lgId: new FormControl(),
+      cbdbId: new FormControl(),
     });
     Object.entries(this.authorForm.controls).forEach(ent => {
       const key = ent[0];
       const fc = ent[1];
-      fc.setValue(author[key] || null);
+      fc.setValue((author[key] || null) as never);
       this.listsOfValues[key] = author[key] ? [author[key]] : [];
+
+      this.subs.push(this.authorForm.controls[key].valueChanges.subscribe(() => {
+        this.updateSize(key);
+      }));
     });
 
     this.filteredOptions = this.authorForm.get('surname').valueChanges.pipe(
       startWith(''),
       map((value) => this._filter(value))
     );
+
     this.subs.push(this.authorForm.valueChanges.subscribe(() => {
       this.authorChanged = true;
     }));
+  }
+
+  private updateSize(key: string) {
+    try {
+      const field = document.querySelector(`#${key}`);
+      if (!field) return;
+      const input = field.querySelector('input');
+      const label = field.querySelector('.mdc-floating-label');
+      input.size = this.authorForm.controls[key].value ? String(this.authorForm.controls[key].value).length + 1 : 1;
+      const width = Math.min(window.innerWidth, Math.max(label.getBoundingClientRect().width + 20, input.getBoundingClientRect().width));
+      this.renderer.setStyle(field, 'flex-basis', `${Math.floor(width)}px`);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  protected delayedUpdateSize(key: string) {
+    setTimeout(() => {
+      this.updateSize(key);
+    }, 200);
   }
 
   private takeCareOfSeries(books: BOOK[]) {
@@ -232,7 +279,7 @@ export class AuthorPage implements OnInit, OnDestroy {
       Object.entries(this.authorForm.controls).forEach(ent => {
         const key = ent[0];
         const fc = ent[1];
-        fc.setValue(jsonAuthor[key] || null);
+        fc.setValue((jsonAuthor[key] || null) as never);
         if (jsonAuthor[key] && !this.listsOfValues[key].includes(jsonAuthor[key]))
           this.listsOfValues[key].push(jsonAuthor[key]);
       });
@@ -309,7 +356,7 @@ export class AuthorPage implements OnInit, OnDestroy {
       if (this.ready2editing)
         fc.enable();
       else {
-        fc.setValue(this.author[key] || null);
+        fc.setValue((this.author[key] || null) as never);
         fc.disable();
       }
     });
@@ -407,6 +454,7 @@ export class AuthorPage implements OnInit, OnDestroy {
 
   onChangePicture() {
     if (!this.listsOfValues.img.length) return;
+    if (this.listsOfValues.img.length === 1 && this.authorForm.get('img').value) return;
     if (this.listsOfValues.img.includes(this.authorForm.get('img').value)) {
       let index = this.listsOfValues.img.indexOf(this.authorForm.get('img').value);
       index = (index + 1) % this.listsOfValues.img.length;
@@ -579,7 +627,7 @@ export class AuthorPage implements OnInit, OnDestroy {
           Object.entries(this.authorForm.controls).forEach(ent => {
             const key = ent[0];
             const fc = ent[1];
-            if (key !== 'lgId') fc.setValue(data[key] || null);
+            if (key !== 'lgId') fc.setValue((data[key] || null) as never);
             if (data[key] && !this.listsOfValues[key].includes(data[key]))
               this.listsOfValues[key].push(data[key]);
           });
@@ -594,7 +642,8 @@ export class AuthorPage implements OnInit, OnDestroy {
           Object.entries(this.authorForm.controls).forEach(ent => {
             const key = ent[0];
             const fc = ent[1];
-            fc.setValue(data[key] || null);
+            const value = data[key] || null;
+            fc.setValue(value as never); // TODO ???
             if (data[key] && !this.listsOfValues[key].includes(data[key]))
               this.listsOfValues[key].push(data[key]);
           });
@@ -614,7 +663,8 @@ export class AuthorPage implements OnInit, OnDestroy {
         Object.entries(this.authorForm.controls).forEach(ent => {
           const key = ent[0];
           const fc = ent[1];
-          fc.setValue(author[key] || null);
+          const value = author[key] || null;
+          fc.setValue(value as never); // TODO ???
           if (author[key] && !this.listsOfValues[key].includes(author[key]))
             this.listsOfValues[key].push(author[key]);
         });
@@ -632,7 +682,10 @@ export class AuthorPage implements OnInit, OnDestroy {
 
   onRemovePic() {
     if (this.authorForm.get('img').value.startsWith('/')) {
-      this.fs.removeFile(this.authorForm.get('img').value).finally(() => {
+      const img = this.authorForm.get('img').value;
+      this.fs.removeFile(img).finally(() => {
+        if (this.listsOfValues.img.includes(img))
+          this.listsOfValues.img = this.listsOfValues.img.filter(im => im !== img);
         this.authorForm.get('img').setValue(null);
         this.authorChanged = true;
       }).catch(e => {
@@ -658,23 +711,44 @@ export class AuthorPage implements OnInit, OnDestroy {
       this._textAreaReduced = !this._textAreaReduced;
   }
 
-  onGetWidth(fcName: string, title: string) {
-    return {
-      width: ((String(this.authorForm.get(fcName).value).length * 7) + 7) + 'px',
-      'min-width': ((title.length * 9.5) + 5) + 'px'
-    };
-  }
+  // onGetWidth(fcName: string, title: string) {
+  //   return {
+  //     'max-width': ((String(this.authorForm.get(fcName).value).length * 7) + 7) + 'px',
+  //     'min-width': ((title.length * 9.5) + 5) + 'px'
+  //   };
+  // }
 
   onIsImgLocal(path: string): boolean {
     return path && path.startsWith('/');
   }
 
   onGetImgSrc(img: string) {
+    console.log(img?.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink + img) : img)
     return img?.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink + img) : img;
   }
 
   ngOnDestroy() {
     this.subs?.forEach(sub => sub?.unsubscribe());
     this.workingServ.done();
+  }
+
+  protected delayedResize(label: HTMLElement, field: MatFormField, input: HTMLInputElement) {
+    setTimeout(() => {
+      this.log(label, field, input);
+    }, 200);
+  }
+
+  log(label: HTMLElement, field: MatFormField, input: HTMLInputElement) {
+    // a.nativeElement.getDebou
+    // console.log(input)
+    input.size = input.value.length + 1;
+    const width = Math.min(window.innerWidth, Math.max(label.getBoundingClientRect().width + 20, input.getBoundingClientRect().width));
+    console.log(width)
+    // console.log(a.style.width)
+    // const width = a.getBoundingClientRect().width;
+    // console.log(b._elementRef.nativeElement)
+    // console.log(b._elementRef.nativeElement.style)
+    this.renderer.setStyle(field._elementRef.nativeElement, 'width', `${Math.floor(width)}px`);
+    // console.log(b._elementRef.nativeElement.style.width)
   }
 }

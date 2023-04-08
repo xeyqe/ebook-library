@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
-import { WebView } from '@ionic-native/ionic-webview/ngx';
+import { WebView } from '@awesome-cordova-plugins/ionic-webview/ngx';
 
 
 @Injectable({

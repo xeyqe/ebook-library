@@ -113,7 +113,7 @@
     
     <ion-item>
         <ion-range *ngIf="textsLength" [value]="progress" min="0" [max]="textsLength" step="1" color="primary"
-            style="height: 0px;" (ionChange)="changeProgress($event.detail.value)" (touchend)="stopStartSpeaking()">
+            style="height: 0px;" (ionChange)="changeProgress($any($event).detail.value)" (touchend)="stopStartSpeaking()">
         </ion-range>
     </ion-item>
 </ng-container>

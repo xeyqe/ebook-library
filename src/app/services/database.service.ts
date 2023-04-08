@@ -4,13 +4,13 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 
 import { Storage } from '@ionic/storage-angular';
-import { SQLitePorter } from '@ionic-native/sqlite-porter/ngx';
-import { SQLite, SQLiteObject } from '@ionic-native/sqlite/ngx';
+import { SQLitePorter } from '@awesome-cordova-plugins/sqlite-porter/ngx';
+import { SQLite, SQLiteObject } from '@awesome-cordova-plugins/sqlite/ngx';
 
 import { Encoding, Filesystem } from '@capacitor/filesystem';
 
 import { DirectoryService } from './directory.service';
-import { AUTHOR, BOOK, AUTHORSIMPLIFIED, BOOKSIMPLIFIED } from 'src/app/services/interfaces';
+import { AUTHOR, BOOK, AUTHORSIMPLIFIED, BOOKSIMPLIFIED, DBJSON } from 'src/app/services/interfaces';
 import { Platform } from '@ionic/angular';
 
 
@@ -36,47 +36,71 @@ export class DatabaseService {
   ) { }
 
   public async initializeDB() {
-    await this.plt.ready().catch((e) => {
+    try {
+      await this.plt.ready();
+      console.log('initializeDB platform is ready')
+    } catch(e) {
       console.error('sqlite.create failed: ');
-      throw new Error(e);
-    });
-    await this.storage.create().catch(e => {
+      throw e;
+    };
+    try {
+      await this.storage.create();
+      console.log('storage created');
+    } catch(e) {
       console.error('this.storage.create failed');
-      throw new Error(e);
-    });
-    const db = await this.sqlite.create({
-      name: 'authors.db',
-      location: 'default',
-    }).catch(e => {
+      throw e;
+    };
+    let db: SQLiteObject;
+    try {
+      db = await this.sqlite.create({
+        name: 'authors.db',
+        location: 'default',
+      });
+      console.log('db created');
+    } catch(e) {
       console.error('this.sqlite.create failed');
-      throw new Error(JSON.stringify(e));
-    });
+      throw e;
+    };
     this.database = db;
-    this.seedDatabase();
+    try {
+      await this.seedDatabase();
+    } catch (e) {
+      console.error('seedDatabase');
+      throw e;
+    }
   }
 
-  private async seedDatabase() {
-    this.http.get('assets/seed.sql', { responseType: 'text' }).subscribe({
-      next: async (sql) => {
-        try {
-          await this.database.executeSql(
-            'SELECT id FROM authors LIMIT 1',
-            []
-          );
-          await this.takeCareOfUpdateDB().then(() => this.dbReady.next(true)).catch(e => {
-            console.error('takeCareOfUpdateDB');
-            throw new Error(JSON.stringify(e));
-          });
-        } catch (e) {
-          this.sqlitePorter.importSqlToDb(this.database, sql).then(async () => {
-            this.dbReady.next(true);
-          }).catch((e) => console.error(e));
+  private async seedDatabase(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.http.get('assets/seed.sql', { responseType: 'text' }).subscribe({
+        next: async (sql) => {
+          try {
+            await this.database.executeSql(
+              'SELECT id FROM authors LIMIT 1',
+              []
+            );
+            await this.takeCareOfUpdateDB().then(() => this.dbReady.next(true)).catch(e => {
+              console.error('takeCareOfUpdateDB');
+              reject(e);
+            });
+            resolve();
+          } catch (e) {
+            console.error(e);
+            console.log(sql)
+            await this.sqlitePorter.importSqlToDb(this.database, sql).then(() => {
+              this.dbReady.next(true);
+              resolve();
+            }).catch((e) => {
+              console.error(e)
+              reject(e)
+            });
+          }
+        },
+        error: (e) => {
+          console.error('assets/seed.sql');
+          reject(e);
         }
-      },
-      error: (e) => {
-        console.error('assets/seed.sql');
-        throw new Error(e);
-      }
+      });
     });
   }
 
@@ -119,7 +143,7 @@ export class DatabaseService {
         [version]
       ).catch(e => {
         console.error(`UPDATE dbInfo SET version ${version} failed`);
-        throw new Error(JSON.stringify(e));
+        throw e;
       });
     }
     if (this.version > version) {
@@ -148,7 +172,7 @@ export class DatabaseService {
       'ALTER TABLE authors ADD COLUMN pseudonym TEXT', []
     ).catch(e => {
       console.error('updateDB1To2 failed');
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
   }
 
@@ -157,13 +181,13 @@ export class DatabaseService {
       'ALTER TABLE books ADD COLUMN serie TEXT', []
     ).catch(e => {
       console.error('adding serie failed');
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
     await this.database.executeSql(
       'ALTER TABLE books ADD COLUMN serieOrder INTEGER', []
     ).catch(e => {
       console.error('adding serieOrder failed');
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
   }
 
@@ -172,7 +196,7 @@ export class DatabaseService {
       'ALTER TABLE authors ADD COLUMN dtbkId TEXT', []
     ).catch(e => {
       console.error('adding dtbkId to authors failed');
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
   }
 
@@ -181,19 +205,19 @@ export class DatabaseService {
       'ALTER TABLE authors ADD COLUMN lgId TEXT', []
     ).catch(e => {
       console.error('adding lgId to authors failed');
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
     await this.database.executeSql(
       'ALTER TABLE books ADD COLUMN lgId TEXT', []
     ).catch(e => {
       console.error('adding lgId to books failed');
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
     await this.database.executeSql(
       'ALTER TABLE books ADD COLUMN dtbkId TEXT', []
     ).catch(e => {
       console.error('adding dtbkId to books failed');
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
   }
 
@@ -202,27 +226,116 @@ export class DatabaseService {
       'ALTER TABLE authors ADD COLUMN cbdbId TEXT', []
     ).catch(e => {
       console.error('adding cbdbId to authors failed');
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
     await this.database.executeSql(
       'ALTER TABLE books ADD COLUMN cbdbId TEXT', []
     ).catch(e => {
       console.error('adding cbdbId to books failed');
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
   }
 
   public exportDB(): Promise<any> {
     return this.sqlitePorter.exportDbToJson(this.database).catch(e => {
       console.error('exportDbToJson failed!');
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
   }
 
-  public async importDB(json: string): Promise<any> {
-    await this.sqlitePorter.wipeDb(this.database);
-    await this.sqlitePorter.importJsonToDb(this.database, json);
-    await this.takeCareOfUpdateDB();
+  public async importDB(json: string, characted: string): Promise<any> {
+    try {
+      await this.sqlitePorter.wipeDb(this.database);
+      console.log('this.database successfully wiped');
+    } catch (e) {
+      console.error('wiping db failed')
+      console.error(e);
+    }
+    try {
+      await this.seedDatabase();
+      console.log('seedDatabase done');
+    } catch (e) {
+      console.error('seedDatabase');
+      throw e;
+    }
+    try {
+      const dbJson: DBJSON = JSON.parse(json);
+      dbJson.data.inserts.authors.forEach(async dt => {
+        const author: AUTHOR = {
+          id: dt.id || null,
+          name: dt.name || null, 
+          surname: dt.surname || null, 
+          pseudonym: dt.pseudonym || null, 
+          nationality: dt.nationality || null, 
+          birth: dt.birth || null, 
+          death: dt.death || null, 
+          biography: dt.biography || null, 
+          img: dt.img || null, 
+          rating: dt.rating || null, 
+          path: dt.path || null, 
+          dtbkId: dt.dtbkId || null, 
+          lgId: dt.lgId || null, 
+          cbdbId: dt.cbdbId || null,
+          idInJson: dt.idInJson || null
+        };
+        try {
+          await this.addAuthor(author, true);
+          console.log(`author ${author.name} ${author.surname} added to db`)
+        } catch (e) {
+          console.error(`author ${author.name} ${author.surname} failed to add to the db`)
+          console.error(e)
+        }
+      });
+      dbJson.data.inserts.books.forEach(async dt => {
+        const book: BOOK = {
+          id: dt.id || null,
+          title: dt.title || null,
+          creatorId: dt.creatorId || null,
+          originalTitle: dt.originalTitle || null,
+          annotation: dt.annotation || null,
+          publisher: dt.publisher || null,
+          published: dt.published || null,
+          genre: dt.genre || null,
+          length: dt.length || null,
+          language: dt.language || null,
+          translator: dt.translator || null,
+          ISBN: dt.ISBN || null,
+          path: dt.path || null,
+          progress: dt.progress || null,
+          rating: dt.rating || null,
+          img: dt.img || null,
+          dtbkId: dt.dtbkId || null,
+          serie: dt.serie || null,
+          serieOrder: dt.serieOrder || null,
+          lgId: dt.lgId || null,
+          cbdbId: dt.cbdbId || null,
+        };
+        try {
+          await this.addBook(book, true);
+          console.log(`book ${book.title} added to the db`)
+        } catch (e) {
+          console.error(`book ${book.title} failed to be added to the db`)
+          console.error(e);
+        }
+      });
+      // await this.sqlitePorter.importJsonToDb(this.database, `${json}`).then(a => console.log(a)).catch(e => console.error(e))
+    } catch (e) {
+      console.error('db exported to json')
+      console.error(e)
+    }
+    try {
+      await this.takeCareOfUpdateDB();
+      console.log('db has been taken care of');
+    } catch (e) {
+      console.error('takeCareOfUpdateDB failed')
+      console.error(e)
+    }
+    try {
+      await this.loadAuthors(characted);
+    } catch (e) {
+      console.error('loading authors failed');
+      console.error(e);
+    }
   }
 
   getDatabaseState(): Observable<boolean> {
@@ -250,7 +363,7 @@ export class DatabaseService {
           []
         ).catch(e => {
           console.error('loadAuthors for # failed');
-          throw new Error(JSON.stringify(e));
+          throw e;
         });
       } else {
         data = await this.database.executeSql(
@@ -258,7 +371,7 @@ export class DatabaseService {
           []
         ).catch(e => {
           console.error('loadAuthors failed');
-          throw new Error(JSON.stringify(e));
+          throw e;
         });
       }
       let authors = [];
@@ -283,8 +396,9 @@ export class DatabaseService {
     }
   }
 
-  public async addAuthor(author: AUTHOR): Promise<number> {
+  public async addAuthor(author: AUTHOR, quiet?: boolean): Promise<number> {
     const data = [
+      author.id,
       author.name,
       author.surname,
       author.pseudonym,
@@ -295,30 +409,33 @@ export class DatabaseService {
       author.img,
       author.rating,
       author.path,
+      author.idInJson,
       author.dtbkId,
       author.lgId,
       author.cbdbId,
     ];
     const output = await this.database.executeSql(
       `INSERT INTO authors
-          (name, surname, pseudonym, nationality, birth, death, biography, img, rating, path, dtbkId, lgId, cbdbId)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (id, name, surname, pseudonym, nationality, birth, death, biography, img, rating, path, idInJson, dtbkId, lgId, cbdbId)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       data
     ).catch(e => {
       console.error('addAuthor failed!');
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
-    author.id = output.insertId;
-    const athrs = this.authors.getValue();
-    athrs.push({ name: author.name, surname: author.surname, pseudonym: author.pseudonym, img: author.img, id: author.id });
-    this.authors.next(athrs);
+    if (!quiet) {
+      author.id = output.insertId;
+      const athrs = this.authors.getValue();
+      athrs.push({ name: author.name, surname: author.surname, pseudonym: author.pseudonym, img: author.img, id: author.id });
+      this.authors.next(athrs);
+    } 
     return output.insertId;
   }
 
   public async getAuthor(id: number): Promise<AUTHOR> {
     const data = await this.database.executeSql('SELECT * FROM authors WHERE id = ?', [id]).catch(e => {
       console.error('getAuthor failed!');
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
     return {
       id: data.rows.item(0).id,
@@ -347,7 +464,7 @@ export class DatabaseService {
       []
     ).catch(e => {
       console.error('findAuthors failed!');
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
     const authors: AUTHORSIMPLIFIED[] = [];
     if (data.rows.length > 0) {
@@ -370,7 +487,7 @@ export class DatabaseService {
       []
     ).catch(e => {
       console.error('findAuthors failed!');
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
     const books: BOOKSIMPLIFIED[] = [];
     if (data.rows.length > 0) {
@@ -391,7 +508,7 @@ export class DatabaseService {
   public async getBooksOfAuthor(id: number): Promise<any> {
     const data = await this.database.executeSql('SELECT * FROM books WHERE creatorId = ? ORDER BY title ASC', [id]).catch(e => {
       console.error('getBooksOfAuthor failed!');
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
     const books: BOOK[] = [];
     if (data.rows.length > 0) {
@@ -422,6 +539,18 @@ export class DatabaseService {
       }
     }
     this.books.next(books);
+  }
+
+  public async isBookFileUsedInDifferentBook(path: string, id: number): Promise<boolean> {
+    let outputId: boolean;
+    try {
+      outputId = !!await this.database.executeSql('SELECT id FROM books WHERE path = ? AND id != ?', [path, id]);
+    } catch (e) {
+      console.error('isBookFileUsedInDifferentBook failed');
+      console.error(e);
+      throw e;
+    }
+    return outputId;
   }
 
   public async getBook(id: number): Promise<BOOK> {
@@ -506,8 +635,9 @@ export class DatabaseService {
     this.authors.next(authors);
   }
 
-  public async addBook(book: BOOK) {
+  public async addBook(book: BOOK, quiet?: boolean) {
     const data = [
+      book.id,
       book.title,
       book.creatorId,
       book.originalTitle,
@@ -523,21 +653,25 @@ export class DatabaseService {
       book.progress,
       book.rating,
       book.img,
+      book.serie,
+      book.serieOrder,
       book.dtbkId,
       book.lgId,
       book.cbdbId,
     ];
     try {
       const output = await this.database.executeSql(
-        `INSERT INTO books (title, creatorId, originalTitle, annotation, publisher, published, genre,
-        lenght, language, translator, ISBN, path, progress, rating, img, dtbkId, lgId, cbdbId)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO books (id, title, creatorId, originalTitle, annotation, publisher, published, genre,
+        lenght, language, translator, ISBN, path, progress, rating, img, serie, serieOrder, dtbkId, lgId, cbdbId)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         data
       );
-      const books = this.books.getValue();
-      book.id = output.insertId;
-      books.push(book);
-      this.books.next(books);
+      if (!quiet) {
+        const books = this.books.getValue();
+        book.id = output.insertId;
+        books.push(book);
+        this.books.next(books);
+      }
     } catch (e) {
       console.error('cannot add a book');
       console.error(e);
@@ -557,7 +691,7 @@ export class DatabaseService {
       });
     }).catch(e => {
       console.error('updateBookProgress failed');
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
   }
 
@@ -623,7 +757,7 @@ export class DatabaseService {
   public async allAuthorsPaths(): Promise<string[]> {
     const data = await this.database.executeSql('SELECT path FROM authors', []).catch(e => {
       console.error('allAuthorsPaths select failed.');
-      throw new Error(JSON.stringify(e));
+      throw new Error(e);
     });
     const paths = [];
     if (data.rows.length > 0) {
@@ -640,7 +774,7 @@ export class DatabaseService {
       [authorId]
     ).catch(e => {
       console.error('authorsBooksPaths failed!');
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
     const paths = [];
     if (data.rows.length > 0) {
@@ -675,7 +809,7 @@ export class DatabaseService {
       []
     ).catch((e) => {
       console.error('getStartedBooks failed!');
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
 
     const books = this.getReducedBooksFromSqlRows(data.rows);
@@ -694,7 +828,7 @@ export class DatabaseService {
       []
     ).catch((e) => {
       console.error('getFinishedBooks failed!');
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
     const books = this.getReducedBooksFromSqlRows(data.rows);
     return books;
@@ -712,7 +846,7 @@ export class DatabaseService {
       []
     ).catch((e) => {
       console.error('getLikedBooks failed!');
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
     const books = this.getReducedBooksFromSqlRows(data.rows);
     return books;
@@ -743,14 +877,14 @@ export class DatabaseService {
   public saveValue(name: string, value: any) {
     this.storage.set(name, value).catch((e) => {
       console.error(`saveValue failed! name: ${name}, value: ${value}`);
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
   }
 
   public getValue(name: string): Promise<any> {
     return this.storage.get(name).catch((e) => {
       console.error(`getValue failed! name: ${name}`);
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
   }
 
@@ -760,7 +894,7 @@ export class DatabaseService {
       []
     ).catch((e) => {
       console.error('getVersion failed!');
-      throw new Error(JSON.stringify(e));
+      throw e;
     });
     return data.rows.item(0).version;
   }

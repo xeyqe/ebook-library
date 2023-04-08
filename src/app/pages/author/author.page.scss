@@ -57,9 +57,13 @@ mat-form-field, .marged {
     flex-wrap: wrap;
     justify-content: space-between;
     & > * {
-        flex-basis: content;
-        max-width: 45%;
+        flex-grow: 1;
     }
+}
+
+.mdc-text-field__input {
+    width: unset;
+    max-width: calc(100vw - .5rem);
 }
 
 .reduced {
@@ -110,4 +114,8 @@ mat-form-field, .marged {
 .book-cont {
     display: flex;
     margin-bottom: .5rem;
+}
+
+.reduced-width {
+    flex-basis: 53px;
 }
