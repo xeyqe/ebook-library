@@ -12,6 +12,7 @@ import { FileReaderService } from './services/file-reader.service';
 import { DatabaseService } from 'src/app/services/database.service';
 import { Subscription } from 'rxjs';
 import { AndroidPermissions } from '@awesome-cordova-plugins/android-permissions/ngx';
+import { WebIntent } from '@awesome-cordova-plugins/web-intent/ngx';
 
 
 @Component({
@@ -36,12 +37,25 @@ export class AppComponent implements OnInit {
     private toastCtrl: ToastController,
     public storage: Storage,
     public workingServ: BusyService,
+    private webIntent: WebIntent
   ) { }
 
   ngOnInit(): void {
     this.platform.ready().then(async () => {
-      const perm = await this.androidPerm.hasPermission('READ_CALENDAR')
-      console.log(perm)
+      const options = {
+        action: this.webIntent[`ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION`],
+        url: `package:io.ionic.starter`
+      }     
+      if (!await this.fr.accessAllFilesPermissionGranted()) 
+        await this.webIntent.startActivity(options).then((a) => {console.log(a)}, (e) => {console.error(e)});
+      // try {
+      //   const a = await this.androidPerm.checkPermission(this.androidPerm.PERMISSION.MANAGE_EXTERNAL_STORAGE);
+      //   console.log(a)
+      // } catch (e) {
+      //   console.error(e)
+      //   await this.androidPerm.requestPermission(this.androidPerm.PERMISSION.MANAGE_EXTERNAL_STORAGE);
+      // }
+      this.fr.downloadDorian();
       this.initializeApp();
       this.setSubs();
       this.statusBar.hide();

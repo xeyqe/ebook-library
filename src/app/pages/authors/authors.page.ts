@@ -177,7 +177,7 @@ export class AuthorsPage implements OnInit, OnDestroy {
       encoding: Encoding.UTF8
     });
     await this.exportDB();
-    await this.db.importDB(json.data, this.where2Search || 'A');
+    await this.db.importDB(json.data as string, this.where2Search || 'A');
     this.workingServ.done();
   }
 

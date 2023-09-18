@@ -210,6 +210,7 @@ export class TtsPage implements OnInit, OnDestroy {
     } else {
       loadedValue = {};
       const defaults = await TextToSpeech.getDefaults();
+      console.log(defaults)
       engine = defaults.engine;
       loadedValue.engine = defaults.engine;
       loadedValue.language = defaults.language;
@@ -254,15 +255,21 @@ export class TtsPage implements OnInit, OnDestroy {
     this.setLangsVoicesLists();
 
     TextToSpeech.getSupportedEngines().then(engines => {
+      console.log('engines')
+      console.log(engines)
       this.engines = engines.engines;
     });
   }
 
   private async setLangsVoicesLists() {
     await TextToSpeech.getSupportedLanguages().then(langs => {
+      console.log('langs')
+      console.log(langs)
       this.languages = langs.languages.sort();
     });
     await TextToSpeech.getSupportedVoices().then(voices => {
+      console.log('voices')
+      console.log(voices)
       this.voices = {};
       voices.voices.forEach(voice => {
         if (!this.voices[voice.lang])

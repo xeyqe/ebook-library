@@ -25,7 +25,7 @@ export class JsonDataParserService {
       directory: this.dir.dir,
       encoding: Encoding.UTF8,
     }).then((data) => {
-      this.authorsIndexes = JSON.parse(data.data);
+      this.authorsIndexes = JSON.parse(data.data as string);
       return true;
     }).catch(() => {
       return false;
@@ -38,7 +38,7 @@ export class JsonDataParserService {
       directory: this.dir.dir,
       encoding: Encoding.UTF8,
     }).then(data => {
-      this.author = JSON.parse(data.data);
+      this.author = JSON.parse(data.data as string);
       return true;
     }).catch(e => {
       return false;
@@ -58,7 +58,7 @@ export class JsonDataParserService {
       directory: this.dir.dir,
       encoding: Encoding.UTF8,
     }).then(data => {
-      this.book = JSON.parse(data.data);
+      this.book = JSON.parse(data.data as string);
       return true;
     }).catch(e => {
       return false;

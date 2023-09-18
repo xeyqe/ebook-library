@@ -33,7 +33,7 @@ export class EpubService {
             path: `${path}/${file.name}`,
             encoding: Encoding.UTF8
           });
-          return resp.data;
+          return resp.data as string;
         }
       }
     }
@@ -64,7 +64,7 @@ export class EpubService {
     });
 
     try {
-      return this.zip.unzip(source.uri, dest.uri);
+      return this.zip.unzip(source.uri, dest.uri, () => {});
     } catch (e) {
       console.error('hovna2')
       console.error(e)
@@ -190,7 +190,7 @@ export class EpubService {
       path: `ebook-library/epub/${path}/${file}`,
       encoding: Encoding.UTF8
     });
-    const outputText = await this.getTextFromChapter(xml.data);
+    const outputText = await this.getTextFromChapter(xml.data as string);
     return outputText;
   }
 

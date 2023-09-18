@@ -1,6 +1,4 @@
-import { Injectable, OnInit } from '@angular/core';
-
-import { Downloader, DownloadRequest, NotificationVisibility } from '@awesome-cordova-plugins/downloader/ngx';
+import { Injectable } from '@angular/core';
 
 import { Filesystem, Encoding, FileInfo, ReaddirResult } from '@capacitor/filesystem';
 
@@ -21,10 +19,23 @@ export class FileReaderService {
 
   constructor(
     private db: DatabaseService,
-    private downloader: Downloader,
     private dir: DirectoryService,
     private webView: WebView,
   ) { }
+
+  public async accessAllFilesPermissionGranted(): Promise<boolean> {
+    Filesystem.checkPermissions().then(a => console.log(a)).catch(e => console.error(e));
+    return Filesystem.readdir({
+      directory: this.dir.dir,
+      path: '/'
+    }).then(a => {
+      console.log(a)
+      return true;
+    }).catch(e => {
+      console.error(e)
+      return false;
+    });
+  }
 
   public async createApplicationFolder() {
     console.log('createApplicationFolder')
@@ -32,30 +43,32 @@ export class FileReaderService {
       Filesystem.readdir({
         directory: this.dir.dir,
         path: ''
-      }).then(item => {
+      }).then(async item => {
         if (item.files.some(it => it.name === 'ebook-library')) resolve();
         else {
-          return Filesystem.mkdir({
+          await Filesystem.mkdir({
             directory: this.dir.dir,
             path: 'ebook-library'
-          }).then(() => {
-            const request: DownloadRequest = {
-              uri: 'https://www.gutenberg.org/ebooks/174.epub.noimages?session_id=931e40dbce8a034672c993b24b343cb40c0e667d',
-              title: 'Dorian',
-              description: '',
-              mimeType: '',
-              visibleInDownloadsUi: true,
-              notificationVisibility: NotificationVisibility.VisibleNotifyCompleted,
-              destinationInExternalPublicDir: {
-                dirType: 'ebook-library/Wilde, Oscar',
-                subPath: 'The Picture of Dorian Gray.epub',
-              },
-            };
-            return this.downloader.download(request);
           });
+          await Filesystem.mkdir({
+            directory: this.dir.dir,
+            path: 'ebook-library/Wilde, Oscar'
+          });
+          return await this.downloadDorian();
         }
       });
     });
+  }
+
+  public downloadDorian(): Promise<any> {
+    return Filesystem.downloadFile({
+      directory: this.dir.dir,
+      path: 'ebook-library/Wilde, Oscar/The Picture of Dorian Gray.epub',
+      url: 'https://www.gutenberg.org/ebooks/174.epub.noimages?session_id=931e40dbce8a034672c993b24b343cb40c0e667d'
+    }).catch(e => {
+      console.error('downloadDorian failed!');
+      console.error(e);
+    })
   }
 
   public async listOfAuthors() {
@@ -184,7 +197,6 @@ export class FileReaderService {
     return foundFiles;
   }
 
-
   private _booksOfAuthor(folderPath: string, authorId: number, paths: string[]) {
     console.log('_booksOfAuthor')
     console.log(arguments)
@@ -201,10 +213,9 @@ export class FileReaderService {
           const extension = file.name.substring(file.name.lastIndexOf('.') + 1);
           if (extension === 'txt' || extension === 'epub') {
             if (!paths.includes(`${folderPath}/${file.name}`) && !paths.includes(`${folderPath}${file.name}`)) {
-              let book: BOOK;
               const id = authorId;
               const name = file.name.substring(0, file.name.lastIndexOf('.'));
-              book = {
+              const book: BOOK = {
                 id: null,
                 title: name,
                 creatorId: id,
@@ -225,7 +236,7 @@ export class FileReaderService {
                 serieOrder: null,
                 dtbkId: null,
                 lgId: null,
-                cbdbId: null,
+                cbdbId: null
               };
               console.log('added book')
               console.log(book)
@@ -253,24 +264,24 @@ export class FileReaderService {
       path: fullPath,
       encoding: Encoding.UTF8
     });
-    return resp.data;
+    return resp.data as string;
   }
 
   public async downloadPicture(Uri: string, path: string, fileName: string): Promise<string> {
     console.log('downloadPicture')
     console.log(arguments)
-    const request: DownloadRequest = {
-      uri: Uri,
-      title: fileName.substring(fileName.lastIndexOf('/') + 1),
-      description: '',
-      mimeType: '',
-      visibleInDownloadsUi: true,
-      notificationVisibility: NotificationVisibility.VisibleNotifyCompleted,
-      destinationInExternalPublicDir: {
-        dirType: path,
-        subPath: fileName,
-      },
-    };
+    // const request: DownloadRequest = {
+    //   uri: Uri,
+    //   title: fileName.substring(fileName.lastIndexOf('/') + 1),
+    //   description: '',
+    //   mimeType: '',
+    //   visibleInDownloadsUi: true,
+    //   notificationVisibility: NotificationVisibility.VisibleNotifyCompleted,
+    //   destinationInExternalPublicDir: {
+    //     dirType: path,
+    //     subPath: fileName,
+    //   },
+    // };
 
     if (path[0] === '/') {
       path = path.substring(1);
@@ -291,12 +302,21 @@ export class FileReaderService {
         path: path + fileName
       }).then(() => {
         resolve(src);
-      }).catch(e => {
-        this.downloader.download(request).then((location) => {
-          resolve(src);
-        }).catch((er) => {
-          console.error(er);
+      }).catch(() => {
+        Filesystem.downloadFile({
+          directory: this.dir.dir,
+          path: `${path}/${fileName}`,
+          url: Uri
+        }).then(a => {
+          resolve(a.path);
+        }).catch(e => {
+          console.error(e);
         });
+        // this.downloader.download(request).then((location) => {
+        //   resolve(src);
+        // }).catch((er) => {
+        //   console.error(er);
+        // });
       });
     });
   }
@@ -340,19 +360,24 @@ export class FileReaderService {
       directory: this.dir.dir,
       path: '/ebook-library/unknown.jpg'
     }).catch(async () => {
-      const request: DownloadRequest = {
-        uri: 'https://p1.hiclipart.com/preview/584/221/301/sword-art-online-vector-icons-help-unknown-png-icon-thumbnail.jpg',
-        title: 'unknown',
-        description: '',
-        mimeType: '',
-        visibleInDownloadsUi: true,
-        notificationVisibility: NotificationVisibility.VisibleNotifyCompleted,
-        destinationInExternalPublicDir: {
-          dirType: 'ebook-library',
-          subPath: 'unknown.jpg',
-        },
-      };
-      await this.downloader.download(request);
+      return Filesystem.downloadFile({
+        directory: this.dir.dir,
+        path: '/ebook-library/unknown.jpg',
+        url: 'https://p1.hiclipart.com/preview/584/221/301/sword-art-online-vector-icons-help-unknown-png-icon-thumbnail.jpg'
+      });
+      // const request: DownloadRequest = {
+      //   uri: 'https://p1.hiclipart.com/preview/584/221/301/sword-art-online-vector-icons-help-unknown-png-icon-thumbnail.jpg',
+      //   title: 'unknown',
+      //   description: '',
+      //   mimeType: '',
+      //   visibleInDownloadsUi: true,
+      //   notificationVisibility: NotificationVisibility.VisibleNotifyCompleted,
+      //   destinationInExternalPublicDir: {
+      //     dirType: 'ebook-library',
+      //     subPath: 'unknown.jpg',
+      //   },
+      // };
+      // await this.downloader.download(request);
     });
   }
 
