@@ -236,7 +236,10 @@ export class FileReaderService {
                 serieOrder: null,
                 dtbkId: null,
                 lgId: null,
-                cbdbId: null
+                cbdbId: null,
+                added: new Date(),
+                lastRead: null,
+                finished: null
               };
               console.log('added book')
               console.log(book)

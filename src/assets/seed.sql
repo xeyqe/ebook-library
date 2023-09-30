@@ -55,7 +55,10 @@ CREATE TABLE IF NOT EXISTS books(
     serieOrder INTEGER,
     dtbkId TEXT,
     lgId TEXT,
-    cbdbId TEXT
+    cbdbId TEXT,
+    added TEXT,
+    lastRead TEXT,
+    finished TEXT
 );
 
 INSERT or IGNORE INTO books VALUES(
@@ -79,6 +82,9 @@ INSERT or IGNORE INTO books VALUES(
     null,
     null,
     null,
+    null,
+    '2000-01-01 00:00:00.000',
+    null,
     null
 );
 
@@ -87,5 +93,5 @@ CREATE TABLE IF NOT EXISTS dbInfo(
 );
 
 INSERT or IGNORE INTO dbInfo VALUES(
-    6
+    7
 );

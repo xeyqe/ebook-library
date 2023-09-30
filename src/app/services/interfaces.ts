@@ -38,6 +38,9 @@ export interface BOOK {
   dtbkId: string;
   lgId: string;
   cbdbId: string;
+  lastRead: Date;
+  added: Date;
+  finished: Date;
 }
 
 export interface BOOKSIMPLIFIED {
@@ -65,7 +68,7 @@ export interface METADATA {
   title: string;
   published: number;
   publisher: string;
-  imgPath: string;
+  imgPaths: string[];
 }
 
 export interface WIKIPEDIADATA {

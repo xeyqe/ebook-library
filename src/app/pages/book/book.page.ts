@@ -33,23 +33,23 @@ import { DialogComponent } from 'src/app/material/dialog/dialog.component';
   templateUrl: './book.page.html',
   styleUrls: ['./book.page.scss'],
 })
-export class BookPage implements OnInit, OnDestroy {
-  book: BOOK = null;
+export class BookComponent implements OnInit, OnDestroy {
+  protected book: BOOK = null;
 
-  bookChanged = false;
-  fileName: string;
-  ready2editing = false;
-  bookId: number;
-  jsonBooks: INDEXOFBOOK[];
-  showAble = false;
+  protected bookChanged = false;
+  protected fileName: string;
+  protected ready2editing = false;
+  protected bookId: number;
+  protected jsonBooks: INDEXOFBOOK[];
+  protected showAble = false;
 
-  onlineBookList: ONLINEBOOKLINK[];
-  onlineAllBooksList: ONLINEBOOKLINK[];
+  protected onlineBookList: ONLINEBOOKLINK[];
+  protected onlineAllBooksList: ONLINEBOOKLINK[];
 
-  onlineBookListLegie: ONLINEAUTHORLEGIE[];
-  onlineShortStoriesListLegie: { title: string, link: string, lgId: string, review: string }[];
+  protected onlineBookListLegie: ONLINEAUTHORLEGIE[];
+  protected onlineShortStoriesListLegie: { title: string, link: string, lgId: string, review: string }[];
 
-  onlineBookListCBDB: {
+  protected onlineBookListCBDB: {
     main: {
       img: string,
       link: string,
@@ -79,18 +79,18 @@ export class BookPage implements OnInit, OnDestroy {
     }[]
   };
 
-  onlineBookListOfAuthorCBDB: {
+  protected onlineBookListOfAuthorCBDB: {
     img: string;
     rating: string;
     title: string;
     link: string;
   }[];
 
-  dontworryiwillnameyoulater: string;
-  dontworryiwillnameyoulater2: string;
+  protected dontworryiwillnameyoulater: string;
+  protected dontworryiwillnameyoulater2: string;
 
   private subs: Subscription[] = [];
-  bookForm: FormGroup<{
+  protected bookForm: FormGroup<{
     img: FormControl<string>,
     title: FormControl<string>,
     originalTitle: FormControl<string>,
@@ -109,8 +109,11 @@ export class BookPage implements OnInit, OnDestroy {
     lgId: FormControl<string>,
     dtbkId: FormControl<string>,
     cbdbId: FormControl<string>,
+    added: FormControl<Date>,
+    lastRead: FormControl<Date>,
+    finished: FormControl<Date>,
   }>;
-  listsOfValues: {
+  protected listsOfValues: {
     img: any[],
     title: any[],
     originalTitle: any[],
@@ -127,9 +130,9 @@ export class BookPage implements OnInit, OnDestroy {
     serie: any[],
     serieOrder: any[],
   };
-  _textAreaReduced = true;
-  imgIsLocal: boolean;
-  imgPreLink: string;
+  protected _textAreaReduced = true;
+  protected imgIsLocal: boolean;
+  protected imgPreLink: string;
 
   @ViewChild(IonContent) content: IonContent;
   @ViewChild('target') target: ElementRef;
@@ -144,11 +147,11 @@ export class BookPage implements OnInit, OnDestroy {
     private iab: InAppBrowser,
     private jsonServ: JsonDataParserService,
     private picsServ: NonusedPicsService,
+    private renderer: Renderer2,
     private route: ActivatedRoute,
     private router: Router,
     private webScrapper: WebScraperService,
     private workingServ: BusyService,
-    private renderer: Renderer2,
   ) { }
 
   ngOnInit() {
@@ -162,7 +165,6 @@ export class BookPage implements OnInit, OnDestroy {
             console.log(data)
             this.fileName = data.title;
             this.book = data;
-            console.log(this.book)
             this.fillOnlineData(data.creatorId);
             this.imgPreLink = this.dir.imgPreLink;
             this.updateOldImgs(data.img);
@@ -195,7 +197,6 @@ export class BookPage implements OnInit, OnDestroy {
     try {
       const field = document.querySelector(`#${key}`);
       if (!field) return;
-      console.log(key)
       const input = field.querySelector('input');
       const label = field.querySelector('.mdc-floating-label');
       input.size = this.bookForm.controls[key].value ? String(this.bookForm.controls[key].value).length + 1 : 1;
@@ -249,6 +250,9 @@ export class BookPage implements OnInit, OnDestroy {
       lgId: new FormControl(),
       dtbkId: new FormControl(),
       cbdbId: new FormControl(),
+      added: new FormControl(),
+      lastRead: new FormControl(),
+      finished: new FormControl(),
     });
     this.listsOfValues = {} as any;
     Object.entries(this.bookForm.controls).forEach(ent => {
@@ -263,6 +267,8 @@ export class BookPage implements OnInit, OnDestroy {
           const ar = book[key].split('/');
           value = Math.floor(+ar[0] / +ar[1] * 100) + '%';
         }
+      } else if (['added', 'lastRead', 'finished'].includes(key)) {
+        value = book[key] ? new Date(book[key]) : null;
       }
       fc.setValue((value || null) as never);
     });
@@ -275,7 +281,7 @@ export class BookPage implements OnInit, OnDestroy {
       Filesystem.stat({
         directory: this.dir.dir,
         path: 'ebook-library' + img
-      }).catch(e => {
+      }).catch(() => {
         this.bookForm.get('img').setValue(null);
         this.listsOfValues.img = this.listsOfValues.img.filter(im => im !== bookImg);
         this.book.img = null;
@@ -291,13 +297,21 @@ export class BookPage implements OnInit, OnDestroy {
 
   }
 
-  async updateBook() {
+  protected async updateBook() {
     Object.keys(this.bookForm.controls).forEach(key => {
       if (key !== 'progress') this.book[key] = this.bookForm.get(key).value;
     });
     if (!this.book.img) {
       await this.fs.downloadUnknownImg();
       this.book.img = '/ebook-library/unknown.jpg';
+    }
+    if (this.book.img[0] === '/' && this.listsOfValues?.img?.includes(this.book.img)) {
+      await Filesystem.copy({
+        directory: this.dir.dir,
+        toDirectory: this.dir.dir,
+        from: this.book.img,
+        to: this.getPath()
+      });
     }
     this.db.updateBook(this.book).then(() => {
       this.bookChanged = false;
@@ -311,7 +325,13 @@ export class BookPage implements OnInit, OnDestroy {
     });
   }
 
-  editable() {
+  private getPath(): string {
+    const path = this.book.path.substring(0, this.book.path.lastIndexOf('/'));
+    const suffix = this.book.img.substring(this.book.img.lastIndexOf('.') + 1);
+    return `${path}/${this.book.title}.${suffix}`;
+  }
+
+  protected editable() {
     Object.entries(this.bookForm.controls).forEach(ent => {
       const key = ent[0];
       ent[1].setValue(this.book[key] as never);
@@ -323,7 +343,7 @@ export class BookPage implements OnInit, OnDestroy {
     this.bookChanged = false;
   }
 
-  async deleteBook() {
+  protected async deleteBook() {
     const dialogRef = this.dialog.open(
       DialogComponent,
       {
@@ -343,7 +363,7 @@ export class BookPage implements OnInit, OnDestroy {
         } catch (e) {
           // nothing
         }
-        this.db.deleteBook(bookId, authorId).then(() => {
+        this.db.deleteBook(bookId).then(() => {
           this.router.navigate(['/author', authorId]);
         });
       }
@@ -351,7 +371,7 @@ export class BookPage implements OnInit, OnDestroy {
 
   }
 
-  async onRemovePic(img: string) {
+  protected async onRemovePic(img: string) {
     if (img?.startsWith('/')) {
       await this.fs.removeFile(img).finally(() => {
         this.bookForm.get('img').setValue(null);
@@ -401,7 +421,7 @@ export class BookPage implements OnInit, OnDestroy {
     }
   }
 
-  getAuthorsBooks() {
+  protected getAuthorsBooks() {
     const authorsId = this.book.creatorId;
     this.db.getAuthor(authorsId).then((author) => {
       const authorsIdInJson = author.idInJson;
@@ -421,7 +441,7 @@ export class BookPage implements OnInit, OnDestroy {
     });
   }
 
-  getBookData(index: any) {
+  protected getBookData(index: any) {
     let jsonBook = this.jsonServ.getBook(index);
     if (jsonBook) {
       jsonBook[`length`] = jsonBook.pages;
@@ -437,7 +457,7 @@ export class BookPage implements OnInit, OnDestroy {
     }
   }
 
-  fillData(jsonBook) {
+  protected fillData(jsonBook) {
     Object.keys(jsonBook).forEach(key => {
       const val = jsonBook[key];
       const fc = this.bookForm.get(key);
@@ -451,7 +471,7 @@ export class BookPage implements OnInit, OnDestroy {
     this.bookChanged = true;
   }
 
-  downloadPicture() {
+  protected downloadPicture() {
     const uri = this.bookForm.get('img').value;
     const path = this.book.path.substring(0, this.book.path.lastIndexOf('/') + 1);
     const index = this.bookForm.get('img').value.lastIndexOf('.');
@@ -468,7 +488,7 @@ export class BookPage implements OnInit, OnDestroy {
     });
   }
 
-  async onGetBooksList() {
+  protected async onGetBooksList() {
     const author = await this.db.getAuthor(this.book.creatorId);
     const dialogRef = this.dialog.open(DialogComponent, {
       data: {
@@ -575,7 +595,7 @@ export class BookPage implements OnInit, OnDestroy {
     this.workingServ.done();
   }
 
-  async downloadBookInfo(item: ONLINEBOOKLINK | {
+  protected async downloadBookInfo(item: ONLINEBOOKLINK | {
     title: string,
     link: string,
     review: string,
@@ -631,20 +651,22 @@ export class BookPage implements OnInit, OnDestroy {
     }
   }
 
-  async downloadShortStoryInfo(item) {
+  protected async downloadShortStoryInfo(item) {
     this.workingServ.busy();
     try {
       const shortStory = await this.webScrapper.getShortStoryLegie(item.link);
       Object.keys(shortStory).forEach(key => {
         this.bookForm.get(key)?.setValue(shortStory[key]);
       });
-    } catch (e) { }
+    } catch (e) {
+      console.error(e);
+    }
     this.bookChanged = true;
     this.content.scrollToTop();
     this.workingServ.done();
   }
 
-  async downloadBookInfoCBDB(link: string) {
+  protected async downloadBookInfoCBDB(link: string) {
     const data = await this.webScrapper.getCBDBBookDetails(link);
     [
       'serie', 'serieOrder', 'genre', 'ISBN', 'length',
@@ -663,7 +685,7 @@ export class BookPage implements OnInit, OnDestroy {
     this.content.scrollToTop();
   }
 
-  async getBook2(url: string): Promise<{
+  protected async getBook2(url: string): Promise<{
     annotation: string;
     genre: string;
     img: string;
@@ -698,7 +720,7 @@ export class BookPage implements OnInit, OnDestroy {
         browser.close();
       });
 
-      browser.on('loadstop').subscribe(event => {
+      browser.on('loadstop').subscribe(() => {
         browser.executeScript({
           code: "function a(el, i) {\
             if (el) {\
@@ -738,7 +760,7 @@ export class BookPage implements OnInit, OnDestroy {
     });
   }
 
-  getMetadataFromEpub() {
+  protected getMetadataFromEpub() {
     this.epub.getMetadataFromEpub(this.book.path).then((metadata) => {
       if (metadata) {
         metadata.annotation = metadata.annotation?.replace(/<[^>]*>/g, '') || null;
@@ -754,33 +776,14 @@ export class BookPage implements OnInit, OnDestroy {
 
         });
 
-        if (metadata.imgPath) {
-          const destination = this.book.path.substring(0, this.book.path.lastIndexOf('/') + 1) +
-            this.bookForm.get('title').value + metadata.imgPath.substring(metadata.imgPath.lastIndexOf('.'));
-          Filesystem.copy({
-            from: metadata.imgPath,
-            to: destination,
-            directory: this.dir.dir,
-            toDirectory: this.dir.dir
-          }).then(async () => {
-            const img = await Filesystem.getUri({
-              path: this.book.path.substring(0, this.book.path.lastIndexOf('/') + 1) +
-                this.bookForm.get('title').value + metadata.imgPath.substring(metadata.imgPath.lastIndexOf('.')),
-              directory: this.dir.dir,
-            });
-            if (this.bookForm.get('img').value !== destination) {
-              this.bookForm.get('img').setValue(destination);
-              if (!this.listsOfValues.img.includes(destination))
-                this.listsOfValues.img.push(destination);
-              this.bookChanged = true;
-            }
-          });
-        }
+        if (!metadata.imgPaths?.length) return;
+        this.bookForm.controls.img.setValue(metadata.imgPaths[0]);
+        this.listsOfValues.img = metadata.imgPaths;
       }
     });
   }
 
-  onSwitchPic() {
+  protected onSwitchPic() {
     if (!this.listsOfValues.img.length) return;
     if (this.listsOfValues.img.length === 1 && this.bookForm.get('img').value) return;
     if (this.listsOfValues.img.includes(this.bookForm.get('img').value)) {
@@ -790,34 +793,21 @@ export class BookPage implements OnInit, OnDestroy {
     } else {
       this.bookForm.get('img').setValue(this.listsOfValues.img[0]);
     }
-    // try {
-    //   console.log(this.listsOfValues.img)
-    //   if (this.listsOfValues.img.length) return;
-    //   if (this.listsOfValues.img.length === 1 && this.bookForm.get('img').value) return;
-    //   let index: number = this.listsOfValues.img.indexOf(this.bookForm.get('img').value);
-    //   index = ((index + 1) % this.listsOfValues.img.length);
-    //   const img = this.listsOfValues.img[index];
-    //   console.log(`img: ${img}`)
-    //   this.bookForm.get('img').setValue(img);
-    //   console.log(`this.bookForm.get('img'): ${this.bookForm.get('img').value}`)
-    // } catch (e) {
-    //   console.error(e)
-    // }
   }
 
-  onReduceHeight() {
+  protected onReduceHeight() {
     if (this.bookForm.get('annotation').disabled)
       this._textAreaReduced = !this._textAreaReduced;
   }
 
-  onGetWidth(fcName: string, title: string) {
+  protected onGetWidth(fcName: string, title: string) {
     return {
       width: ((String(this.bookForm.get(fcName).value).length * 7) + 7) + 'px',
       'min-width': ((title.length * 9.5)) + 'px'
     };
   }
 
-  onGetImgSrc(img: string) {
+  protected onGetImgSrc(img: string) {
     return img?.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink + img) : img;
   }
 

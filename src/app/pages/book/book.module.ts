@@ -18,7 +18,7 @@ import { ApplicationPipesModuleModule } from 'src/app/application-pipes-module/a
 
 import { NgsContenteditableModule } from '@ng-stack/contenteditable';
 
-import { BookPage } from './book.page';
+import { BookComponent } from './book.page';
 
 
 @NgModule({
@@ -37,6 +37,6 @@ import { BookPage } from './book.page';
     ReactiveFormsModule,
   ],
   providers: [InAppBrowser],
-  declarations: [BookPage]
+  declarations: [BookComponent]
 })
 export class BookPageModule { }

@@ -4,7 +4,7 @@ import { FormControl, FormGroup } from '@angular/forms';
 
 import { Platform } from '@ionic/angular';
 import { Storage } from '@ionic/storage-angular';
-import { TextToSpeech } from '@capacitor-community/text-to-speech';
+import { TextToSpeech } from 'capacitor-text-to-speech';
 
 import { Subscription } from 'rxjs';
 
@@ -19,49 +19,51 @@ import { FileReaderService } from 'src/app/services/file-reader.service';
   templateUrl: './tts.page.html',
   styleUrls: ['./tts.page.scss'],
 })
-export class TtsPage implements OnInit, OnDestroy {
-  id: number;
-  path: string;
-  title: string;
-  isSpeaking = false;
-  speed = 30;
+export class TtsComponent implements OnInit, OnDestroy {
+  protected id: number;
+  protected path: string;
+  protected title: string;
+  protected isSpeaking = false;
+  protected speed = 30;
 
-  fontSize = '20px';
-  contHeight = '70px';
-  authorName = '';
-  textsLength = 0;
+  protected fontSize = '20px';
+  protected contHeight = '70px';
+  protected authorName = '';
+  protected textsLength = 0;
 
-  texts: string[];
-  progress: number;
-  spritzBoolean = false;
-  spritzPreText: string;
-  spritzRedText: string;
-  spritzPostText: string;
-  sentense = '';
-  speakingLengthLimit = 500;
+  protected texts: string[];
+  protected progress: number;
+  protected spritzBoolean = false;
+  protected spritzPreText: string;
+  protected spritzRedText: string;
+  protected spritzPostText: string;
+  protected sentense = '';
+  protected speakingLengthLimit = 500;
 
-  extension = 'txt';
+  protected extension = 'txt';
 
-  language: string;
-  languages: string[];
-  voices: { [lang: string]: { voiceURI: string, name: string }[] };
-  voice: string;
-  engines: { name: string, label: string, icon: number }[];
+  protected language: string;
+  protected languages: string[];
+  protected voices: { [lang: string]: { voiceURI: string, name: string }[] };
+  protected voice: string;
+  protected engines: { name: string, label: string, icon: number }[];
 
-  initialized = false;
-  isWorking = false;
+  protected initialized = false;
+  protected isWorking = false;
 
   private isRewinding: boolean;
   private stopRewind: boolean;
 
   private subs: Subscription[] = [];
-  myForm: FormGroup<{
+  protected myForm: FormGroup<{
     engine: FormControl<string>,
     language: FormControl<string>,
     voice: FormControl<string>,
   }>;
-  interval: ReturnType<typeof setTimeout>;
-  inBg: boolean;
+  protected interval: ReturnType<typeof setTimeout>;
+  protected inBg: boolean;
+
+  private lastReadSet: boolean;
 
 
   constructor(
@@ -354,7 +356,7 @@ export class TtsPage implements OnInit, OnDestroy {
     return this.epubService.getText(this.path);
   }
 
-  speak() {
+  protected speak() {
     if (this.texts) {
       if (!this.working.isSpeaking) this.working.isSpeaking = true;
       this.isSpeaking = true;
@@ -399,14 +401,17 @@ export class TtsPage implements OnInit, OnDestroy {
     }
   }
 
-
   private saveAuthorTitle() {
     this.db.saveValue('author', this.authorName);
     this.db.saveValue('title', this.title);
     this.db.saveValue('isSpeaking', this.isSpeaking);
   }
 
-  onOff() {
+  protected onOff() {
+    if (!this.lastReadSet && !this.isSpeaking) {
+      this.lastReadSet = true;
+      this.db.updateBookLastRead(this.id, new Date());
+    }
     if (this.spritzBoolean) {
       this.isSpeaking = !this.isSpeaking;
       this.saveAuthorTitle();
@@ -428,7 +433,7 @@ export class TtsPage implements OnInit, OnDestroy {
     });
   }
 
-  onStartRewinding(n: 0 | 1) {
+  protected onStartRewinding(n: 0 | 1) {
     this.isSpeaking = true;
     this.onOff();
     if (this.isRewinding) {
@@ -452,7 +457,7 @@ export class TtsPage implements OnInit, OnDestroy {
     }, 200);
   }
 
-  onStopRewinding(n: 0 | 1) {
+  protected onStopRewinding(n: 0 | 1) {
     if (this.isRewinding) {
       if (this.interval) {
         clearInterval(this.interval);
@@ -469,7 +474,7 @@ export class TtsPage implements OnInit, OnDestroy {
     }
   }
 
-  changeProgress(progress: number) {
+  protected changeProgress(progress: number) {
     if (this.spritzBoolean) {
       this.progress = progress;
     } else {
@@ -495,12 +500,13 @@ export class TtsPage implements OnInit, OnDestroy {
       } else {
         progress2DB = null;
       }
-      this.db.updateBookProgress(this.id, progress2DB);
+      this.db.updateBookProgress(this.id, progress2DB).then(() => {
+        if (progress2DB === 'finished') this.db.updateBookFinished(this.id, new Date());
+      });
     }
   }
 
-
-  stopStartSpeaking() {
+  protected stopStartSpeaking() {
     this.setProgress2DB();
     if (!this.spritzBoolean) {
       if (this.isSpeaking) {
@@ -606,7 +612,7 @@ export class TtsPage implements OnInit, OnDestroy {
     });
   }
 
-  increaseFontSize() {
+  protected increaseFontSize() {
     let str = this.fontSize;
     str = str.substring(0, str.length - 2);
     let num = parseFloat(str);
@@ -618,7 +624,7 @@ export class TtsPage implements OnInit, OnDestroy {
     this.strg.set('fs', this.fontSize);
   }
 
-  decreaseFontSize() {
+  protected decreaseFontSize() {
     let str = this.fontSize;
     str = str.substring(0, str.length - 2);
     let num = parseFloat(str);
@@ -628,7 +634,7 @@ export class TtsPage implements OnInit, OnDestroy {
     this.fontSize = num + 'px';
   }
 
-  changeSpeed(str: string) {
+  protected changeSpeed(str: string) {
     if (!this.spritzBoolean && this.isSpeaking) this.stopSpeaking();
     const speed = this.speed;
     if (str === '-') {

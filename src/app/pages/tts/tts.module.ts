@@ -9,10 +9,10 @@ import { IonicModule } from '@ionic/angular';
 
 import { TtsPageRoutingModule } from 'src/app/pages/tts/tts-routing.module';
 
-import { TtsPage } from 'src/app/pages/tts/tts.page';
+import { TtsComponent } from 'src/app/pages/tts/tts.page';
 
 @NgModule({
-  declarations: [TtsPage],
+  declarations: [TtsComponent],
   imports: [
     CommonModule,
     FormsModule,
