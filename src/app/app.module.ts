@@ -7,7 +7,6 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { IonicStorageModule } from '@ionic/storage-angular';
 import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
 
-import { Zip } from '@awesome-cordova-plugins/zip/ngx';
 import { HTTP } from '@awesome-cordova-plugins/http/ngx';
 import { SQLite } from '@awesome-cordova-plugins/sqlite/ngx';
 import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
@@ -62,7 +61,6 @@ import { AppComponent } from 'src/app/app.component';
         WebIntent,
         WebScraperService,
         WebView,
-        Zip,
     ],
     bootstrap: [AppComponent]
 })

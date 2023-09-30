@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core';
-import { Zip } from '@awesome-cordova-plugins/zip/ngx';
 
 import { Filesystem, Encoding } from '@capacitor/filesystem';
 
@@ -7,6 +6,8 @@ import { DirectoryService } from './directory.service';
 
 import { METADATA, CHAPTER } from 'src/app/services/interfaces';
 
+import { Zip4J } from 'capacitor-zip4j';
+// import {Book} from 'epubjs';
 
 @Injectable({
   providedIn: 'root',
@@ -15,7 +16,6 @@ export class EpubService {
   private path2ChaptersDir: string;
   constructor(
     private dir: DirectoryService,
-    private zip: Zip,
   ) { }
 
   private async getOpfNcxText(path: string, optOrNcx: string): Promise<string> {
@@ -44,55 +44,53 @@ export class EpubService {
         if (text) return text;
       }
     }
-
-
   }
 
-  private async unzipEpub(relativePath2EpubFile: string): Promise<number> {
+  private async unzipEpub(relativePath2EpubFile: string): Promise<any> {
     await Filesystem.mkdir({
       directory: this.dir.dir,
       path: 'ebook-library/epub',
     });
-    const source = await Filesystem.getUri({
+
+    const directoryUri = await Filesystem.getUri({
       directory: this.dir.dir,
-      path: relativePath2EpubFile,
+      path: ''
     });
 
-    const dest = await Filesystem.getUri({
-      directory: this.dir.dir,
-      path: '/ebook-library/epub',
-    });
-
-    try {
-      return this.zip.unzip(source.uri, dest.uri, () => {});
-    } catch (e) {
-      console.error('hovna2')
-      console.error(e)
-    }
+    return Zip4J.unzip({
+      source: directoryUri.uri + relativePath2EpubFile,
+      destination: directoryUri.uri + '/ebook-library/epub'
+    }).then(() => {
+      console.log('finished')
+    }).catch(e => {
+      console.error(e);
+    })
   }
 
   private getMetadata(opfText: string): Promise<METADATA> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       if (!opfText) {
         return;
       }
       const parser = new DOMParser();
       const xml = parser.parseFromString(opfText, 'text/xml');
-      let imgPath: string;
 
-      try {
-        const id = xml.getElementsByTagName('metadata')[0].querySelector('[name="cover"]').getAttribute('content')
-          .replace('.', '\\.').replace(':', '\\:');
-        imgPath = this.path2ChaptersDir + '/' + xml.querySelector('#' + id).getAttribute('href');
-      } catch {
-        const elms = xml.querySelectorAll('[id*="cover"]');
-        for (const el of Array.from(elms)) {
-          if (el.getAttribute('media-type').match('^image/')) {
-            imgPath = this.path2ChaptersDir + '/' + el.getAttribute('href');
-          }
-        }
+      // try {
+      //   const id = xml.getElementsByTagName('metadata')[0].querySelector('[name="cover"]').getAttribute('content')
+      //     .replace('.', '\\.').replace(':', '\\:');
+      //   imgPath = this.path2ChaptersDir + '/' + xml.querySelector('#' + id).getAttribute('href');
+      // } catch {
+      //   const elms = xml.querySelectorAll('[id*="cover"]');
+      //   for (const el of Array.from(elms)) {
+      //     if (el.getAttribute('media-type').match('^image/')) {
+      //       imgPath = this.path2ChaptersDir + '/' + el.getAttribute('href');
+      //     }
+      //   }
 
-      }
+      // }
+
+      const imgEls = Array.from(xml.querySelectorAll('[media-type^="image"]'));
+      const imgPaths = imgEls.map(it => '/' + this.path2ChaptersDir + '/' + it.getAttribute('href'));
 
       const annotation = xml.getElementsByTagName('dc:description').length
         ? xml.getElementsByTagName('dc:description')[0].textContent
@@ -133,7 +131,7 @@ export class EpubService {
         published,
         ISBN,
         genre,
-        imgPath,
+        imgPaths,
       });
     });
   }
@@ -219,16 +217,16 @@ export class EpubService {
   }
 
   public async getMetadataFromEpub(path2EpubFile: string): Promise<METADATA> {
-    return new Promise(async (resolve, reject) => {
+    return new Promise(async (resolve) => {
       await this.prepareFolder();
 
-      let unzipped: number;
       try {
-        unzipped = await this.unzipEpub(path2EpubFile);
+        await this.unzipEpub(path2EpubFile);
       } catch (e) {
         console.error('getMetadataFromEpub unzipped failed');
+        return Promise.reject(e)
       }
-      if (unzipped === -1) return Promise.reject();
+
       let text: string;
       try {
         text = await this.getOpfNcxText('ebook-library/epub', 'opf');
@@ -247,14 +245,12 @@ export class EpubService {
     const output: string[] = [];
     await this.prepareFolder();
 
-    let unziped: number
     try {
-      unziped = await this.unzipEpub(path2EpubFile);
+      await this.unzipEpub(path2EpubFile);
     } catch (e) {
       console.error('unzipEpub')
-      console.error(e)
+      return Promise.reject(e);
     }
-    if (unziped === -1) return Promise.reject();
     try {
       await this.getOpfNcxText('ebook-library/epub', 'opf');
     } catch (e) {

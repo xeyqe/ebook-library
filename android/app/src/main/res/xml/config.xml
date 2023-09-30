@@ -57,10 +57,6 @@
     <param name="onload" value="true"/>
   </feature>
 
-  <feature name="Zip">
-    <param name="android-package" value="org.apache.cordova.Zip"/>
-  </feature>
-
   <feature name="SQLitePlugin">
     <param name="android-package" value="io.sqlc.SQLitePlugin"/>
   </feature>

@@ -1,9 +1,5 @@
 [
 	{
-		"pkg": "@capacitor-community/text-to-speech",
-		"classpath": "com.getcapacitor.community.tts.TextToSpeechPlugin"
-	},
-	{
 		"pkg": "@capacitor/app",
 		"classpath": "com.capacitorjs.plugins.app.AppPlugin"
 	},
@@ -26,5 +22,13 @@
 	{
 		"pkg": "@capacitor/status-bar",
 		"classpath": "com.capacitorjs.plugins.statusbar.StatusBarPlugin"
+	},
+	{
+		"pkg": "capacitor-text-to-speech",
+		"classpath": "com.getcapacitor.community.tts.TextToSpeechPlugin"
+	},
+	{
+		"pkg": "capacitor-zip4j",
+		"classpath": "com.xeyqe.plugins.zipj4.Zip4JPlugin"
 	}
 ]
