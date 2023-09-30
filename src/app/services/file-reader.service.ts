@@ -339,12 +339,19 @@ export class FileReaderService {
   public async write2File(text: string, dbVersion: number) {
     console.log('write2File')
     console.log(arguments)
+    const path = `/ebook-library/db${dbVersion}_${new Date().toJSON()}.json`;
     await Filesystem.writeFile({
       directory: this.dir.dir,
-      path: `/ebook-library/db${dbVersion}_${new Date().toJSON()}.json`,
+      path: 'ebook-library/db.txt',
       data: text,
       encoding: Encoding.UTF8,
     }).then(a => console.log(a)).catch(e => console.error(e));
+    await Filesystem.rename({
+      toDirectory: this.dir.dir,
+      directory: this.dir.dir,
+      from: 'ebook-library/db.txt',
+      to: path
+    });
   }
 
   public async getDBJsons(): Promise<FileInfo[]> {
