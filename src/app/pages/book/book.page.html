@@ -54,18 +54,16 @@
         </div>
 
         <div class="flexed">
-            <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.controls.serie.value || ready2editing" id="serie">
-                <mat-label class="red">Serie</mat-label>
-                <input type="text" formControlName="serie" matInput [matAutocomplete]="autoSerie"
-                    [ngClass]="ready2editing ? 'white' : 'gray'">
-                <mat-autocomplete #autoSerie="matAutocomplete" panelWidth="auto">
-                    <ng-container *ngFor="let serie of listsOfValues.serie">
-                        <mat-option *ngIf="bookForm.controls.serie.value !== serie" [value]="serie">
-                            {{ serie }}
-                        </mat-option>
-                    </ng-container>
-                </mat-autocomplete>
-            </mat-form-field>
+            <ion-textarea *ngIf="bookForm.controls.serie.value || ready2editing" label="Serie" labelPlacement="floating"
+                fill="solid" formControlName="serie" matInput [ngClass]="ready2editing ? 'white' : 'gray'"
+                autoGrow="true">
+            </ion-textarea>
+            <ng-container *ngFor="let serie of listsOfValues.serie">
+                <mat-option *ngIf="bookForm.controls.serie.value !== serie && ready2editing" [value]="serie"
+                    (onSelectionChange)="onInput('serie', serie)">
+                    {{ serie }}
+                </mat-option>
+            </ng-container>
 
             <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.controls.serieOrder.value || ready2editing"
                 id="serieOrder">
@@ -81,18 +79,16 @@
                 </mat-autocomplete>
             </mat-form-field>
 
-            <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.controls.title.value || ready2editing" id="title">
-                <mat-label class="red">Title</mat-label>
-                <input type="text" formControlName="title" matInput [matAutocomplete]="autoTitle"
-                    [ngClass]="ready2editing ? 'white' : 'gray'">
-                <mat-autocomplete #autoTitle="matAutocomplete" [panelWidth]="'auto'">
-                    <ng-container *ngFor="let title of listsOfValues.title">
-                        <mat-option *ngIf="bookForm.controls.title.value !== title" [value]="title">
-                            {{ title }}
-                        </mat-option>
-                    </ng-container>
-                </mat-autocomplete>
-            </mat-form-field>
+            <ion-textarea *ngIf="bookForm.controls.title.value || ready2editing" label="Title" labelPlacement="floating"
+                fill="solid" formControlName="title" matInput [ngClass]="ready2editing ? 'white' : 'gray'"
+                autoGrow="true" (keydown.enter)="onSkipKey($event)">
+            </ion-textarea>
+            <ng-container *ngFor="let title of listsOfValues.title">
+                <mat-option *ngIf="bookForm.controls.title.value !== title && ready2editing" [value]="title"
+                    (onSelectionChange)="onInput('title', title)">
+                    {{ title }}
+                </mat-option>
+            </ng-container>
 
             <!-- <mat-form-field subscriptSizing="dynamic" *ngIf="jsonBooks && ready2editing">
                 <mat-label class="red">Choose an option</mat-label>
@@ -103,33 +99,27 @@
                 </mat-select>
             </mat-form-field> -->
 
-            <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.controls.originalTitle.value || ready2editing"
-                id="originalTitle">
-                <mat-label class="red">Original title</mat-label>
-                <input type="text" formControlName="originalTitle" matInput [matAutocomplete]="autoOriginalTitle"
-                    [ngClass]="ready2editing ? 'white' : 'gray'">
-                <mat-autocomplete #autoOriginalTitle="matAutocomplete" [panelWidth]="'auto'">
-                    <ng-container *ngFor="let originalTitle of listsOfValues.originalTitle">
-                        <mat-option *ngIf="bookForm.controls.originalTitle.value !== originalTitle"
-                            [value]="originalTitle">
-                            {{ originalTitle }}
-                        </mat-option>
-                    </ng-container>
-                </mat-autocomplete>
-            </mat-form-field>
+            <ion-textarea *ngIf="bookForm.controls.originalTitle.value || ready2editing" label="Original title"
+                labelPlacement="floating" fill="solid" formControlName="originalTitle" matInput
+                [ngClass]="ready2editing ? 'white' : 'gray'" autoGrow="true">
+            </ion-textarea>
+            <ng-container *ngFor="let originalTitle of listsOfValues.originalTitle">
+                <mat-option *ngIf="bookForm.controls.originalTitle.value !== originalTitle && ready2editing" [value]="originalTitle"
+                    (onSelectionChange)="onInput('originalTitle', originalTitle)">
+                    {{ originalTitle }}
+                </mat-option>
+            </ng-container>
 
-            <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.controls.genre.value || ready2editing" id="genre">
-                <mat-label class="red">Genre</mat-label>
-                <input type="text" formControlName="genre" matInput [matAutocomplete]="autoGenre"
-                    [ngClass]="ready2editing ? 'white' : 'gray'">
-                <mat-autocomplete #autoGenre="matAutocomplete" [panelWidth]="'auto'">
-                    <ng-container *ngFor="let genre of listsOfValues.genre">
-                        <mat-option *ngIf="bookForm.controls.genre.value !== genre" [value]="genre">
-                            {{ genre }}
-                        </mat-option>
-                    </ng-container>
-                </mat-autocomplete>
-            </mat-form-field>
+            <ion-textarea *ngIf="bookForm.controls.genre.value || ready2editing" label="Genre" labelPlacement="floating"
+                fill="solid" formControlName="genre" matInput [ngClass]="ready2editing ? 'white' : 'gray'"
+                autoGrow="true">
+            </ion-textarea>
+            <ng-container *ngFor="let genre of listsOfValues.genre">
+                <mat-option *ngIf="bookForm.controls.genre.value !== genre && ready2editing" [value]="genre"
+                    (onSelectionChange)="onInput('genre', genre)">
+                    {{ genre }}
+                </mat-option>
+            </ng-container>
 
             <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.controls.ISBN.value || ready2editing" id="ISBN">
                 <mat-label class="red">ISBN</mat-label>
@@ -197,7 +187,8 @@
                 </mat-autocomplete>
             </mat-form-field>
 
-            <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.controls.length.value || ready2editing" id="pages">
+            <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.controls.length.value || ready2editing"
+                id="pages">
                 <mat-label class="red">Pages</mat-label>
                 <input type="number" formControlName="length" matInput [matAutocomplete]="autoPages"
                     [ngClass]="ready2editing ? 'white' : 'gray'">
@@ -217,17 +208,20 @@
 
             <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.controls.added.value">
                 <mat-label class="red">Added</mat-label>
-                <input class="gray" disabled [value]="bookForm.controls.added.value" matInput>
+                <input class="gray" disabled type="text" matInput
+                    [value]="bookForm.controls.added.value | date:'dd.MM.yyyy, hh:mm:ss'">
             </mat-form-field>
 
             <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.controls.lastRead.value">
                 <mat-label class="red">Last Read</mat-label>
-                <input class="gray" disabled [value]="bookForm.controls.lastRead.value" matInput>
+                <input class="gray" disabled type="text" matInput
+                    [value]="bookForm.controls.lastRead.value | date:'dd.MM.yyyy, hh:mm:ss'">
             </mat-form-field>
 
             <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.controls.finished.value">
                 <mat-label class="red">Finished</mat-label>
-                <input class="gray" disabled [value]="bookForm.controls.finished.value" matInput>
+                <input class="gray" disabled type="text" matInput
+                    [value]="bookForm.controls.finished.value | date:'dd.MM.yyyy, hh:mm:ss'">
             </mat-form-field>
 
             <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.controls.rating.value || ready2editing"

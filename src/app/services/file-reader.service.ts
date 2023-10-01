@@ -300,18 +300,30 @@ export class FileReaderService {
     const src = this.webView.convertFileSrc(`${uri.uri}/${path}/${fileName}`);
 
     return new Promise((resolve) => {
+      const pth = `/${path}/${fileName}`;
       Filesystem.stat({
         directory: this.dir.dir,
-        path: path + fileName
+        path: pth
       }).then(() => {
         resolve(src);
       }).catch(() => {
+        const filePath = `/${path}/${(Math.random() + 1).toString(36).substring(2)}` + fileName.substring(fileName.lastIndexOf('.'));
         Filesystem.downloadFile({
           directory: this.dir.dir,
-          path: `${path}/${fileName}`,
+          path: filePath,
           url: Uri
-        }).then(a => {
-          resolve(a.path);
+        }).then(() => {
+          Filesystem.copy({
+            directory: this.dir.dir,
+            toDirectory: this.dir.dir,
+            from: filePath,
+            to: pth
+          }).then(() => {
+            resolve(pth);
+          }).catch(e => {
+            console.warn(e);
+            resolve(filePath);
+          });
         }).catch(e => {
           console.error(e);
         });

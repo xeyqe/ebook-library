@@ -98,3 +98,30 @@ body.my-light-theme {
 .mat-mdc-form-field-focus-overlay {
     background: #0d0d0d;
 }
+
+ion-textarea {
+    .label-text {
+        color: #ff3d3d !important;
+    }
+    .textarea-wrapper.sc-ion-textarea-md {
+        margin: .5rem;
+        background-color: #121212;
+    }
+
+    .textarea-disabled.sc-ion-textarea-md-h {
+        opacity: unset;
+    }
+
+    &.textarea-label-placement-floating.sc-ion-textarea-md-h {
+        opacity: unset;
+    }
+
+    &.textarea-disabled .textarea-wrapper.sc-ion-textarea-md {
+        background-color: black;
+    }
+}
+
+.ion-valid.sc-ion-textarea-md-h  {
+    --highlight-color: #ff3d3d;
+}
+

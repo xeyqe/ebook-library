@@ -194,6 +194,7 @@ export class BookComponent implements OnInit, OnDestroy {
   }
 
   private updateSize(key: string) {
+    if (['serie', 'title', 'originalTitle', 'genre'].includes(key)) return;
     try {
       const field = document.querySelector(`#${key}`);
       if (!field) return;
@@ -295,6 +296,16 @@ export class BookComponent implements OnInit, OnDestroy {
       this.bookChanged = true;
     }));
 
+    ['serie', 'title', 'originalTitle', 'genre'].forEach(key => {
+      this.subs.push(this.bookForm.controls[key].valueChanges.subscribe(val => {
+        const newVal = val.replace(/\n/g, '');
+        if (val !== newVal) this.bookForm.controls[key].setValue(newVal, { emitEvent: false });
+      }));
+    });
+  }
+
+  protected onInput(fc: string, value: string) {
+    this.bookForm.controls[fc].setValue(value);
   }
 
   protected async updateBook() {
@@ -312,6 +323,7 @@ export class BookComponent implements OnInit, OnDestroy {
         from: this.book.img,
         to: this.getPath()
       });
+      this.book.img = this.getPath();
     }
     this.db.updateBook(this.book).then(() => {
       this.bookChanged = false;
@@ -736,16 +748,16 @@ export class BookComponent implements OnInit, OnDestroy {
           a(document.querySelector('#abinfo > a'),'click');\
           setTimeout(() => {\
             var o={\
-              annotation:a(document.querySelector('#bdetdesc'),'textContent'),\
-              genre:a(document.querySelector('[itemprop=genre]'),'textContent'),\
+              annotation:a(document.querySelector('.justify.new2.odtop_big'),'textContent'),\
+              genre:a(document.querySelector('[itemprop=genre]'),'innerText'),\
               img:a(document.querySelector('.kniha_img'),'src'),\
               language:a(document.querySelector('[itemprop=language]'),'innerText'),\
-              originalTitle:a(document.querySelector('#bdetail_rest>div.detail_description>h4'),'textContent'),\
+              originalTitle:a(document.querySelector('#bdetail_rest>div.detail_description>h4'),'innerText'),\
               length:a(document.querySelector('[itemprop=numberOfPages]'),'innerText'),\
               published:a(document.querySelector('[itemprop=datePublished]'),'textContent'),\
               publisher:a(document.querySelector('[itemprop=publisher]'),'innerText'),\
               title:a(document.querySelector('[itemprop=name]'),'innerText'),\
-              translator:a(document.querySelector('[itemprop=translator]'),'textContent'),\
+              translator:a(document.querySelector('[itemprop=translator]'),'innerText'),\
               ISBN:a(document.querySelector('[itemprop=isbn]'),'innerText'),\
               serie:a(document.querySelector('.detail_description h3 a'),'textContent'),\
               serieOrder:a(document.querySelector('.detail_description h3 em'),'textContent')\
@@ -809,6 +821,11 @@ export class BookComponent implements OnInit, OnDestroy {
 
   protected onGetImgSrc(img: string) {
     return img?.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink + img) : img;
+  }
+
+  protected onSkipKey(ev: Event) {
+    ev.stopPropagation();
+    console.log(ev)
   }
 
   ngOnDestroy() {
