@@ -917,7 +917,7 @@ export class DatabaseService {
     creatorId: number,
   }[]> {
     const data = await this.database.executeSql(
-      'SELECT id, title, progress, img, creatorId FROM books WHERE progress LIKE "%/%" ORDER BY title COLLATE NOCASE ASC',
+      'SELECT id, title, progress, img, creatorId FROM books WHERE progress LIKE "%/%" ORDER BY lastRead DESC, title COLLATE NOCASE ASC',
       []
     ).catch((e) => {
       console.error('getStartedBooks failed!');
@@ -936,7 +936,7 @@ export class DatabaseService {
     creatorId: number,
   }[]> {
     const data = await this.database.executeSql(
-      `SELECT id, title, progress, img, creatorId FROM books WHERE progress = 'finished' ORDER BY title COLLATE NOCASE ASC`,
+      `SELECT id, title, progress, img, creatorId FROM books WHERE progress = 'finished' ORDER BY finished DESC, title COLLATE NOCASE ASC`,
       []
     ).catch((e) => {
       console.error('getFinishedBooks failed!');
