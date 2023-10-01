@@ -17,7 +17,6 @@ import { FileChooser } from '@awesome-cordova-plugins/file-chooser/ngx';
 import { SplashScreen } from '@awesome-cordova-plugins/splash-screen/ngx';
 import { SQLitePorter } from '@awesome-cordova-plugins/sqlite-porter/ngx';
 import { BackgroundMode } from '@awesome-cordova-plugins/background-mode/ngx';
-import { AndroidPermissions } from '@awesome-cordova-plugins/android-permissions/ngx';
 
 import { EpubService } from './services/epub.service';
 import { DatabaseService } from './services/database.service';
@@ -52,7 +51,6 @@ import { AppComponent } from 'src/app/app.component';
         FilePath,
         FileReaderService,
         HTTP,
-        AndroidPermissions,
         JsonDataParserService,
         SplashScreen,
         SQLite,

@@ -1,7 +1,6 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { Storage } from '@ionic/storage-angular';
 import { Platform, ToastController } from '@ionic/angular';
 
 import { StatusBar } from '@awesome-cordova-plugins/status-bar/ngx';
@@ -11,7 +10,6 @@ import { BusyService } from './services/busy.service';
 import { FileReaderService } from './services/file-reader.service';
 import { DatabaseService } from 'src/app/services/database.service';
 import { Subscription } from 'rxjs';
-import { AndroidPermissions } from '@awesome-cordova-plugins/android-permissions/ngx';
 import { WebIntent } from '@awesome-cordova-plugins/web-intent/ngx';
 
 
@@ -26,18 +24,15 @@ export class AppComponent implements OnInit {
   private subs: Subscription[] = [];
 
   constructor(
-    private androidPerm: AndroidPermissions,
     private backgroundMode: BackgroundMode,
-    private cdRef: ChangeDetectorRef,
     private db: DatabaseService,
     private fr: FileReaderService,
     private platform: Platform,
     private router: Router,
     private statusBar: StatusBar,
     private toastCtrl: ToastController,
-    public storage: Storage,
-    public workingServ: BusyService,
-    private webIntent: WebIntent
+    private webIntent: WebIntent,
+    protected workingServ: BusyService,
   ) { }
 
   ngOnInit(): void {
@@ -48,13 +43,7 @@ export class AppComponent implements OnInit {
       }     
       if (!await this.fr.accessAllFilesPermissionGranted()) 
         await this.webIntent.startActivity(options).then((a) => {console.log(a)}, (e) => {console.error(e)});
-      // try {
-      //   const a = await this.androidPerm.checkPermission(this.androidPerm.PERMISSION.MANAGE_EXTERNAL_STORAGE);
-      //   console.log(a)
-      // } catch (e) {
-      //   console.error(e)
-      //   await this.androidPerm.requestPermission(this.androidPerm.PERMISSION.MANAGE_EXTERNAL_STORAGE);
-      // }
+
       this.fr.downloadDorian();
       this.initializeApp();
       this.setSubs();
@@ -108,7 +97,6 @@ export class AppComponent implements OnInit {
       if (this.workingServ.isSpeaking) {
         this.workingServ.inBg = true;
         this.backgroundMode.disable();
-        this.cdRef.detectChanges();
       }
     }));
     this.subs.push(this.platform.pause.subscribe(() => {
