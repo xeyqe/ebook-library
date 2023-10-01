@@ -10,7 +10,7 @@ import { DialogModule } from '../../material/dialog/dialog.module';
 import { AuthorsPageRoutingModule } from './authors-routing.module';
 import { ApplicationPipesModuleModule } from 'src/app/application-pipes-module/application-pipes-module.module';
 
-import { AuthorsPage } from 'src/app/pages/authors/authors.page';
+import { AuthorsComponent } from 'src/app/pages/authors/authors.page';
 
 
 @NgModule({
@@ -24,7 +24,7 @@ import { AuthorsPage } from 'src/app/pages/authors/authors.page';
     ReactiveFormsModule,
   ],
   declarations: [
-    AuthorsPage,
+    AuthorsComponent,
     FilterPipe
   ]
 })

@@ -35,7 +35,7 @@
                 <ion-col size="3">
                     <div *ngIf="author.img">
                         <ion-avatar>
-                            <img [src]="onGetImgSrc(author.img)" />
+                            <img [src]="onGetImgSrc(author.img)" alt="img" />
                         </ion-avatar>
                     </div>
                 </ion-col>
@@ -51,7 +51,7 @@
             <ion-item *ngFor="let book of books" [routerLink]="['/book', book.id]">
                 <div *ngIf="book.img">
                     <ion-avatar>
-                        <img [src]="onGetImgSrc(book.img)" />
+                        <img [src]="onGetImgSrc(book.img)" alt="img" />
                     </ion-avatar>
                 </div>
 

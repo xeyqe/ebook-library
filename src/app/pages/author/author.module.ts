@@ -13,7 +13,7 @@ import { DialogModule } from 'src/app/material/dialog/dialog.module';
 import { AuthorPageRoutingModule } from 'src/app/pages/author/author-routing.module';
 import { ApplicationPipesModuleModule } from 'src/app/application-pipes-module/application-pipes-module.module';
 
-import { AuthorPage } from 'src/app/pages/author/author.page';
+import { AuthorComponent } from 'src/app/pages/author/author.page';
 
 import { NgsContenteditableModule } from '@ng-stack/contenteditable';
 
@@ -32,6 +32,6 @@ import { NgsContenteditableModule } from '@ng-stack/contenteditable';
     NgsContenteditableModule,
     ReactiveFormsModule,
   ],
-  declarations: [AuthorPage],
+  declarations: [AuthorComponent],
 })
 export class AuthorPageModule {}

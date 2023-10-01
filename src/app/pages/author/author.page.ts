@@ -38,7 +38,7 @@ import { DialogComponent } from 'src/app/material/dialog/dialog.component';
     ])
   ]
 })
-export class AuthorPage implements OnInit, OnDestroy {
+export class AuthorComponent implements OnInit, OnDestroy {
   author: AUTHOR = null;
   books: BOOKSIMPLIFIED[] = [];
   biography = '';
@@ -688,7 +688,7 @@ export class AuthorPage implements OnInit, OnDestroy {
           this.listsOfValues.img = this.listsOfValues.img.filter(im => im !== img);
         this.authorForm.get('img').setValue(null);
         this.authorChanged = true;
-      }).catch(e => {
+      }).catch(() => {
         this.dialog.open(
           DialogComponent,
           {
@@ -723,7 +723,6 @@ export class AuthorPage implements OnInit, OnDestroy {
   }
 
   onGetImgSrc(img: string) {
-    console.log(img?.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink + img) : img)
     return img?.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink + img) : img;
   }
 

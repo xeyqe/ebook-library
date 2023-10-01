@@ -6,6 +6,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { Encoding, Filesystem } from '@capacitor/filesystem';
+import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
 import { FileChooser } from '@awesome-cordova-plugins/file-chooser/ngx';
 
 import { Subscription } from 'rxjs';
@@ -19,7 +20,6 @@ import { FileReaderService } from './../../services/file-reader.service';
 import { DialogComponent } from 'src/app/material/dialog/dialog.component';
 
 import { BOOKSIMPLIFIED, AUTHORSIMPLIFIED } from 'src/app/services/interfaces';
-import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
 
 
 @Component({
@@ -27,24 +27,24 @@ import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
   templateUrl: './authors.page.html',
   styleUrls: ['./authors.page.scss'],
 })
-export class AuthorsPage implements OnInit, OnDestroy {
-  authors: AUTHORSIMPLIFIED[] = [];
-  books: BOOKSIMPLIFIED[] = [];
-  author: AUTHORSIMPLIFIED;
-  lastListenedBookId: string;
-  hideCharacters = false;
-  where2Search: string;
+export class AuthorsComponent implements OnInit, OnDestroy {
+  protected authors: AUTHORSIMPLIFIED[] = [];
+  protected books: BOOKSIMPLIFIED[] = [];
+  protected author: AUTHORSIMPLIFIED;
+  protected lastListenedBookId: string;
+  protected hideCharacters = false;
+  protected where2Search: string;
 
-  selectedView = 'TODO';
-  alphabet = [
+  protected selectedView = 'TODO';
+  protected alphabet = [
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
     'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#',
   ];
-  selectedCharacter: string;
+  protected selectedCharacter: string;
 
   private subs: Subscription[] = [];
-  imgPreLink: string;
-  searchFc: FormControl<string>;
+  protected imgPreLink: string;
+  protected searchFc: FormControl<string>;
 
 
   constructor(
@@ -84,7 +84,7 @@ export class AuthorsPage implements OnInit, OnDestroy {
     }));
   }
 
-  async ionViewWillEnter() {
+  protected async ionViewWillEnter() {
     const as = await this.db.getValue('as');
     this.lastListenedBookId = as || '10';
 
@@ -104,13 +104,13 @@ export class AuthorsPage implements OnInit, OnDestroy {
     SplashScreen.hide();
   }
 
-  changeSelectedChar(type: string, whichOne: 'authors' | 'books') {
+  protected changeSelectedChar(type: string, whichOne: 'authors' | 'books') {
     this.db.saveValue('character', type);
     this.selectedCharacter = type;
     whichOne === 'authors' ? this.db.loadAuthors(type) : this.db.loadBooks(type as any);
   }
 
-  where2SearchFn() {
+  protected where2SearchFn() {
     if (this.where2Search === 'A') {
       this.where2Search = 'B';
       this.selectedCharacter = 'liked';
@@ -122,7 +122,7 @@ export class AuthorsPage implements OnInit, OnDestroy {
     this.db.saveValue('where2Search', this.where2Search);
   }
 
-  onShowDialog() {
+  protected onShowDialog() {
     const dialogRef = this.dialog.open(
       DialogComponent,
       {
@@ -181,15 +181,15 @@ export class AuthorsPage implements OnInit, OnDestroy {
     this.workingServ.done();
   }
 
-  onImgIsLocal(path: string) {
+  protected onImgIsLocal(path: string) {
     return path.startsWith('/');
   }
 
-  onGetImgSrc(img: string) {
+  protected onGetImgSrc(img: string) {
     return img?.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink + img) : img;
   }
 
-  onSearchClear() {
+  protected onSearchClear() {
     if (this.where2Search === 'A') {
       this.db.loadAuthors(this.selectedCharacter);
     } else {
