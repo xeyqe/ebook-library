@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { FormControl, FormGroup } from '@angular/forms';
 
@@ -71,6 +71,7 @@ export class TtsComponent implements OnInit, OnDestroy {
     private epubService: EpubService,
     private fs: FileReaderService,
     private platform: Platform,
+    private ref: ChangeDetectorRef,
     private route: ActivatedRoute,
     private strg: Storage,
     private working: BusyService,
@@ -86,9 +87,21 @@ export class TtsComponent implements OnInit, OnDestroy {
       }
       this.subs.push(this.platform.resume.subscribe(() => {
         this.inBg = false;
+        const title = this.title;
+        this.title = 'title';
+        setTimeout(() => {
+          this.title = title;
+          // this.ref.markForCheck();
+          this.ref.detach();
+          this.ref.detectChanges();
+          this.ref.reattach();
+        }, 500);
+        console.log(this.inBg);
+        // this.ref.markForCheck();
       }));
       this.subs.push(this.platform.pause.subscribe(() => {
         this.inBg = true;
+        console.log(this.inBg);
       }));
       console.log('ngOnInit end')
     } catch (e) {
