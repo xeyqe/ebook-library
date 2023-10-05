@@ -20,7 +20,7 @@ import { DirectoryService } from 'src/app/services/directory.service';
 import { FileReaderService } from 'src/app/services/file-reader.service';
 import { WebScraperService } from 'src/app/services/web-scraper.service';
 import { JsonDataParserService } from 'src/app/services/json-data-parser.service';
-import { AUTHOR, WIKIPEDIADATA, BOOKSIMPLIFIED, ONLINEAUTHORLINK, BOOK } from 'src/app/services/interfaces';
+import { AUTHOR, WIKIPEDIADATA, ONLINEAUTHORLINK, AUTHORSBOOKS } from 'src/app/services/interfaces';
 
 import { DialogComponent } from 'src/app/material/dialog/dialog.component';
 
@@ -39,31 +39,31 @@ import { DialogComponent } from 'src/app/material/dialog/dialog.component';
   ]
 })
 export class AuthorComponent implements OnInit, OnDestroy {
-  author: AUTHOR = null;
-  books: BOOKSIMPLIFIED[] = [];
-  biography = '';
-  textareaFocus = false;
-  authorChanged = false;
-  ready2editing = false;
-  fromWiki: WIKIPEDIADATA[];
-  wikiOutputBoolean = false;
-  listOfPictures: string[];
-  authorId: number;
-  jsonOfAuthorsIndex;
-  fullHeight = false;
-  onlineAuthorsList: ONLINEAUTHORLINK[];
-  onlineAuthorsListLegie: ONLINEAUTHORLINK[];
-  onlineAuthorsListCBDB: {
+  protected author: AUTHOR = null;
+  protected books: AUTHORSBOOKS[] = [];
+  protected biography = '';
+  protected textareaFocus = false;
+  protected authorChanged = false;
+  protected ready2editing = false;
+  protected fromWiki: WIKIPEDIADATA[];
+  protected wikiOutputBoolean = false;
+  protected listOfPictures: string[];
+  protected authorId: number;
+  protected jsonOfAuthorsIndex;
+  protected fullHeight = false;
+  protected onlineAuthorsList: ONLINEAUTHORLINK[];
+  protected onlineAuthorsListLegie: ONLINEAUTHORLINK[];
+  protected onlineAuthorsListCBDB: {
     link: string;
     img: string;
     name: string;
     date: string;
     cbdbId: string;
   }[];
-  showAble = false;
+  protected showAble = false;
 
-  filteredOptions: Observable<any[]>;
-  authorForm: FormGroup<{
+  protected filteredOptions: Observable<any[]>;
+  protected authorForm: FormGroup<{
     img: FormControl<string>,
     name: FormControl<string>,
     surname: FormControl<string>,
@@ -77,7 +77,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
     lgId: FormControl<string>,
     cbdbId: FormControl<string>,
   }>;
-  listsOfValues: {
+  protected listsOfValues: {
     img: string[],
     name: string[],
     surname: string[],
@@ -87,9 +87,9 @@ export class AuthorComponent implements OnInit, OnDestroy {
     death: number[],
     biography: string[],
   };
-  _textAreaReduced = true;
-  imgPreLink: string;
-  seriesCont: { name: string, open: boolean, items: { book: BOOK, order: number }[] }[];
+  protected _textAreaReduced = true;
+  protected imgPreLink: string;
+  protected seriesCont: { name: string, open: boolean, books: AUTHORSBOOKS[] }[];
 
   private subs: Subscription[] = [];
 
@@ -113,56 +113,62 @@ export class AuthorComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.route.paramMap.subscribe((params) => {
-      const autId = params.get('id');
-      const id = parseInt(autId, 10);
-      this.authorId = id;
+    this.initialize();
 
-      this.subs.push(this.db.getDatabaseState().subscribe({
-        next: (ready) => {
-          if (ready) {
-            this.db.getAuthor(id).then((data) => {
-              console.log(data)
-              this.author = data;
-              console.log(this.author)
-              this.imgPreLink = this.directoryServ.imgPreLink;
-              this.updateOldImgs(data.img);
-              this.initializeForm(this.author);
-              this.fs.addBooksOfAuthor(id, data.path);
-
-              this.db.getBooksOfAuthor(id).then(() => {
-                this.subs.push(this.db.getBooks().subscribe((books) => {
-                  console.log(books)
-                  this.updateOldBooksImgs(books);
-                  this.takeCareOfSeries(books);
-                  this.loadUnusedPics([...books.map(bk => bk.img), this.author.img]);
-                }));
-              }).catch((e) => {
-                console.error('getBooksOfAuthor failed: ');
-                console.error(e);
-              });
-              setTimeout(() => {
-                Object.keys(this.authorForm.controls).forEach(key => {
-                  this.updateSize(key);
-                });
-              }, 1000);
-            }).catch((e) => {
-              console.error('getAuthor failed: ');
-              console.error(e);
-            });
-          }
-        }, error: e => {
-          console.error(e);
-        }
-      }));
-      this.jsonServ.jsonAuthorsIndexesData().then(() => {
-        this.jsonOfAuthorsIndex = this.jsonServ.getListOfAuthors();
-      }).catch((e) => {
-        console.error('jsonServ failed');
-        console.error(e);
-      });
+    this.jsonServ.jsonAuthorsIndexesData().then(() => {
+      this.jsonOfAuthorsIndex = this.jsonServ.getListOfAuthors();
+    }).catch((e) => {
+      console.error('jsonServ failed');
+      console.error(e);
     });
     this.showAble = this.webScraper.showAble;
+  }
+
+  private async initialize() {
+    this.authorId = await this.getAuthorId();
+    await this.isDBReady();
+    this.author = await this.db.getAuthor(this.authorId);
+    console.log(this.author)
+    this.imgPreLink = this.directoryServ.imgPreLink;
+    this.updateOldImgs(this.author.img);
+    this.initializeForm(this.author);
+    this.fs.addBooksOfAuthor(this.author.id, this.author.path);
+
+    const books = await this.db.getBooksOfAuthor(this.author.id);
+    console.log(books)
+    this.updateOldBooksImgs(books);
+    this.takeCareOfSeries(books);
+    this.loadUnusedPics([...books.map(bk => bk.img), this.author.img]);
+
+    setTimeout(() => {
+      Object.keys(this.authorForm.controls).forEach(key => {
+        this.updateSize(key);
+      });
+    }, 1000);
+  }
+
+  private getAuthorId(): Promise<number> {
+    return new Promise((resolve) => {
+      this.route.paramMap.subscribe({
+        next: (params) => {
+          resolve(+params.get('id'))
+        }
+      });
+    });
+  }
+
+  private isDBReady(): Promise<boolean> {
+    return new Promise((resolve) => {
+      this.subs.push(this.db.getDatabaseState().subscribe({
+        next: (ready) => {
+          resolve(ready);
+        },
+        error: (error) => {
+          resolve(false);
+          console.error(error);
+        }
+      }));
+    });
   }
 
   private async updateOldImgs(img: string) {
@@ -173,11 +179,10 @@ export class AuthorComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async updateOldBooksImgs(books: BOOK[]) {
+  private updateOldBooksImgs(books: AUTHORSBOOKS[]) {
     for (const book of books) {
       if (book.img?.startsWith('http://localhost/_app_file_/storage') || book.img?.startsWith('http://localhost/_capacitor_file_/')) {
         book.img = book.img?.replace(/.*\/ebook-library/, '/ebook-library') || null;
-        await this.db.updateBook(book);
       }
     }
   }
@@ -239,28 +244,40 @@ export class AuthorComponent implements OnInit, OnDestroy {
     }, 200);
   }
 
-  private takeCareOfSeries(books: BOOK[]) {
+  private takeCareOfSeries(books: AUTHORSBOOKS[]) {
     const seriesNames = [];
     this.seriesCont = [];
 
-    const serieLessBooks = [];
+    const serieLessBooks: AUTHORSBOOKS[] = [];
     books.forEach(book => {
-      if (book.serie) {
-        if (!seriesNames.includes(book.serie)) {
-          seriesNames.push(book.serie);
-          this.seriesCont.push({ name: book.serie, open: false, items: [{ book, order: book.serieOrder }] });
-        } else {
-          const item = this.seriesCont.find(itm => itm.name === book.serie);
-          item.items.push({ book, order: book.serieOrder });
-        }
-      } else {
+      if (!book.serie) {
         serieLessBooks.push(book);
+        return;
+      }
+      if (!seriesNames.includes(book.serie)) {
+        seriesNames.push(book.serie);
+        this.seriesCont.push({ name: book.serie, open: false, books: [book] });
+      } else {
+        const item = this.seriesCont.find(itm => itm.name === book.serie);
+        item.books.push(book);
       }
     });
     this.seriesCont.sort((a, b) => {
       return a.name.localeCompare(b.name);
     });
+
+    
     this.books = serieLessBooks;
+    if (!seriesNames?.length) return;
+    this.db.getSeriesBooks(seriesNames, this.author.id).then(otherBooks => {
+      Object.keys(otherBooks).forEach(key => {
+        const serie = this.seriesCont.find(it => it.name === key);
+        serie.books.push(...otherBooks[key]);
+      });
+      this.seriesCont.sort((a, b) => {
+        return a.name.localeCompare(b.name);
+      });
+    });
   }
 
   private async loadUnusedPics(usedPics: string[]): Promise<void> {
@@ -270,7 +287,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
     this.picsServ.pics = unUsed.length ? unUsed : null;
   }
 
-  async onGetPosts(index: string) {
+  protected async onGetPosts(index: string) {
     this.workingServ.busy();
     await this.jsonServ.jsonAuthorsData();
     const jsonAuthor = this.jsonServ.getAuthor(index);
@@ -303,7 +320,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
     }
   }
 
-  displayFn(subject) {
+  protected displayFn(subject) {
     if (subject && !subject.name) {
       return subject;
     } else if (subject && subject.name) {
@@ -318,7 +335,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
     }
   }
 
-  async onUpdateAuthor() {
+  protected async onUpdateAuthor() {
     Object.entries(this.authorForm.controls).forEach(ent => {
       const key = ent[0];
       const val = ent[1].value;
@@ -345,7 +362,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
     });
   }
 
-  async onEditable() {
+  protected async onEditable() {
     this.ready2editing = !this.ready2editing;
     if (!this.ready2editing) {
       this.wikiOutputBoolean = false;
@@ -364,7 +381,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
     this.fromWiki = null;
   }
 
-  getFromWikipedia() {
+  protected getFromWikipedia() {
     const searchValue = this.authorForm.get('name').value + ' ' + this.authorForm.get('surname').value;
     this.workingServ.busy();
 
@@ -392,7 +409,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
     });
   }
 
-  onSetWikipediaData(aa: WIKIPEDIADATA) {
+  protected onSetWikipediaData(aa: WIKIPEDIADATA) {
     const pageid = aa.pageid + '';
     this.workingServ.busy();
     this.http.get(
@@ -448,11 +465,11 @@ export class AuthorComponent implements OnInit, OnDestroy {
     });
   }
 
-  onUnhtml(str: string): string {
+  protected onUnhtml(str: string): string {
     return str.replace(/<[^>]*>/g, '');
   }
 
-  onChangePicture() {
+  protected onChangePicture() {
     if (!this.listsOfValues.img.length) return;
     if (this.listsOfValues.img.length === 1 && this.authorForm.get('img').value) return;
     if (this.listsOfValues.img.includes(this.authorForm.get('img').value)) {
@@ -464,7 +481,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
     }
   }
 
-  async deleteAuthor() {
+  protected async deleteAuthor() {
     const dialogRef = this.dialog.open(
       DialogComponent,
       {
@@ -530,7 +547,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
     this.content.scrollToTop();
   }
 
-  onDownloadPicture() {
+  protected onDownloadPicture() {
     const uri = this.authorForm.get('img').value;
     const path = this.author.path;
     const index = this.authorForm.get('img').value.lastIndexOf('.');
@@ -551,7 +568,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
     });
   }
 
-  onGetAuthor() {
+  protected onGetAuthor() {
     let authorsName: string;
     if (!this.authorForm.get('name').value || this.authorForm.get('name').value.length < 3) {
       authorsName = this.authorForm.get('surname').value;
@@ -619,7 +636,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
     });
   }
 
-  onDownloadAuthorInfo(item: ONLINEAUTHORLINK) {
+  protected onDownloadAuthorInfo(item: ONLINEAUTHORLINK) {
     this.workingServ.busy();
     if (item.dtbkId) {
       this.webScraper.getAuthor(item.link).then((data) => {
@@ -655,7 +672,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
     }
   }
 
-  onDownloadAuthorInfoCBDB(cbdbId: string) {
+  protected onDownloadAuthorInfoCBDB(cbdbId: string) {
     this.workingServ.busy();
     this.webScraper.getAuthorCBDB(cbdbId).then(author => {
       console.log(author)
@@ -680,7 +697,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
     this.content.scrollToPoint(0, target.nativeElement.offsetTop, 500);
   }
 
-  onRemovePic() {
+  protected onRemovePic() {
     if (this.authorForm.get('img').value.startsWith('/')) {
       const img = this.authorForm.get('img').value;
       this.fs.removeFile(img).finally(() => {
@@ -706,7 +723,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
     }
   }
 
-  onReduceHeight() {
+  protected onReduceHeight() {
     if (this.authorForm.get('biography').disabled)
       this._textAreaReduced = !this._textAreaReduced;
   }
@@ -718,17 +735,12 @@ export class AuthorComponent implements OnInit, OnDestroy {
   //   };
   // }
 
-  onIsImgLocal(path: string): boolean {
+  protected onIsImgLocal(path: string): boolean {
     return path && path.startsWith('/');
   }
 
-  onGetImgSrc(img: string) {
+  protected onGetImgSrc(img: string) {
     return img?.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink + img) : img;
-  }
-
-  ngOnDestroy() {
-    this.subs?.forEach(sub => sub?.unsubscribe());
-    this.workingServ.done();
   }
 
   protected delayedResize(label: HTMLElement, field: MatFormField, input: HTMLInputElement) {
@@ -749,5 +761,10 @@ export class AuthorComponent implements OnInit, OnDestroy {
     // console.log(b._elementRef.nativeElement.style)
     this.renderer.setStyle(field._elementRef.nativeElement, 'width', `${Math.floor(width)}px`);
     // console.log(b._elementRef.nativeElement.style.width)
+  }
+
+  ngOnDestroy() {
+    this.subs?.forEach(sub => sub?.unsubscribe());
+    this.workingServ.done();
   }
 }
