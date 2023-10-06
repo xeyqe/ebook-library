@@ -121,19 +121,15 @@ export class DatabaseService {
 
   private async setVersion(version: number) {
     const json = await this.exportDB();
-    const path = `ebook-library/db${version}_${new Date().toJSON()}.json.txt`;
+    const path = `ebook-library/db${version}_${new Date().toJSON().replace(/[,:\s/]/g, '_')}.json`;    
+
     await Filesystem.writeFile({
       directory: this.dir.dir,
-      path: 'ebook-library/db.txt',
+      path,
       data: JSON.stringify(json),
       encoding: Encoding.UTF8,
     });
-    await Filesystem.rename({
-      toDirectory: this.dir.dir,
-      directory: this.dir.dir,
-      from: 'ebook-library/db.txt',
-      to: path
-    });
+
     if (version === 1) {
       await this.database.executeSql(
         'CREATE TABLE IF NOT EXISTS dbInfo (version INTEGER PRIMARY KEY)', []

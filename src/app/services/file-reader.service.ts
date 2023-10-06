@@ -307,31 +307,16 @@ export class FileReaderService {
       }).then(() => {
         resolve(src);
       }).catch(() => {
-        const filePath = `/${path}/${(Math.random() + 1).toString(36).substring(2)}` + fileName.substring(fileName.lastIndexOf('.'));
+        const filePath = pth.replace(/[,:\s/]/g, '_');
         Filesystem.downloadFile({
           directory: this.dir.dir,
           path: filePath,
           url: Uri
         }).then(() => {
-          Filesystem.copy({
-            directory: this.dir.dir,
-            toDirectory: this.dir.dir,
-            from: filePath,
-            to: pth
-          }).then(() => {
-            resolve(pth);
-          }).catch(e => {
-            console.warn(e);
-            resolve(filePath);
-          });
+          resolve(filePath);
         }).catch(e => {
           console.error(e);
         });
-        // this.downloader.download(request).then((location) => {
-        //   resolve(src);
-        // }).catch((er) => {
-        //   console.error(er);
-        // });
       });
     });
   }
@@ -351,19 +336,13 @@ export class FileReaderService {
   public async write2File(text: string, dbVersion: number) {
     console.log('write2File')
     console.log(arguments)
-    const path = `/ebook-library/db${dbVersion}_${new Date().toJSON()}.json`;
+    const path = `/ebook-library/db${dbVersion}_${new Date().toJSON().replace(/[,:\s/]/g, '_')}.json`;
     await Filesystem.writeFile({
       directory: this.dir.dir,
-      path: 'ebook-library/db.txt',
+      path,
       data: text,
       encoding: Encoding.UTF8,
     }).then(a => console.log(a)).catch(e => console.error(e));
-    await Filesystem.rename({
-      toDirectory: this.dir.dir,
-      directory: this.dir.dir,
-      from: 'ebook-library/db.txt',
-      to: path
-    });
   }
 
   public async getDBJsons(): Promise<FileInfo[]> {

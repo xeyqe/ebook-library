@@ -317,13 +317,14 @@ export class BookComponent implements OnInit, OnDestroy {
       this.book.img = '/ebook-library/unknown.jpg';
     }
     if (this.book.img[0] === '/' && this.listsOfValues?.img?.includes(this.book.img)) {
+      const path = this.getPath();
       await Filesystem.copy({
         directory: this.dir.dir,
         toDirectory: this.dir.dir,
         from: this.book.img,
-        to: this.getPath()
+        to: path
       });
-      this.book.img = this.getPath();
+      this.book.img = path;
     }
     this.db.updateBook(this.book).then(() => {
       this.bookChanged = false;
@@ -340,7 +341,7 @@ export class BookComponent implements OnInit, OnDestroy {
   private getPath(): string {
     const path = this.book.path.substring(0, this.book.path.lastIndexOf('/'));
     const suffix = this.book.img.substring(this.book.img.lastIndexOf('.') + 1);
-    return `${path}/${this.book.title}.${suffix}`;
+    return `${path}/${this.book.title}.${suffix}`.replace(/[,:\s/]/g, '_');
   }
 
   protected editable() {
