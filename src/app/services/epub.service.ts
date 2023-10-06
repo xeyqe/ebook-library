@@ -166,17 +166,13 @@ export class EpubService {
       const parser = new DOMParser();
       const xml = parser.parseFromString(chapterHtmlText, 'text/xml');
 
-      const texts = xml
-        .querySelector('body')
-        .innerHTML.replace(/<\/p>/g, '\n')
-        .replace(/<[^>]*>/g, '')
-        .split('\n')
-        .filter((item) => {
-          if (item.trim().length) {
-            return item;
-          }
+      const output = [];
+      xml.querySelector('body').innerHTML.replace(/<\/p>/g, '\n').replace(/<[^>]*>/g, '')
+        .split(/(?=[.!?][\n\s])|(?<=[.!?][\n\s])/).forEach((it, i) => {
+          if (i % 2 === 0) output.push(it);
+          else output[output.length - 1] += it;
         });
-      resolve(texts);
+      resolve(output);
     });
   }
 

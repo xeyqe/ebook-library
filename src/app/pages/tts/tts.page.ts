@@ -306,36 +306,13 @@ export class TtsComponent implements OnInit, OnDestroy {
 
   private getTextsFromString(): Promise<string[]> {
     return this.fs.readTextFile(this.path).then((str) => {
-      const arrayOfParagraphs = str.split(/\n+/g);
-      const regex = RegExp('[A-Za-z0-9]+');
-      const newArray = [];
-
-      arrayOfParagraphs.forEach((element) => {
-        if (element && regex.test(element)) {
-          let length = element.length;
-
-          const arrayOfSentences = element.split(/\.\ /g);
-
-          for (let i = 0; i < arrayOfSentences.length; i++) {
-            let sentence = arrayOfSentences[i];
-            length = arrayOfSentences[i].length;
-            if (sentence && length < 790 && regex.test(sentence)) {
-              i === arrayOfSentences.length - 1 ? (sentence = sentence) : (sentence += '.');
-              newArray.push(sentence);
-            } else {
-              const thousands = Math.floor(length / 790);
-              for (let j = 0; j < thousands; j++) {
-                const partOfSentence = sentence.substring(j * 790, (j + 1) * 790);
-                if (partOfSentence && regex.test(partOfSentence)) {
-                  newArray.push(partOfSentence);
-                }
-              }
-            }
-          }
-        }
+      const output = [];
+      str.split(/(?=[.!?][\n\s])|(?<=[.!?][\n\s])/).forEach((it, i) => {
+        if (i % 2 === 0) output.push(it);
+        else output[output.length - 1] += it;
       });
 
-      return newArray;
+      return output;
     }).catch(e => {
       console.error(e);
       return [];
@@ -343,29 +320,6 @@ export class TtsComponent implements OnInit, OnDestroy {
   }
 
   private async getTextsFromEpub(): Promise<string[]> {
-    // const outputTexts: string[] = [];
-    // return this.epubService.unzipEpub(this.path).then(async num => {
-    //   if (num === 0) {
-
-    //     await this.epubService.getChapters().then(async (chapters) => {
-    //       for (const chapter of chapters) {
-    //         await new Promise((next) => {
-    //           this.getTextFromChapter(chapter).then((texts) => {
-    //             if (texts && (texts as string[]).length) {
-    //               for (const text of texts as string[]) {
-    //                 if (text) {
-    //                   outputTexts.push(text);
-    //                 }
-    //               }
-    //             }
-    //             next();
-    //           });
-    //         });
-    //       }
-    //     });
-    //     return outputTexts;
-    //   }
-    // });
     return this.epubService.getText(this.path);
   }
 
