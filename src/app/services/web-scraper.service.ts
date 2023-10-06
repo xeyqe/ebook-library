@@ -90,9 +90,9 @@ export class WebScraperService {
       const link = (item.children[0] as HTMLLinkElement).href;
       parsedList.push({
         link,
-        img: (item.children[0].firstChild as HTMLImageElement).src,
+        img: (item.children[0].children[0] as HTMLImageElement).src,
         title: item.children[2].innerHTML,
-        comment: item.children[4].innerHTML,
+        comment: item.children[4].textContent.trim().replace(/\n[ ]+/, ' '),
         dtbkId: link?.substring(link.lastIndexOf('/') + 1) || null
       });
     });
