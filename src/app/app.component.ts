@@ -3,14 +3,15 @@ import { Router } from '@angular/router';
 
 import { Platform, ToastController } from '@ionic/angular';
 
+import { Subscription } from 'rxjs';
+
 import { StatusBar } from '@awesome-cordova-plugins/status-bar/ngx';
+import { WebIntent } from '@awesome-cordova-plugins/web-intent/ngx';
 import { BackgroundMode } from '@awesome-cordova-plugins/background-mode/ngx';
 
 import { BusyService } from './services/busy.service';
 import { FileReaderService } from './services/file-reader.service';
 import { DatabaseService } from 'src/app/services/database.service';
-import { Subscription } from 'rxjs';
-import { WebIntent } from '@awesome-cordova-plugins/web-intent/ngx';
 
 
 @Component({
@@ -40,9 +41,9 @@ export class AppComponent implements OnInit {
       const options = {
         action: this.webIntent[`ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION`],
         url: `package:io.ionic.starter`
-      }     
-      if (!await this.fr.accessAllFilesPermissionGranted()) 
-        await this.webIntent.startActivity(options).then((a) => {console.log(a)}, (e) => {console.error(e)});
+      }
+      if (!await this.fr.accessAllFilesPermissionGranted())
+        await this.webIntent.startActivity(options).then((a) => { console.log(a) }, (e) => { console.error(e) });
 
       this.fr.downloadDorian();
       this.initializeApp();
@@ -144,8 +145,8 @@ export class AppComponent implements OnInit {
           this.router.navigate(['/author', authorId]);
         });
       });
-    } else if (/^(\/tts\/[0-9]+)$/.test(url)) {
-      const bookId = url.substring(url.lastIndexOf('/') + 1, url.length - 1);
+    } else if (/^\/tts\/[0-9]+;type=[a-z]+$/.test(url)) {
+      const bookId = url.slice(url.lastIndexOf('/') + 1, url.lastIndexOf(';'));
       this.router.navigate(['/book', bookId]);
     } else {
       console.error('else ?');

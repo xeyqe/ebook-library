@@ -64,13 +64,13 @@
         </div>
     </ion-list>
 
-    <ion-button *ngIf="lastListenedBookId !== null" (click)="onShowDialog()" class="sp-bu__share">
+    <ion-button *ngIf="lastListened" (click)="onShowDialog()" class="sp-bu__share">
         <ion-icon slot="icon-only" name="share"></ion-icon>
     </ion-button>
     <!-- <ion-button (click)="chooseAFile()" class="sp-bu__share">
         <ion-icon slot="icon-only" name="share"></ion-icon>
     </ion-button> -->
-    <ion-button *ngIf="lastListenedBookId !== null" class="sp-bu__play" [routerLink]="['/tts', lastListenedBookId]">
+    <ion-button *ngIf="lastListened" class="sp-bu__play" (click)="onGo2Last()">
         <ion-icon slot="icon-only" name="play-sharp"></ion-icon>
     </ion-button>
 </ion-content>

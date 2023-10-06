@@ -5,11 +5,11 @@
             <ion-col *ngIf="ready2editing">
                 <ion-button (click)="deleteBook()">delete</ion-button>
             </ion-col>
-            <div *ngIf="dontworryiwillnameyoulater && dontworryiwillnameyoulater2 && book" class="buttons">
-                <ion-button *ngIf="!ready2editing" [routerLink]="['/', 'tts', dontworryiwillnameyoulater]">
+            <div *ngIf="book" class="buttons">
+                <ion-button *ngIf="!ready2editing" (click)="onGo2('speech')">
                     <ion-icon slot="icon-only" name="megaphone"></ion-icon>
                 </ion-button>
-                <ion-button *ngIf="!ready2editing" [routerLink]="['/', 'tts', dontworryiwillnameyoulater2]">
+                <ion-button *ngIf="!ready2editing" (click)="onGo2('spritz')">
                     <ion-icon slot="icon-only" name="book"></ion-icon>
                 </ion-button>
                 <ion-button *ngIf="bookChanged" (click)="updateBook()">

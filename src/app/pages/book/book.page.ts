@@ -86,9 +86,6 @@ export class BookComponent implements OnInit, OnDestroy {
     link: string;
   }[];
 
-  protected dontworryiwillnameyoulater: string;
-  protected dontworryiwillnameyoulater2: string;
-
   private subs: Subscription[] = [];
   protected bookForm: FormGroup<{
     img: FormControl<string>,
@@ -171,8 +168,6 @@ export class BookComponent implements OnInit, OnDestroy {
             this.initializeBookForm(data);
             this.initializeSubs();
             this.getAuthorsBooks();
-            this.dontworryiwillnameyoulater = this.book.id + '0';
-            this.dontworryiwillnameyoulater2 = this.book.id + '1';
             if (this.picsServ.pics?.length)
               this.listsOfValues.img = [...this.listsOfValues.img, ...this.picsServ.pics];
             setTimeout(() => {
@@ -279,6 +274,7 @@ export class BookComponent implements OnInit, OnDestroy {
   private removeNotWorkingImg(bookImg: string) {
     if (bookImg && bookImg.includes('_capacitor_file_')) {
       const img = bookImg.split('ebook-library')[1];
+
       Filesystem.stat({
         directory: this.dir.dir,
         path: 'ebook-library' + img
@@ -298,6 +294,7 @@ export class BookComponent implements OnInit, OnDestroy {
 
     ['serie', 'title', 'originalTitle', 'genre'].forEach(key => {
       this.subs.push(this.bookForm.controls[key].valueChanges.subscribe(val => {
+        if (!val) return;
         const newVal = val.replace(/\n/g, '');
         if (val !== newVal) this.bookForm.controls[key].setValue(newVal, { emitEvent: false });
       }));
@@ -827,6 +824,10 @@ export class BookComponent implements OnInit, OnDestroy {
   protected onSkipKey(ev: Event) {
     ev.stopPropagation();
     console.log(ev)
+  }
+
+  protected onGo2(dir: 'spritz' | 'speech') {
+    this.router.navigate(['/tts', this.book.id, { type: dir }]);
   }
 
   ngOnDestroy() {

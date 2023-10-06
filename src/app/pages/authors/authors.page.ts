@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormControl } from '@angular/forms';
+import { Router } from '@angular/router';
 
 import { MatDialog } from '@angular/material/dialog';
 
@@ -31,7 +32,7 @@ export class AuthorsComponent implements OnInit, OnDestroy {
   protected authors: AUTHORSIMPLIFIED[] = [];
   protected books: BOOKSIMPLIFIED[] = [];
   protected author: AUTHORSIMPLIFIED;
-  protected lastListenedBookId: string;
+  protected lastListened: { id: number, type: 'speech' | 'spritz' };
   protected hideCharacters = false;
   protected where2Search: string;
 
@@ -54,6 +55,7 @@ export class AuthorsComponent implements OnInit, OnDestroy {
     private fileChooser: FileChooser,
     private filePath: FilePath,
     private fr: FileReaderService,
+    private router: Router,
     private workingServ: BusyService,
   ) { }
 
@@ -86,7 +88,14 @@ export class AuthorsComponent implements OnInit, OnDestroy {
 
   protected async ionViewWillEnter() {
     const as = await this.db.getValue('as');
-    this.lastListenedBookId = as || '10';
+    if (!as) {
+      this.lastListened = { id: 1, type: 'speech' };
+    } else if (/^[\d]+$/.test(as)) {
+      this.lastListened = { id: as.slice(0, -1), type: +as.slice(-1) ? 'spritz' : 'speech'}
+      this.db.saveValue('as', JSON.stringify(this.lastListened));
+    } else {
+      this.lastListened = JSON.parse(as);
+    }
 
     const where2Search = await this.db.getValue('where2Search');
     this.where2Search = where2Search || 'A';
@@ -216,6 +225,10 @@ export class AuthorsComponent implements OnInit, OnDestroy {
     }
     console.log(nativePath);
     console.log(path);
+  }
+
+  protected onGo2Last() {
+    this.router.navigate(['/tts', this.lastListened.id, { type: this.lastListened.type }]);
   }
 
   ngOnDestroy() {
