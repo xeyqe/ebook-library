@@ -1,3 +1,4 @@
+import { Platform } from '@ionic/angular';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
@@ -10,8 +11,7 @@ import { SQLite, SQLiteObject } from '@awesome-cordova-plugins/sqlite/ngx';
 import { Encoding, Filesystem } from '@capacitor/filesystem';
 
 import { DirectoryService } from './directory.service';
-import { AUTHOR, BOOK, AUTHORSIMPLIFIED, BOOKSIMPLIFIED, DBJSON } from 'src/app/services/interfaces';
-import { Platform } from '@ionic/angular';
+import { AUTHOR, BOOK, AUTHORSIMPLIFIED, BOOKSIMPLIFIED, DBJSON, AUTHORSBOOKS } from 'src/app/services/interfaces';
 
 
 @Injectable({
@@ -20,7 +20,7 @@ import { Platform } from '@ionic/angular';
 export class DatabaseService {
   private database: SQLiteObject;
   private dbReady: BehaviorSubject<boolean> = new BehaviorSubject(false);
-  private version = 7;
+  private version = 8;
 
   authors = new BehaviorSubject<AUTHORSIMPLIFIED[]>([]);
   books = new BehaviorSubject([]);
@@ -272,6 +272,15 @@ export class DatabaseService {
     });
     await this.database.executeSql(
       `UPDATE books SET finished = '2001-01-02 00:00:00.000' WHERE finished IS NULL AND progress = 'finished'`, []
+    ).catch(e => {
+      console.error('initializing finished in books failed');
+      throw e;
+    });
+  }
+
+  private async updateDB7To8() {
+    await this.database.executeSql(
+      `UPDATE books SET progress = '1/1' WHERE finished IS NOT NULL AND progress = 'finished'`, []
     ).catch(e => {
       console.error('initializing finished in books failed');
       throw e;
@@ -551,43 +560,49 @@ export class DatabaseService {
     this.allBooks.next(books);
   }
 
-  public async getBooksOfAuthor(id: number): Promise<any> {
-    const data = await this.database.executeSql('SELECT * FROM books WHERE creatorId = ? ORDER BY title ASC', [id]).catch(e => {
+  public async getBooksOfAuthor(id: number): Promise<AUTHORSBOOKS[]> {
+    const data = await this.database.executeSql('SELECT id, title, creatorId, progress, img, serie, serieOrder FROM books WHERE creatorId = ? ORDER BY title ASC', [id]).catch(e => {
       console.error('getBooksOfAuthor failed!');
       throw e;
     });
-    const books: BOOK[] = [];
-    if (data.rows.length > 0) {
-      for (let i = 0; i < data.rows.length; i++) {
-        books.push({
-          id: data.rows.item(i).id,
-          title: data.rows.item(i).title,
-          creatorId: data.rows.item(i).creatorId,
-          originalTitle: data.rows.item(i).originalTitle,
-          annotation: data.rows.item(i).annotation,
-          publisher: data.rows.item(i).publisher,
-          published: data.rows.item(i).published,
-          genre: data.rows.item(i).genre,
-          length: data.rows.item(i).length,
-          language: data.rows.item(i).language,
-          translator: data.rows.item(i).translator,
-          ISBN: data.rows.item(i).ISBN,
-          path: data.rows.item(i).path,
-          progress: data.rows.item(i).progress,
-          rating: data.rows.item(i).rating,
-          img: data.rows.item(i).img,
-          serie: data.rows.item(i).serie,
-          serieOrder: data.rows.item(i).serieOrder,
-          dtbkId: data.rows.item(i).dtbkId,
-          lgId: data.rows.item(i).lgId,
-          cbdbId: data.rows.item(i).cbdbId,
-          added: data.rows.item(i).added ? new Date(data.rows.item(i).added) : null,
-          lastRead: data.rows.item(i).lastRead ? new Date(data.rows.item(i).lastRead) : null,
-          finished: data.rows.item(i).finished ? new Date(data.rows.item(i).finished) : null,
-        });
-      }
+    return this.getAuthorsBooks(data);
+  }
+
+  private getAuthorsBooks(data: any): AUTHORSBOOKS[] {
+    const books: AUTHORSBOOKS[] = [];
+    if (!data.rows?.length) return;
+    for (let i = 0; i < data.rows.length; i++) {
+      books.push({
+        id: data.rows.item(i).id,
+        title: data.rows.item(i).title,
+        creatorId: data.rows.item(i).creatorId,
+        progress: data.rows.item(i).progress,
+        img: data.rows.item(i).img,
+        serie: data.rows.item(i).serie,
+        serieOrder: data.rows.item(i).serieOrder,
+      });
     }
-    this.books.next(books);
+    return books;
+  }
+
+  public async getSeriesBooks(seriesNames: string[], authorId: number): Promise<{ [serieName: string]: AUTHORSBOOKS[] }> {
+    if (!seriesNames?.length || !authorId) throw new Error('Wrong input to getSeriesBooks');
+    const output: { [serieName: string]: AUTHORSBOOKS[] } = {};
+
+    for (const serie of seriesNames) {
+      const data = await this.database.executeSql(
+        'SELECT id, title, creatorId, progress, img, serie, serieOrder FROM books WHERE creatorId IS NOT ? AND serie == ? ORDER BY title ASC',
+        [authorId, serie]
+      ).catch(e => {
+        console.error(`getSeriesBooks for "${serie}" failed!`);
+        throw e;
+      });
+      if (!data?.rows?.length) break;
+      output[serie] = this.getAuthorsBooks(data);
+    }
+
+    return output;
+
   }
 
   public async isBookFileUsedInDifferentBook(path: string, id: number): Promise<boolean> {
@@ -757,10 +772,10 @@ export class DatabaseService {
 
     this.updateBookInSubs(id);
   }
-  
+
   private async updateBookInSubs(id: number) {
     const newBook = await this.getBook(id);
-  
+
     const newValue = this.allBooks.getValue().map((item) => {
       if (item.id === id) {
         return newBook;
@@ -913,7 +928,7 @@ export class DatabaseService {
     creatorId: number,
   }[]> {
     const data = await this.database.executeSql(
-      'SELECT id, title, progress, img, creatorId FROM books WHERE progress LIKE "%/%" ORDER BY lastRead DESC, title COLLATE NOCASE ASC',
+      'SELECT id, title, progress, img, creatorId FROM books WHERE lastRead IS NOT NULL ORDER BY lastRead DESC, title COLLATE NOCASE ASC',
       []
     ).catch((e) => {
       console.error('getStartedBooks failed!');
@@ -932,7 +947,7 @@ export class DatabaseService {
     creatorId: number,
   }[]> {
     const data = await this.database.executeSql(
-      `SELECT id, title, progress, img, creatorId FROM books WHERE progress = 'finished' ORDER BY finished DESC, title COLLATE NOCASE ASC`,
+      `SELECT id, title, progress, img, creatorId FROM books WHERE finished is NOT NULL ORDER BY finished DESC, title COLLATE NOCASE ASC`,
       []
     ).catch((e) => {
       console.error('getFinishedBooks failed!');

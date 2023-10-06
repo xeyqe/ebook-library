@@ -52,6 +52,16 @@ export interface BOOKSIMPLIFIED {
   creatorId: number;
 }
 
+export interface AUTHORSBOOKS {
+  id: string,
+  title: string,
+  creatorId: string,
+  progress: string,
+  img: string,
+  serie: string,
+  serieOrder: number,
+}
+
 export interface AUTHORSIMPLIFIED {
   name: string;
   surname: string;

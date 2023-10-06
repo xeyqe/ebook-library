@@ -93,5 +93,5 @@ CREATE TABLE IF NOT EXISTS dbInfo(
 );
 
 INSERT or IGNORE INTO dbInfo VALUES(
-    7
+    8
 );
