@@ -4,8 +4,6 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { IonicModule } from '@ionic/angular';
 
-import { FilterPipe } from 'src/app/pipes/filter.pipe';
-
 import { DialogModule } from '../../material/dialog/dialog.module';
 import { AuthorsPageRoutingModule } from './authors-routing.module';
 import { ApplicationPipesModuleModule } from 'src/app/application-pipes-module/application-pipes-module.module';
@@ -25,7 +23,6 @@ import { AuthorsComponent } from 'src/app/pages/authors/authors.page';
   ],
   declarations: [
     AuthorsComponent,
-    FilterPipe
   ]
 })
 export class AuthorsPageModule { }
