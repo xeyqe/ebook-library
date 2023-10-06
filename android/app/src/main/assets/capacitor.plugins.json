@@ -24,8 +24,8 @@
 		"classpath": "com.capacitorjs.plugins.statusbar.StatusBarPlugin"
 	},
 	{
-		"pkg": "capacitor-text-to-speech",
-		"classpath": "com.getcapacitor.community.tts.TextToSpeechPlugin"
+		"pkg": "@xeyqe/capacitor-tts",
+		"classpath": "com.example.tts.TTSPlugin"
 	},
 	{
 		"pkg": "capacitor-zip4j",

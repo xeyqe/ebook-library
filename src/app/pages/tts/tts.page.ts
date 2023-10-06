@@ -4,7 +4,7 @@ import { FormControl, FormGroup } from '@angular/forms';
 
 import { Platform } from '@ionic/angular';
 import { Storage } from '@ionic/storage-angular';
-import { TextToSpeech } from 'capacitor-text-to-speech';
+import { TTS } from '@xeyqe/capacitor-tts';
 
 import { Subscription } from 'rxjs';
 
@@ -21,35 +21,38 @@ import { FileReaderService } from 'src/app/services/file-reader.service';
 })
 export class TtsComponent implements OnInit, OnDestroy {
   protected id: number;
-  protected path: string;
-  protected title: string;
-  protected isSpeaking = false;
-  protected speed = 30;
-
-  protected fontSize = '20px';
-  protected contHeight = '70px';
-  protected authorName = '';
-  protected textsLength = 0;
-
+  private path: string;
   protected texts: string[];
   protected progress: number;
-  protected spritzBoolean = false;
-  protected spritzPreText: string;
-  protected spritzRedText: string;
-  protected spritzPostText: string;
-  protected sentense = '';
-  protected speakingLengthLimit = 500;
 
-  protected extension = 'txt';
+  protected htmlData: {
+    inBg: boolean,
+    speed: number,
+    title: string,
+    authorName: string,
+  };
 
-  protected language: string;
-  protected languages: string[];
-  protected voices: { [lang: string]: { voiceURI: string, name: string }[] };
-  protected voice: string;
-  protected engines: { name: string, label: string, icon: number }[];
+  protected spritzObj: {
+    isSpritz: boolean,
+    preText: string,
+    redText: string,
+    postText: string,
+    sentense: string,
+    fontSize: string;
+    contHeight: string;
+  };
+
+  protected speechObj: {
+    language: string;
+    languages: string[];
+    voices: { [lang: string]: { voiceURI: string, name: string }[] };
+    voice: string;
+    engines: { name: string, label: string, icon: number }[];
+    maxSpeechLength: number;
+    isSpeaking: boolean,
+  };
 
   protected initialized = false;
-  protected isWorking = false;
 
   private isRewinding: boolean;
   private stopRewind: boolean;
@@ -61,9 +64,9 @@ export class TtsComponent implements OnInit, OnDestroy {
     voice: FormControl<string>,
   }>;
   protected interval: ReturnType<typeof setTimeout>;
-  protected inBg: boolean;
 
   private lastReadSet: boolean;
+  private progressObj: { [progress: number]: number, toAdd: number };
 
 
   constructor(
@@ -78,143 +81,127 @@ export class TtsComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
+    this.initialize();
+    this.takeCareOfResume();
+    this.initVariablesFromStorage();
+    this.initVariablesFromDatabase();
+    if (!this.spritzObj.isSpritz) this.initSpeechOptions();
+  }
+
+  private initialize() {
+    this.spritzObj = {} as any;
+    this.spritzObj.fontSize = '20px';
+    this.spritzObj.contHeight = '70px';
+    this.speechObj = {} as any;
+    this.speechObj.engines = [];
+    this.speechObj.languages = [];
+    this.speechObj.voices = {};
+    this.htmlData = {} as any;
+    this.htmlData.speed = 30;
+    this.htmlData.authorName = '';
+  }
+
+  private takeCareOfResume() {
+    this.subs.push(this.platform.resume.subscribe(() => {
+      this.htmlData.inBg = false;
+      setTimeout(() => {
+        this.ref.detach();
+        this.ref.detectChanges();
+        this.ref.reattach();
+      }, 500);
+    }));
+    this.subs.push(this.platform.pause.subscribe(() => {
+      this.htmlData.inBg = true;
+    }));
+  }
+
+  private getRouteParams(): Promise<{ id: string, type: 'speech' | 'spritz' }> {
+    return new Promise((resolve, reject) => {
+      const sub = this.route.paramMap.subscribe({
+        next: (params) => {
+          resolve({
+            id: params.get('id'),
+            type: params.get('type') as any
+          });
+        },
+        error: (error) => {
+          reject(error);
+        }
+      });
+    });
+
+  }
+
+  private async initVariablesFromStorage() {
     try {
-      console.log('ngOnInit')
-      this.initVariablesFromStorage();
-      this.initVariablesFromDatabase();
-      if (!this.spritzBoolean) {
-        this.initSpeechOptions();
+      const params = await this.getRouteParams();
+      this.id = +params.id;
+      const lastListened = await this.db.getValue('as');
+      this.db.saveValue('as', JSON.stringify({ id: this.id, type: params.type}));
+
+      this.spritzObj.isSpritz = params.type === 'spritz';
+      if (this.spritzObj.isSpritz) {
+        this.htmlData.speed = await this.strg.get('spritzSpeed') || 300;
+        const val = await this.strg.get('fs');
+        if (val) {
+          this.spritzObj.fontSize = val;
+          this.spritzObj.contHeight = (+val.replace('px', '') * 3 + 10) + 'px';
+        }
+      } else {
+        this.htmlData.speed = await this.strg.get('speed') || 30;
       }
-      this.subs.push(this.platform.resume.subscribe(() => {
-        this.inBg = false;
-        const title = this.title;
-        this.title = 'title';
-        setTimeout(() => {
-          this.title = title;
-          // this.ref.markForCheck();
-          this.ref.detach();
-          this.ref.detectChanges();
-          this.ref.reattach();
-        }, 500);
-        console.log(this.inBg);
-        // this.ref.markForCheck();
-      }));
-      this.subs.push(this.platform.pause.subscribe(() => {
-        this.inBg = true;
-        console.log(this.inBg);
-      }));
-      console.log('ngOnInit end')
+
+      if (!lastListened || JSON.parse(lastListened).id !== this.id) {
+        this.stopSpeaking();
+      }
     } catch (e) {
-      console.error(`ngOnInit`)
+      console.error(`initVariablesFromStorage failed`)
       console.error(e)
     }
   }
 
-  private initVariablesFromStorage() {
-    try {
-    let oldBookId: string;
-    this.route.paramMap.subscribe((params) => {
-      let bookId = params.get('id');
-      this.db.getValue('as').then((num) => {
-        oldBookId = num;
-      }).catch(e => {
-        console.error(`this.db.getValue('as') failed`)
-        console.error(e);
+  private waitTillDbReady(): Promise<boolean> {
+    return new Promise((resolve) => {
+      this.db.getDatabaseState().subscribe({
+        next: (ready) => {
+          resolve(ready);
+        },
+        error: (e) => {
+          console.error('waitTillDbReady');
+          console.error(e);
+          resolve(false)
+        }
       });
-      this.db.saveValue('as', bookId);
-      if (bookId[bookId.length - 1] === '0') {
-        this.spritzBoolean = false;
-        this.strg.get('speed').then((val) => {
-          if (val) {
-            this.speed = val;
-          } else {
-            this.speed = 30;
-          }
-        }).catch((e) => {
-          console.error('storage failed: ');
-          console.error(e);
-          this.speed = 300;
-        });
-      } else {
-        this.spritzBoolean = true;
-        this.strg.get('spritzSpeed').then((val) => {
-          if (val) {
-            this.speed = val;
-          } else {
-            this.speed = 300;
-          }
-        }).catch((e) => {
-          console.error('storage failed: ');
-          console.error(e);
-          this.speed = 300;
-        });
+    })
+  }
 
-        this.strg.get('fs').then((val) => {
-          if (val) {
-            this.fontSize = val;
-            this.contHeight = (+val.replace('px', '') * 3 + 10) + 'px';
-          }
-        }).catch(e => {
-          console.error(`this.strg.get('fs') failed`)
-          console.error(e)
-        });
-      }
+  private async initVariablesFromDatabase() {
+    if (!(await this.waitTillDbReady())) throw new Error('initVariablesFromDatabase failed')
+    const book = await this.db.getBook(this.id);
+    if (!book) return;
+    this.path = book.path;
+    this.htmlData.title = book.title;
 
-      if (!oldBookId || oldBookId !== bookId) {
-        this.stopSpeaking();
-      }
-      bookId = bookId.substring(0, bookId.length - 1);
-      this.id = parseInt(bookId, 10);
+    const progressArray = book.progress?.split('/') || ['0', '0'];
+    this.progress = +progressArray[0];
+
+    this.texts = await this.getTexts();
+    if (this.progress && +progressArray[1] !== this.texts.length) {
+      const percents = this.progress / +progressArray[1];
+      this.progress = Math.floor(this.texts.length * percents);
+    }
+
+    this.progressObj = { 0: 0, toAdd: 0 };
+    this.texts.forEach((str, index) => {
+      this.progressObj[index + 1] = this.progressObj[index] + str.length;
     });
-  } catch (e) {
-    console.error(`initVariablesFromStorage failed`)
-    console.error(e)
-  }
-  }
+    this.progressObj.toAdd = this.progressObj[this.progress];
 
-  private initVariablesFromDatabase() {
-    try {
-    this.subs.push(this.db.getDatabaseState().subscribe((ready) => {
-      console.log(`ready: ${ready}`)
-      if (ready) {
-        this.db.getBook(this.id).then((book) => {
-          this.path = book.path;
-          this.title = book.title;
+    this.working.done();
 
-          // if (book.language) {
-          //   this.language = book.language;
-          // }
-
-          this.extension = book.path.substring(book.path.lastIndexOf('.') + 1);
-
-          if (book.progress) {
-            const progressArray = book.progress.split('/');
-            this.progress = parseInt(progressArray[0], 10);
-          }
-
-          this.getTexts().then(texts => {
-            this.texts = texts;
-            this.textsLength = texts.length;
-            if (!this.progress) {
-              this.progress = 0;
-            }
-            this.isWorking = false;
-          });
-
-          this.db.getAuthor(book.creatorId).then((author) => {
-            this.authorName = (author.name || '') + ' ' + (author.surname || '');
-          });
-          this.initialized = true;
-        }).catch((e) => {
-          console.error('getBook failed: ');
-          console.error(e);
-        });
-      }
-    }));
-  } catch (e) {
-    console.error(`initVariablesFromDatabase`)
-    console.error(e)
-  }
+    const author = await this.db.getAuthor(book.creatorId);
+    this.htmlData.authorName = (author.name || '') + ' ' + (author.surname || '');
+    this.initialized = true;
   }
 
   private async initSpeechOptions() {
@@ -224,15 +211,16 @@ export class TtsComponent implements OnInit, OnDestroy {
       loadedValue = JSON.parse(loadedValue);
     } else {
       loadedValue = {};
-      const defaults = await TextToSpeech.getDefaults();
+      const defaults = await TTS.getDefaults();
       console.log(defaults)
       engine = defaults.engine;
       loadedValue.engine = defaults.engine;
       loadedValue.language = defaults.language;
-      loadedValue.voice = defaults.voice;
+      loadedValue.voice = defaults.voiceURI;
     }
-    this.voice = loadedValue.voice;
-    this.language = loadedValue.language;
+    this.speechObj.maxSpeechLength = (await TTS.getMaxSpeechInputLength()).maxSpeechInputLength;
+    this.speechObj.voice = loadedValue.voice;
+    this.speechObj.language = loadedValue.language;
 
     this.myForm = new FormGroup({
       engine: new FormControl(loadedValue?.engine),
@@ -241,61 +229,68 @@ export class TtsComponent implements OnInit, OnDestroy {
     });
 
     if (loadedValue && loadedValue.engine !== engine)
-      await TextToSpeech.switchEngine({ engineName: loadedValue.engine });
+      await TTS.switchEngine({ engineName: loadedValue.engine });
+
+    TTS.addListener('progressEvent', (a) => {
+      if ((this.progressObj.toAdd + a.end) > this.progressObj[this.progress + 1]) {
+        this.progress++;
+        this.ref.detectChanges();
+      }
+    });
 
     this.subs.push(this.myForm.valueChanges.subscribe(() => {
       this.db.saveValue('tts', JSON.stringify(this.myForm.value));
-      if (this.isSpeaking) {
+      if (this.speechObj.isSpeaking) {
         this.stopSpeaking();
       }
     }));
 
     this.subs.push(this.myForm.get('voice').valueChanges.subscribe(voice => {
-      this.voice = voice;
+      this.speechObj.voice = voice;
     }));
     this.subs.push(this.myForm.get('engine').valueChanges.subscribe(async engine => {
       this.working.busy();
-      TextToSpeech.switchEngine({ engineName: engine }).catch(e => console.error(e)).finally(async () => {
+      TTS.switchEngine({ engineName: engine }).catch(e => console.error(e)).finally(async () => {
         await this.setLangsVoicesLists();
-        this.myForm.get('language').setValue(this.languages[0]);
-        this.myForm.get('voice').setValue(this.voices[this.languages[0]] ? this.voices[this.languages[0]][0]?.voiceURI : null);
+        this.myForm.get('language').setValue(this.speechObj.languages[0]);
+        this.myForm.get('voice').setValue(this.speechObj.voices[this.speechObj.languages[0]] ? this.speechObj.voices[this.speechObj.languages[0]][0]?.voiceURI : null);
         this.working.done();
       });
     }));
     this.subs.push(this.myForm.get('language').valueChanges.subscribe(language => {
-      this.language = language;
-      this.myForm.get('voice').setValue(this.voices[language]?.length ? this.voices[language][0]?.voiceURI : null);
+      this.speechObj.language = language;
+      this.myForm.get('voice').setValue(this.speechObj.voices[language]?.length ? this.speechObj.voices[language][0]?.voiceURI : null);
     }));
 
     this.setLangsVoicesLists();
 
-    TextToSpeech.getSupportedEngines().then(engines => {
+    TTS.getSupportedEngines().then(engines => {
       console.log('engines')
       console.log(engines)
-      this.engines = engines.engines;
+      this.speechObj.engines = engines.engines;
     });
   }
 
   private async setLangsVoicesLists() {
-    await TextToSpeech.getSupportedLanguages().then(langs => {
+    await TTS.getSupportedLanguages().then(langs => {
       console.log('langs')
       console.log(langs)
-      this.languages = langs.languages.sort();
+      this.speechObj.languages = langs.languages.sort();
     });
-    await TextToSpeech.getSupportedVoices().then(voices => {
+    await TTS.getSupportedVoices().then(voices => {
       console.log('voices')
       console.log(voices)
-      this.voices = {};
+      this.speechObj.voices = {};
       voices.voices.forEach(voice => {
-        if (!this.voices[voice.lang])
-          this.voices[voice.lang] = [];
-        this.voices[voice.lang].push({ voiceURI: voice.voiceURI, name: voice.name });
+        if (!this.speechObj.voices[voice.lang])
+          this.speechObj.voices[voice.lang] = [];
+        this.speechObj.voices[voice.lang].push({ voiceURI: voice.voiceURI, name: voice.name });
       });
     });
   }
 
   private getTexts(): Promise<string[]> {
-    this.isWorking = true;
+    this.working.busy();
     const extension = this.path.substring(this.path.lastIndexOf('.') + 1);
     if (extension === 'txt') {
       return this.getTextsFromString();
@@ -326,10 +321,12 @@ export class TtsComponent implements OnInit, OnDestroy {
   protected speak() {
     if (this.texts) {
       if (!this.working.isSpeaking) this.working.isSpeaking = true;
-      this.isSpeaking = true;
+      this.speechObj.isSpeaking = true;
       this.saveAuthorTitle();
-      let text2Speak = '';
-      let add2Progress = 0;
+      let text2Speak = this.texts[this.progress];
+      let add2Progress = 1;
+
+      this.progressObj.toAdd = this.progressObj[this.progress];
 
       do {
         if (this.texts[this.progress + add2Progress]) {
@@ -338,30 +335,27 @@ export class TtsComponent implements OnInit, OnDestroy {
         add2Progress++;
       } while (
         this.texts[this.progress + add2Progress] &&
-        text2Speak.length + this.texts[this.progress + add2Progress].length < this.speakingLengthLimit
+        text2Speak.length + this.texts[this.progress + add2Progress].length < this.speechObj.maxSpeechLength
       );
       const params = {
         text: text2Speak,
-        lang: this.language,
-        rate: this.speed / 10,
+        rate: this.htmlData.speed / 10,
       };
-      if (this.voice) params[`voice`] = this.voice;
-      console.log('params')
-      console.log(params)
-      TextToSpeech.speak(params).then(() => {
+      if (this.speechObj.voice) params[`voiceURI`] = this.speechObj.voice;
+      TTS.speak(params).then(() => {
         if (this.progress < this.texts.length) {
-          this.changeProgress(this.progress + add2Progress);
+          // this.changeProgress(this.progress + add2Progress);
+          this.progress++;
+          this.setProgress2DB();
           // this.db.updateBookProgress(this.bookId, this.progress + '/' + this.texts.length);
           this.speak();
         } else {
           this.working.isSpeaking = false;
-          this.isSpeaking = false;
-          this.saveAuthorTitle();
+          this.speechObj.isSpeaking = false;
         }
       }).catch((reason) => {
         this.working.isSpeaking = false;
-        this.isSpeaking = false;
-        this.saveAuthorTitle();
+        this.speechObj.isSpeaking = false;
         console.error('tts speak failed: ');
         console.error(reason);
       });
@@ -369,22 +363,22 @@ export class TtsComponent implements OnInit, OnDestroy {
   }
 
   private saveAuthorTitle() {
-    this.db.saveValue('author', this.authorName);
-    this.db.saveValue('title', this.title);
-    this.db.saveValue('isSpeaking', this.isSpeaking);
+    this.db.saveValue('author', this.htmlData.authorName);
+    this.db.saveValue('title', this.htmlData.title);
+    this.db.saveValue('this.speechObj.isSpeaking', this.speechObj.isSpeaking);
   }
 
   protected onOff() {
-    if (!this.lastReadSet && !this.isSpeaking) {
+    if (!this.lastReadSet && !this.speechObj.isSpeaking) {
       this.lastReadSet = true;
       this.db.updateBookLastRead(this.id, new Date());
     }
-    if (this.spritzBoolean) {
-      this.isSpeaking = !this.isSpeaking;
+    if (this.spritzObj.isSpritz) {
+      this.speechObj.isSpeaking = !this.speechObj.isSpeaking;
       this.saveAuthorTitle();
       this.spritz();
     } else {
-      if (this.isSpeaking) {
+      if (this.speechObj.isSpeaking) {
         this.stopSpeaking();
       } else {
         this.speak();
@@ -401,7 +395,7 @@ export class TtsComponent implements OnInit, OnDestroy {
   }
 
   protected onStartRewinding(n: 0 | 1) {
-    this.isSpeaking = true;
+    this.speechObj.isSpeaking = true;
     this.onOff();
     if (this.isRewinding) {
       this.stopRewind = true;
@@ -410,7 +404,7 @@ export class TtsComponent implements OnInit, OnDestroy {
     this.interval = setTimeout(async () => {
       this.interval = null;
 
-      while (this.progress > 0 && this.progress < this.textsLength) {
+      while (this.progress > 0 && this.progress < this.texts.length) {
         if (this.stopRewind) {
           this.stopRewind = false;
           this.isRewinding = false;
@@ -430,7 +424,7 @@ export class TtsComponent implements OnInit, OnDestroy {
         clearInterval(this.interval);
         this.stopRewind = true;
         if (n) {
-          this.progress = this.progress + 1 > this.textsLength ? this.textsLength : this.progress + 1;
+          this.progress = (this.progress + 1 > this.texts.length) ? this.texts.length : this.progress + 1;
         } else {
           this.progress = this.progress - 1 < 0 ? 0 : this.progress - 1;
         }
@@ -442,7 +436,7 @@ export class TtsComponent implements OnInit, OnDestroy {
   }
 
   protected changeProgress(progress: number) {
-    if (this.spritzBoolean) {
+    if (this.spritzObj.isSpritz) {
       this.progress = progress;
     } else {
       if (this.texts) {
@@ -460,40 +454,38 @@ export class TtsComponent implements OnInit, OnDestroy {
   private setProgress2DB() {
     if (this.texts) {
       let progress2DB: string;
-      if (this.progress === this.texts.length) {
-        progress2DB = 'finished';
-      } else if (this.progress) {
+      if (this.progress) {
         progress2DB = this.progress + '/' + this.texts.length;
       } else {
         progress2DB = null;
       }
       this.db.updateBookProgress(this.id, progress2DB).then(() => {
-        if (progress2DB === 'finished') this.db.updateBookFinished(this.id, new Date());
+        if (this.progress === this.texts.length) this.db.updateBookFinished(this.id, new Date());
       });
     }
   }
 
   protected stopStartSpeaking() {
     this.setProgress2DB();
-    if (!this.spritzBoolean) {
-      if (this.isSpeaking) {
+    if (!this.spritzObj.isSpritz) {
+      if (this.speechObj.isSpeaking) {
         this.stopSpeaking();
       }
     } else {
-      if (this.isSpeaking) {
-        this.isSpeaking = false;
+      if (this.speechObj.isSpeaking) {
+        this.speechObj.isSpeaking = false;
         this.saveAuthorTitle();
       }
-      this.sentense = this.texts[this.progress];
+      this.spritzObj.sentense = this.texts[this.progress];
       this.spritz();
     }
   }
 
   private stopSpeaking(): Promise<any> {
-    this.isSpeaking = false;
+    this.speechObj.isSpeaking = false;
     this.working.isSpeaking = false;
     this.saveAuthorTitle();
-    return TextToSpeech.stop();
+    return TTS.stop();
   }
 
   private redIndexFinder(length: number): number[] {
@@ -521,18 +513,18 @@ export class TtsComponent implements OnInit, OnDestroy {
   private async spritz() {
     const slowRegex = new RegExp('[.,?!]');
     let addedMs = 0;
-    const timeout = Math.floor(60000 / this.speed);
+    const timeout = Math.floor(60000 / this.htmlData.speed);
     for (let i = this.progress; i < this.texts.length; i++) {
       if (!this.texts[i]) continue;
       const words = this.texts[i].split(/[\s]+/);
-      this.sentense = this.texts[i];
+      this.spritzObj.sentense = this.texts[i];
       for (const word of words) {
         const slovo = word.trim();
         const regex = new RegExp('[A-Za-z0-9]+');
         if (regex.test(slovo)) {
           for (const index of this.redIndexFinder(slovo.length)) {
             this.printWord(slovo, index);
-            if (!this.isSpeaking) {
+            if (!this.speechObj.isSpeaking) {
               break;
             }
             await new Promise<void>((resolve) => {
@@ -551,12 +543,12 @@ export class TtsComponent implements OnInit, OnDestroy {
               });
             }
           }
-          if (!this.isSpeaking) {
+          if (!this.speechObj.isSpeaking) {
             break;
           }
         }
       }
-      if (this.isSpeaking) {
+      if (this.speechObj.isSpeaking) {
         this.progress++;
       } else {
         break;
@@ -565,13 +557,13 @@ export class TtsComponent implements OnInit, OnDestroy {
   }
 
   private printWord(word: string, index: number) {
-    this.spritzPreText = word.substring(0, index - 1);
-    this.spritzRedText = word[index - 1];
-    this.spritzPostText = word.substring(index);
+    this.spritzObj.preText = word.substring(0, index - 1);
+    this.spritzObj.redText = word[index - 1];
+    this.spritzObj.postText = word.substring(index);
   }
 
   private async waitFn() {
-    const ms = 60000 / this.speed;
+    const ms = 60000 / this.htmlData.speed;
     await new Promise<void>((resolve) => {
       setTimeout(() => {
         resolve();
@@ -580,54 +572,54 @@ export class TtsComponent implements OnInit, OnDestroy {
   }
 
   protected increaseFontSize() {
-    let str = this.fontSize;
+    let str = this.spritzObj.fontSize;
     str = str.substring(0, str.length - 2);
     let num = parseFloat(str);
     if (num < 32) {
       num += 0.1;
     }
-    this.fontSize = num + 'px';
-    this.contHeight = (num * 3 + 10) + 'px';
-    this.strg.set('fs', this.fontSize);
+    this.spritzObj.fontSize = num + 'px';
+    this.spritzObj.contHeight = (num * 3 + 10) + 'px';
+    this.strg.set('fs', this.spritzObj.fontSize);
   }
 
   protected decreaseFontSize() {
-    let str = this.fontSize;
+    let str = this.spritzObj.fontSize;
     str = str.substring(0, str.length - 2);
     let num = parseFloat(str);
     if (num > 10) {
       num -= 0.1;
     }
-    this.fontSize = num + 'px';
+    this.spritzObj.fontSize = num + 'px';
   }
 
   protected changeSpeed(str: string) {
-    if (!this.spritzBoolean && this.isSpeaking) this.stopSpeaking();
-    const speed = this.speed;
+    if (!this.spritzObj.isSpritz && this.speechObj.isSpeaking) this.stopSpeaking();
+    const speed = this.htmlData.speed;
     if (str === '-') {
-      if (this.spritzBoolean) {
+      if (this.spritzObj.isSpritz) {
         if (speed > 100) {
-          this.speed = speed - 10;
+          this.htmlData.speed = speed - 10;
         }
       } else {
         if (speed > 5) {
-          this.speed = speed - 1;
+          this.htmlData.speed = speed - 1;
         }
       }
     } else {
-      if (this.spritzBoolean) {
+      if (this.spritzObj.isSpritz) {
         if (speed < 1000) {
-          this.speed = speed + 10;
+          this.htmlData.speed = speed + 10;
         }
       } else {
         if (speed < 40) {
-          this.speed = speed + 1;
+          this.htmlData.speed = speed + 1;
         }
       }
     }
 
-    if (this.spritzBoolean) {
-      this.strg.set('spritzSpeed', this.speed);
+    if (this.spritzObj.isSpritz) {
+      this.strg.set('spritzSpeed', this.htmlData.speed);
     } else {
       this.strg.set('speed', speed);
     }
