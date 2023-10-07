@@ -24,11 +24,15 @@ export class FileReaderService {
   ) { }
 
   public async accessAllFilesPermissionGranted(): Promise<boolean> {
-    Filesystem.checkPermissions().then(a => console.log(a)).catch(e => console.error(e));
-    return Filesystem.readdir({
+    return Filesystem.writeFile({
       directory: this.dir.dir,
-      path: '/'
+      path: 'ebook-library.test',
+      data: ''
     }).then(a => {
+      Filesystem.deleteFile({
+        directory: this.dir.dir,
+        path: 'ebook-library.test',
+      });
       console.log(a)
       return true;
     }).catch(e => {
