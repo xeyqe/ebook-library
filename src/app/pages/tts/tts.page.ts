@@ -1,17 +1,21 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
 import { ActivatedRoute } from '@angular/router';
 import { FormControl, FormGroup } from '@angular/forms';
 
 import { Platform } from '@ionic/angular';
-import { Storage } from '@ionic/storage-angular';
 import { TTS } from '@xeyqe/capacitor-tts';
-
+import { Storage } from '@ionic/storage-angular';
 import { Subscription } from 'rxjs';
 
 import { BusyService } from 'src/app/services/busy.service';
 import { EpubService } from 'src/app/services/epub.service';
 import { DatabaseService } from 'src/app/services/database.service';
+import { DirectoryService } from 'src/app/services/directory.service';
 import { FileReaderService } from 'src/app/services/file-reader.service';
+
+import * as PDFJS from 'pdfjs-dist';
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry'
 
 
 @Component({
@@ -72,6 +76,7 @@ export class TtsComponent implements OnInit, OnDestroy {
 
   constructor(
     private db: DatabaseService,
+    private directoryServ: DirectoryService,
     private epubService: EpubService,
     private fs: FileReaderService,
     private platform: Platform,
@@ -299,13 +304,15 @@ export class TtsComponent implements OnInit, OnDestroy {
       return this.getTextsFromString();
     } else if (extension === 'epub') {
       return this.getTextsFromEpub();
+    } else if (extension === 'pdf') {
+      return this.getTextsFromPdf();
     }
   }
 
   private getTextsFromString(): Promise<string[]> {
     return this.fs.readTextFile(this.path).then((str) => {
       const output = [];
-      str.split(/(?=[.!?][\n\s])|(?<=[.!?][\n\s])/).forEach((it, i) => {
+      str.split(/(?=[.!?][“"\n\s])|(?<=[.!?][“"\n\s])/).forEach((it, i) => {
         if (i % 2 === 0) output.push(it);
         else output[output.length - 1] += it;
       });
@@ -319,6 +326,26 @@ export class TtsComponent implements OnInit, OnDestroy {
 
   private async getTextsFromEpub(): Promise<string[]> {
     return this.epubService.getText(this.path);
+  }
+
+  private async getTextsFromPdf(): Promise<string[]> {
+    PDFJS.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+    const path = Capacitor.convertFileSrc(this.directoryServ.imgPreLink + this.path);
+    const pdf = await PDFJS.getDocument(path).promise;
+  
+    console.log((await pdf.getMetadata()));
+    const output = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const textItems = textContent.items;
+      const str = textItems.map(item => item[`str`]).join('\n');
+      str.split(/(?=[.!?][“"\n\s])|(?<=[.!?][“"\n\s])/).forEach((it, i) => {
+        if (i % 2 === 0) output.push(it);
+        else output[output.length - 1] += it;
+      });
+    }
+    return output;
   }
 
   protected speak() {

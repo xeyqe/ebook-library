@@ -190,7 +190,7 @@ export class FileReaderService {
     for (const file of item.files) {
       if (file.type === 'file') {
         const extension = file.name.substring(file.name.lastIndexOf('.') + 1);
-        if (!['txt', 'epub'].includes(extension)) {
+        if (!['txt', 'epub', 'pdf'].includes(extension)) {
           if (path.endsWith('/')) path = path.substring(0, path.length - 1);
           foundFiles.push(`${path}/${file.name}`);
         }
@@ -226,7 +226,7 @@ export class FileReaderService {
 
   private async addBook(dt: { file: FileInfo, paths: string[], folderPath: string, authorId: number },) {
     const extension = dt.file.name.substring(dt.file.name.lastIndexOf('.') + 1);
-    if (extension !== 'txt' && extension !== 'epub') return;
+    if (!['txt', 'epub', 'pdf'].includes(extension)) return;
     if (dt.paths.includes(`${dt.folderPath}/${dt.file.name}`) || dt.paths.includes(`${dt.folderPath}${dt.file.name}`)) return;
     const title = dt.file.name.substring(0, dt.file.name.lastIndexOf('.'));
     const book = this.createBook({ title, creatorIds: [dt.authorId], path: `${dt.folderPath}/${dt.file.name}` });
