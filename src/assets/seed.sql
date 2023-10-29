@@ -95,5 +95,5 @@ CREATE TABLE IF NOT EXISTS dbInfo(
 );
 
 INSERT or IGNORE INTO dbInfo VALUES(
-    9
+    10
 );

@@ -350,10 +350,6 @@ export class AuthorComponent implements OnInit, OnDestroy {
         console.error(e);
       }
     });
-    if (!this.author.img) {
-      await this.fs.downloadUnknownImg();
-      this.author.img = '/ebook-library/unknown.jpg';
-    }
     this.db.updateAuthor(this.author).then(() => {
       this.wikiOutputBoolean = false;
       this.authorChanged = false;

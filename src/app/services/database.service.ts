@@ -20,11 +20,7 @@ import { AUTHOR, BOOK, AUTHORSIMPLIFIED, BOOKSIMPLIFIED, DBJSON, AUTHORSBOOKS } 
 export class DatabaseService {
   private database: SQLiteObject;
   private dbReady: BehaviorSubject<boolean> = new BehaviorSubject(false);
-  private version = 9;
-
-  // authors = new BehaviorSubject<AUTHORSIMPLIFIED[]>([]);
-  // books = new BehaviorSubject([]);
-  // allBooks = new BehaviorSubject<BOOKSIMPLIFIED[]>([]);
+  private version = 10;
 
   constructor(
     private dir: DirectoryService,
@@ -357,6 +353,21 @@ export class DatabaseService {
 
   }
 
+  private async updateDB9To10() {
+    await this.database.executeSql(
+      `UPDATE authors SET img = NULL WHERE img = '/ebook-library/unknown.jpg'`, []
+    ).catch(e => {
+      console.error('update img of authors failed');
+      throw e;
+    });
+    await this.database.executeSql(
+      `UPDATE books SET img = NULL WHERE img = '/ebook-library/unknown.jpg'`, []
+    ).catch(e => {
+      console.error('update img of books failed');
+      throw e;
+    });
+  }
+
   private async getUpdatedBooks() {
     let data;
     try {
@@ -468,18 +479,6 @@ export class DatabaseService {
     return this.dbReady.asObservable();
   }
 
-  // getAuthors(): BehaviorSubject<AUTHORSIMPLIFIED[]> {
-  //   return this.authors;
-  // }
-
-  // getBooks(): Observable<BOOK[]> {
-  //   return this.books.asObservable();
-  // }
-
-  // public getAllBooks(): BehaviorSubject<BOOKSIMPLIFIED[]> {
-  //   return this.allBooks;
-  // }
-
   public async loadAuthors(character: string): Promise<AUTHORSIMPLIFIED[]> {
     try {
       let data: any;
@@ -536,12 +535,7 @@ export class DatabaseService {
       console.error('addAuthor failed!');
       throw e;
     });
-    // if (!quiet) {
-    // author.id = output.insertId;
-    // const athrs = this.authors.getValue();
-    // athrs.push({ name: author.name, surname: author.surname, pseudonym: author.pseudonym, img: author.img, id: author.id });
-    // this.authors.next(athrs);
-    // }
+
     return output.insertId;
   }
 
@@ -587,7 +581,6 @@ export class DatabaseService {
       }
     }
     return authors;
-    // this.authors.next(authors);
   }
 
   public async findBooks(searchValue: string): Promise<BOOKSIMPLIFIED[]> {
@@ -612,7 +605,6 @@ export class DatabaseService {
       }
     }
     return books;
-    // this.allBooks.next(books);
   }
 
   public async getBooksOfAuthor(ids: number[]): Promise<AUTHORSBOOKS[]> {
@@ -626,8 +618,6 @@ export class DatabaseService {
       data = e;
     }
     return this.getAuthorsBooks(data);
-    // this.books.next(this.getAuthorsBooks(data));
-    // return this.books;
   }
 
   private getAuthorsBooks(data: any): AUTHORSBOOKS[] {
@@ -701,9 +691,6 @@ export class DatabaseService {
         await this.updateBook({ ...book, creatorIds: book.creatorIds.filter(it => it !== id) })
     }
     await this.database.executeSql('DELETE FROM authors WHERE id = ?', [id]);
-    // this.authors.next(this.authors.getValue().filter(ath => ath.id !== id));
-    // this.allBooks.next(this.allBooks.getValue().filter(bk => bk.creatorIds?.length !== 1 || bk.creatorIds[0] !== id));
-    // this.books.next(this.books.getValue().filter(bk => bk.creatorIds !== id));
   }
 
   public async deleteBook(bookId: number) {
@@ -723,8 +710,6 @@ export class DatabaseService {
 
     }
     await this.database.executeSql('DELETE FROM books WHERE id = ?', [bookId]);
-    // this.allBooks.next(this.allBooks.getValue().filter(bk => bk.creatorIds?.length !== 1 || bk.creatorIds[0] !== bookId));
-    // this.books.next(this.books.getValue().filter(bk => bk.creatorIds !== bookId));
   }
 
   public async updateAuthor(author: AUTHOR) {
@@ -734,27 +719,8 @@ export class DatabaseService {
     delete author.id;
     const keys = Object.keys(author).map(it => `${it} = ?`).join(', ');
     const params = Object.values(author);
-    // for (const it of Object.values(author)) {
-    //   if (typeof it === 'string') params.push(it.replace(/:/g, "':'"));
-    //   else params.push(it);
-    // }
 
     await this.database.executeSql(`UPDATE authors SET ${keys} WHERE id = ${id}`, params);
-    // const simpl = {
-    //   name: author.name,
-    //   surname: author.surname,
-    //   pseudonym: author.pseudonym,
-    //   img: author.img,
-    //   id: author.id,
-    // };
-    // const authors = this.authors.getValue().map(ath => {
-    //   if (ath.id === author.id) {
-    //     return simpl;
-    //   } else {
-    //     return ath;
-    //   }
-    // });
-    // this.authors.next(authors);
   }
 
   public async addBook(book: BOOK) {
@@ -765,11 +731,7 @@ export class DatabaseService {
     const keys = Object.keys(book).join(', ');
     const params = Object.values(book);
     const questionMarks = new Array(params.length).fill('?').join(', ');
-    // for (const value of Object.values(book)) {
-    //   if (typeof value === 'string') params.push(value.replace(/:/g, "':'"));
-    //   else params.push(value);
-    // }
-    console.log(book)
+
     try {
       const output = await this.database.executeSql(
         `INSERT INTO books (${keys}) VALUES (${questionMarks})`, params
@@ -786,13 +748,6 @@ export class DatabaseService {
           }
         }
       }
-
-      // if (!quiet) {
-      //   const books = this.books.getValue();
-      //   book.id = output.insertId;
-      //   books.push(book);
-      //   this.books.next(books);
-      // }
     } catch (e) {
       console.error('cannot add a book');
       console.error(e);
@@ -819,21 +774,7 @@ export class DatabaseService {
       console.error('updateBookProgress failed');
       throw e;
     }
-
-    // this.updateBookInSubs(id);
   }
-
-  // private async updateBookInSubs(id: number) {
-  //   const newBook = await this.getBook(id);
-
-  //   const newValue = this.allBooks.getValue().map((item) => {
-  //     if (item.id === id) {
-  //       return newBook;
-  //     }
-  //     return item;
-  //   });
-  //   this.allBooks.next(newValue as BOOKSIMPLIFIED[]);
-  // }
 
   public async updateBookLastRead(id: number, lastRead: Date) {
     if (!(lastRead instanceof Date)) return;
@@ -847,8 +788,6 @@ export class DatabaseService {
       console.error('updateBookLastRead failed');
       throw e;
     }
-
-    // this.updateBookInSubs(id);
   }
 
   public async updateBookFinished(id: number, finished: Date) {
@@ -863,8 +802,6 @@ export class DatabaseService {
       console.error('updateBookFinished failed');
       throw e;
     }
-
-    // this.updateBookInSubs(id);
   }
 
   public async updateBook(book: BOOK) {
@@ -884,27 +821,11 @@ export class DatabaseService {
     const values = Object.keys(book).map(it => `${it} = ?`).join(', ');
 
     const params = Object.values(book);
-    // for (const it of Object.values(book)) {
-    //   if (typeof it === 'string') params.push(it.replace(/:/g, "':'"));
-    //   else params.push(it);
-    // }
 
     await this.database.executeSql(
       `UPDATE books SET ${values} WHERE id = ${id}`,
       params
     );
-    // const allBooks = this.allBooks.getValue();
-    // const indexAllBooks = allBooks.findIndex(bk => bk.id === book.id);
-    // if (indexAllBooks !== -1) {
-    //   allBooks[indexAllBooks] = this.getBookSimplified(book);
-    //   this.allBooks.next(allBooks);
-    // }
-    // const books = this.books.getValue();
-    // const index = books.findIndex(bk => bk.id === book.id);
-    // if (index !== -1) {
-    //   books[index] = book;
-    //   this.books.next(books);
-    // }
   }
 
   private getBookSimplified(book: BOOK): BOOKSIMPLIFIED {
@@ -960,7 +881,6 @@ export class DatabaseService {
     }
     console.log(books)
     return books;
-    // this.allBooks.next(books);
   }
 
   public async getStartedBooks(): Promise<{

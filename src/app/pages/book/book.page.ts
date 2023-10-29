@@ -289,7 +289,7 @@ export class BookComponent implements OnInit, OnDestroy {
         directory: this.dir.dir,
         path: 'ebook-library' + img
       }).catch(() => {
-        this.bookForm.get('img').setValue(null);
+        this.bookForm.controls.img.setValue(null);
         this.listsOfValues.img = this.listsOfValues.img.filter(im => im !== bookImg);
         this.book.img = null;
         this.db.updateBook(this.book);
@@ -326,12 +326,9 @@ export class BookComponent implements OnInit, OnDestroy {
 
   protected async updateBook() {
     Object.keys(this.bookForm.controls).forEach(key => {
-      if (key !== 'progress') this.book[key] = this.bookForm.get(key).value;
+      if (key !== 'progress') this.book[key] = this.bookForm.controls[key].value;
     });
-    if (!this.book.img) {
-      await this.fs.downloadUnknownImg();
-      this.book.img = '/ebook-library/unknown.jpg';
-    }
+
     if (this.book.img[0] === '/' && this.listsOfValues?.img?.includes(this.book.img)) {
       const path = this.getPath();
       await Filesystem.copy({
@@ -403,7 +400,7 @@ export class BookComponent implements OnInit, OnDestroy {
   protected async onRemovePic(img: string) {
     if (img?.startsWith('/')) {
       await this.fs.removeFile(img).finally(() => {
-        this.bookForm.get('img').setValue(null);
+        this.bookForm.controls.img.setValue(null);
         this.bookChanged = true;
       }).catch(e => {
         console.error(e);
@@ -419,7 +416,7 @@ export class BookComponent implements OnInit, OnDestroy {
         );
       });
     } else {
-      this.bookForm.get('img').setValue(null);
+      this.bookForm.controls.img.setValue(null);
       this.bookChanged = true;
     }
   }
@@ -489,7 +486,7 @@ export class BookComponent implements OnInit, OnDestroy {
   protected fillData(jsonBook) {
     Object.keys(jsonBook).forEach(key => {
       const val = jsonBook[key];
-      const fc = this.bookForm.get(key);
+      const fc = this.bookForm.controls[key];
       if (fc) {
         fc.setValue(val || null);
         if (val && !this.listsOfValues[key].includes(val)) {
@@ -505,16 +502,16 @@ export class BookComponent implements OnInit, OnDestroy {
       alert('No internet connection!');
       return;
     }
-    const uri = this.bookForm.get('img').value;
+    const uri = this.bookForm.controls.img.value;
     const path = this.book.path.substring(0, this.book.path.lastIndexOf('/') + 1);
-    const index = this.bookForm.get('img').value.lastIndexOf('.');
-    const extension = this.bookForm.get('img').value.substring(index);
+    const index = this.bookForm.controls.img.value.lastIndexOf('.');
+    const extension = this.bookForm.controls.img.value.substring(index);
     const filename = this.book.title + extension;
 
     this.workingServ.busy();
     this.fs.downloadPicture(uri, path, filename).then((src) => {
       this.workingServ.done();
-      this.bookForm.get('img').setValue(src?.replace(/^.*ebook-library/, '/ebook-library'));
+      this.bookForm.controls.img.setValue(src?.replace(/^.*ebook-library/, '/ebook-library'));
       this.bookChanged = true;
     }).catch((e) => {
       alert(e);
@@ -553,7 +550,7 @@ export class BookComponent implements OnInit, OnDestroy {
 
     if (authorsName.length) {
       this.workingServ.busy();
-      const data = await this.webScrapper.getBooksListOfAnyAuthor(this.bookForm.get('title').value);
+      const data = await this.webScrapper.getBooksListOfAnyAuthor(this.bookForm.controls.title.value);
       if (author.dtbkId) {
         const authorsBooks = await this.webScrapper.getBooksListOfAuthorById(author.dtbkId);
         this.onlineAllBooksList = authorsBooks;
@@ -574,7 +571,7 @@ export class BookComponent implements OnInit, OnDestroy {
 
   private async getBooksListLegie(author: AUTHOR) {
     const authorsName = [author.name || '', author.surname || ''].join(' ').trim();
-    const data = await this.webScrapper.getBookByNameLegie(authorsName, this.bookForm.get('title').value);
+    const data = await this.webScrapper.getBookByNameLegie(authorsName, this.bookForm.controls.title.value);
     if (!data) return;
     if (Array.isArray(data)) {
       if (!data.length && author.lgId) {
@@ -591,7 +588,7 @@ export class BookComponent implements OnInit, OnDestroy {
         'translator', 'ISBN', 'length', 'serie', 'serieOrder'
       ].forEach(key => {
         if (data[key]) {
-          this.bookForm.get(key).setValue(data[key]);
+          this.bookForm.controls[key].setValue(data[key]);
           if (!this.listsOfValues[key].includes(data[key]))
             this.listsOfValues[key].push(data[key]);
         }
@@ -614,11 +611,11 @@ export class BookComponent implements OnInit, OnDestroy {
         'publisher', 'published', 'cbdbId'
       ].forEach(key => {
         if (data.book[key]) {
-          this.bookForm.get(key).setValue(data.book[key]);
+          this.bookForm.controls[key].setValue(data.book[key]);
           if (!this.listsOfValues[key].includes(data.book[key]))
             this.listsOfValues[key].push(data.book[key]);
         } else {
-          this.bookForm.get(key).setValue(null);
+          this.bookForm.controls[key].setValue(null);
         }
       });
       this.bookChanged = true;
@@ -654,14 +651,14 @@ export class BookComponent implements OnInit, OnDestroy {
             null :
             'cs-CZ';
           data.genre = data.genre?.toString();
-          this.bookForm.get('dtbkId').setValue(item.lgId);
+          this.bookForm.controls.dtbkId.setValue(item.lgId);
           [
             'img', 'title', 'originalTitle', 'genre',
             'publisher', 'published', 'annotation', 'language',
             'translator', 'ISBN', 'length', 'serie', 'serieOrder', 'dtbkId'
           ].forEach(key => {
             if (data[key]) {
-              this.bookForm.get(key).setValue(data[key]);
+              this.bookForm.controls[key].setValue(data[key]);
               if (!this.listsOfValues[key].includes(data[key]))
                 this.listsOfValues[key].push(data[key]);
             }
@@ -679,7 +676,7 @@ export class BookComponent implements OnInit, OnDestroy {
         'translator', 'ISBN', 'length', 'serie', 'serieOrder'
       ].forEach(key => {
         if (data[key]) {
-          this.bookForm.get(key).setValue(data[key]);
+          this.bookForm.controls[key].setValue(data[key]);
           if (!this.listsOfValues[key].includes(data[key]))
             this.listsOfValues[key].push(data[key]);
         }
@@ -695,7 +692,7 @@ export class BookComponent implements OnInit, OnDestroy {
     try {
       const shortStory = await this.webScrapper.getShortStoryLegie(item.link);
       Object.keys(shortStory).forEach(key => {
-        this.bookForm.get(key)?.setValue(shortStory[key]);
+        this.bookForm.controls[key]?.setValue(shortStory[key]);
       });
     } catch (e) {
       console.error(e);
@@ -713,11 +710,11 @@ export class BookComponent implements OnInit, OnDestroy {
       'publisher', 'published', 'cbdbId'
     ].forEach(key => {
       if (data[key]) {
-        this.bookForm.get(key).setValue(data[key]);
+        this.bookForm.controls[key].setValue(data[key]);
         if (!this.listsOfValues[key].includes(data[key]))
           this.listsOfValues[key].push(data[key]);
       } else {
-        this.bookForm.get(key).setValue(null);
+        this.bookForm.controls[key].setValue(null);
       }
     });
     this.bookChanged = true;
@@ -806,8 +803,8 @@ export class BookComponent implements OnInit, OnDestroy {
         metadata.annotation = metadata.annotation?.replace(/<[^>]*>/g, '') || null;
         ['annotation', 'ISBN', 'title', 'published', 'publisher', 'genre'].forEach(key => {
           if (metadata[key]) {
-            if (this.bookForm.get(key).value !== metadata[key]) {
-              this.bookForm.get(key).setValue(metadata[key]);
+            if (this.bookForm.controls[key].value !== metadata[key]) {
+              this.bookForm.controls[key].setValue(metadata[key]);
               this.bookChanged = true;
             }
             if (!this.listsOfValues[key].includes(metadata[key]))
@@ -825,18 +822,18 @@ export class BookComponent implements OnInit, OnDestroy {
 
   protected onSwitchPic() {
     if (!this.listsOfValues.img.length) return;
-    if (this.listsOfValues.img.length === 1 && this.bookForm.get('img').value) return;
-    if (this.listsOfValues.img.includes(this.bookForm.get('img').value)) {
-      let index = this.listsOfValues.img.indexOf(this.bookForm.get('img').value);
+    if (this.listsOfValues.img.length === 1 && this.bookForm.controls.img.value) return;
+    if (this.listsOfValues.img.includes(this.bookForm.controls.img.value)) {
+      let index = this.listsOfValues.img.indexOf(this.bookForm.controls.img.value);
       index = (index + 1) % this.listsOfValues.img.length;
-      this.bookForm.get('img').setValue(this.listsOfValues.img[index]);
+      this.bookForm.controls.img.setValue(this.listsOfValues.img[index]);
     } else {
-      this.bookForm.get('img').setValue(this.listsOfValues.img[0]);
+      this.bookForm.controls.img.setValue(this.listsOfValues.img[0]);
     }
   }
 
   protected onReduceHeight() {
-    if (this.bookForm.get('annotation').disabled)
+    if (this.bookForm.controls.annotation.disabled)
       this._textAreaReduced = !this._textAreaReduced;
   }
 

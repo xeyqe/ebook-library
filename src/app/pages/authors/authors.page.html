@@ -33,28 +33,21 @@
     <ion-list class="ion-padding">
         <ng-container *ngIf="where2Search === 'A'">
             <ion-item *ngFor="let author of authors" [routerLink]="['/author', author.id]">
-                <ion-col size="3">
-                    <div *ngIf="author.img">
-                        <ion-avatar>
-                            <img [src]="onGetImgSrc(author.img)" alt="img" />
-                        </ion-avatar>
-                    </div>
-                </ion-col>
-                <ion-col>
-                    <ion-label>
-                        <h2>{{ author.surname }}</h2>
-                        <p>{{ author.name }}</p>
-                    </ion-label>
-                </ion-col>
+                <ion-avatar>
+                    <img [src]="onGetImgSrc(author.img)" alt="img" />
+                </ion-avatar>
+
+                <ion-label>
+                    <h2>{{ author.surname }}</h2>
+                    <p>{{ author.name }}</p>
+                </ion-label>
             </ion-item>
         </ng-container>
         <ng-container *ngIf="where2Search === 'B'">
             <ion-item *ngFor="let book of books" [routerLink]="['/book', book.id]">
-                <div *ngIf="book.img">
-                    <ion-avatar>
-                        <img [src]="onGetImgSrc(book.img)" alt="img" />
-                    </ion-avatar>
-                </div>
+                <ion-avatar>
+                    <img [src]="onGetImgSrc(book.img)" alt="img" />
+                </ion-avatar>
 
                 <ion-label>
                     <h2 class="ion-text-wrap">{{ book.title }}</h2>

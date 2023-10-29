@@ -63,6 +63,7 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
   private async initialize() {
     if (!await this.dbIsReady()) return;
     this.imgPreLink = this.dir.imgPreLink;
+    this.fr.downloadUnknownImg();
   }
 
   private dbIsReady(): Promise<boolean> {
@@ -198,6 +199,7 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   protected onGetImgSrc(img: string) {
+    if (!img) img = '/ebook-library/unknown.jpg';
     return img?.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink + img) : img;
   }
 
