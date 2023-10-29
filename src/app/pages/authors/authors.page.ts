@@ -203,11 +203,11 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
     return img?.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink + img) : img;
   }
 
-  protected onSearchClear() {
+  protected async onSearchClear() {
     if (this.where2Search === 'A') {
-      this.db.loadAuthors(this.selectedCharacter);
+      this.authors = await this.db.loadAuthors(this.selectedCharacter);
     } else {
-      this.db.loadBooks(this.bookSearchBy as any);
+      this.books = await this.db.loadBooks(this.bookSearchBy as any);
     }
   }
 
@@ -236,14 +236,15 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.router.navigate(['/tts', this.lastListened.id, { type: this.lastListened.type }]);
   }
 
-  protected onSearch(event: Event) {
+  protected async onSearch(event: Event) {
     const val = event.target['value'];
     if (!val) {
       this.onSearchClear();
       return;
     }
     if (val.length < 3) return;
-    this.where2Search === 'A' ? this.db.findAuthors(val) : this.db.findBooks(val);
+    if (this.where2Search === 'A') this.authors = await this.db.findAuthors(val);
+    else this.books = await this.db.findBooks(val);
   }
 
   ngOnDestroy() {
