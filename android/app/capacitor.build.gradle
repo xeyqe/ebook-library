@@ -16,6 +16,7 @@ dependencies {
     implementation project(':capacitor-splash-screen')
     implementation project(':capacitor-status-bar')
     implementation project(':xeyqe-capacitor-tts')
+    implementation project(':capacitor-all-files-access-permission')
     implementation project(':capacitor-zip4j')
     implementation "androidx.core:core:1.1.0"
     implementation "androidx.core:core:1.0.0"

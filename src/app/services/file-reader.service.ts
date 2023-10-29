@@ -23,24 +23,6 @@ export class FileReaderService {
     private webView: WebView,
   ) { }
 
-  public async accessAllFilesPermissionGranted(): Promise<boolean> {
-    return Filesystem.writeFile({
-      directory: this.dir.dir,
-      path: 'ebook-library.test',
-      data: ''
-    }).then(a => {
-      Filesystem.deleteFile({
-        directory: this.dir.dir,
-        path: 'ebook-library.test',
-      });
-      console.log(a)
-      return true;
-    }).catch(e => {
-      console.error(e)
-      return false;
-    });
-  }
-
   public async createEbookLibraryFolder() {
     console.log('createEbookLibraryFolder')
     return new Promise<void>((resolve) => {
@@ -357,19 +339,6 @@ export class FileReaderService {
         path: '/ebook-library/unknown.jpg',
         url: 'https://p1.hiclipart.com/preview/584/221/301/sword-art-online-vector-icons-help-unknown-png-icon-thumbnail.jpg'
       });
-      // const request: DownloadRequest = {
-      //   uri: 'https://p1.hiclipart.com/preview/584/221/301/sword-art-online-vector-icons-help-unknown-png-icon-thumbnail.jpg',
-      //   title: 'unknown',
-      //   description: '',
-      //   mimeType: '',
-      //   visibleInDownloadsUi: true,
-      //   notificationVisibility: NotificationVisibility.VisibleNotifyCompleted,
-      //   destinationInExternalPublicDir: {
-      //     dirType: 'ebook-library',
-      //     subPath: 'unknown.jpg',
-      //   },
-      // };
-      // await this.downloader.download(request);
     });
   }
 

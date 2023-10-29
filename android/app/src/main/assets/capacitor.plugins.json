@@ -28,6 +28,10 @@
 		"classpath": "com.example.tts.TTSPlugin"
 	},
 	{
+		"pkg": "capacitor-all-files-access-permission",
+		"classpath": "com.xeyqe.plugins.example.AllFilesAccessPlugin"
+	},
+	{
 		"pkg": "capacitor-zip4j",
 		"classpath": "com.xeyqe.plugins.zipj4.Zip4JPlugin"
 	}

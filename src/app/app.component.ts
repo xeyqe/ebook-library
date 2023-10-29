@@ -6,12 +6,13 @@ import { NavController, Platform, ToastController } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 
 import { StatusBar } from '@awesome-cordova-plugins/status-bar/ngx';
-import { WebIntent } from '@awesome-cordova-plugins/web-intent/ngx';
 import { BackgroundMode } from '@awesome-cordova-plugins/background-mode/ngx';
 
 import { BusyService } from './services/busy.service';
 import { FileReaderService } from './services/file-reader.service';
 import { DatabaseService } from 'src/app/services/database.service';
+
+import { AllFilesAccess } from 'capacitor-all-files-access-permission';
 
 
 @Component({
@@ -33,18 +34,12 @@ export class AppComponent implements OnInit {
     private router: Router,
     private statusBar: StatusBar,
     private toastCtrl: ToastController,
-    private webIntent: WebIntent,
     protected workingServ: BusyService,
   ) { }
 
   ngOnInit(): void {
     this.platform.ready().then(async () => {
-      const options = {
-        action: this.webIntent[`ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION`],
-        url: `package:io.ionic.starter`
-      }
-      if (!await this.fr.accessAllFilesPermissionGranted())
-        await this.webIntent.startActivity(options).then((a) => { console.log(a) }, (e) => { console.error(e) });
+      await AllFilesAccess.access();
 
       this.fr.downloadDorian();
       this.initializeApp();

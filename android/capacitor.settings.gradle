@@ -23,5 +23,8 @@ project(':capacitor-status-bar').projectDir = new File('../node_modules/@capacit
 include ':xeyqe-capacitor-tts'
 project(':xeyqe-capacitor-tts').projectDir = new File('../node_modules/@xeyqe/capacitor-tts/android')
 
+include ':capacitor-all-files-access-permission'
+project(':capacitor-all-files-access-permission').projectDir = new File('../node_modules/capacitor-all-files-access-permission/android')
+
 include ':capacitor-zip4j'
 project(':capacitor-zip4j').projectDir = new File('../node_modules/capacitor-zip4j/android')
