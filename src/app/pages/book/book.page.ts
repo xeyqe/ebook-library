@@ -501,6 +501,10 @@ export class BookComponent implements OnInit, OnDestroy {
   }
 
   protected downloadPicture() {
+    if (!navigator.onLine) {
+      alert('Not connected to internet!');
+      return;
+    }
     const uri = this.bookForm.get('img').value;
     const path = this.book.path.substring(0, this.book.path.lastIndexOf('/') + 1);
     const index = this.bookForm.get('img').value.lastIndexOf('.');
@@ -518,6 +522,10 @@ export class BookComponent implements OnInit, OnDestroy {
   }
 
   protected async onGetBooksList() {
+    if (!navigator.onLine) {
+      alert('Not connected to internet!');
+      return;
+    }
     const author = await this.db.getAuthor(this.book.creatorIds[0]);
     const dialogRef = this.dialog.open(DialogComponent, {
       data: {
@@ -629,6 +637,10 @@ export class BookComponent implements OnInit, OnDestroy {
     lgId: string,
     dtbkId?: string,
   }) {
+    if (!navigator.onLine) {
+      alert('Not connected to internet!');
+      return;
+    }
     if (item.dtbkId) {
       this.workingServ.busy();
 

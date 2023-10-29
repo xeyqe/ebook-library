@@ -551,6 +551,10 @@ export class AuthorComponent implements OnInit, OnDestroy {
   }
 
   protected onDownloadPicture() {
+    if (!navigator.onLine) {
+      alert('Not connected to internet!');
+      return;
+    }
     const uri = this.authorForm.get('img').value;
     const path = this.author.path;
     const index = this.authorForm.get('img').value.lastIndexOf('.');
@@ -577,6 +581,10 @@ export class AuthorComponent implements OnInit, OnDestroy {
   }
 
   protected onGetAuthor() {
+    if (!navigator.onLine) {
+      alert('Not connected to internet!');
+      return;
+    }
     let authorsName: string;
     if (!this.authorForm.get('name').value || this.authorForm.get('name').value.length < 3) {
       authorsName = this.authorForm.get('surname').value;
