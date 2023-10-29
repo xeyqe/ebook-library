@@ -125,6 +125,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
   ionViewDidEnter() {
     this.db.getBooksOfAuthor(this.author.booksIds).then(books => {
       console.log(books)
+      if (!books?.length) return;
       this.updateOldBooksImgs(books);
       this.takeCareOfSeries(books);
       this.loadUnusedPics([...books.map(bk => bk.img), this.author.img]);
