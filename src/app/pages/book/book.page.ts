@@ -21,7 +21,7 @@ import { NonusedPicsService } from '../author/nonused-pics.service';
 import { DirectoryService } from 'src/app/services/directory.service';
 import { FileReaderService } from 'src/app/services/file-reader.service';
 import { WebScraperService } from 'src/app/services/web-scraper.service';
-import { JsonDataParserService } from 'src/app/services/json-data-parser.service';
+// import { JsonDataParserService } from 'src/app/services/json-data-parser.service';
 
 import { BOOK, ONLINEBOOKLINK, INDEXOFBOOK, AUTHOR, ONLINEAUTHORLEGIE } from 'src/app/services/interfaces';
 
@@ -37,9 +37,8 @@ export class BookComponent implements OnInit, OnDestroy {
   protected book: BOOK = null;
 
   protected bookChanged = false;
-  protected fileName: string;
+  // protected fileName: string;
   protected ready2editing = false;
-  protected bookId: number;
   protected jsonBooks: INDEXOFBOOK[];
   protected showAble = false;
 
@@ -129,7 +128,7 @@ export class BookComponent implements OnInit, OnDestroy {
   };
   protected _textAreaReduced = true;
   protected imgIsLocal: boolean;
-  protected imgPreLink: string;
+  private readonly imgSuffix = Math.floor(Math.random() * 1000000);
 
   @ViewChild(IonContent) content: IonContent;
   @ViewChild('target') target: ElementRef;
@@ -142,7 +141,7 @@ export class BookComponent implements OnInit, OnDestroy {
     private epub: EpubService,
     private fs: FileReaderService,
     private iab: InAppBrowser,
-    private jsonServ: JsonDataParserService,
+    // private jsonServ: JsonDataParserService,
     private picsServ: NonusedPicsService,
     private renderer: Renderer2,
     private route: ActivatedRoute,
@@ -152,39 +151,50 @@ export class BookComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.route.paramMap.subscribe((params) => {
-      const bookId = params.get('id');
-      const id = parseInt(bookId, 10);
-      this.bookId = id;
-      this.subs.push(this.db.getDatabaseState().subscribe((ready) => {
-        if (ready) {
-          this.db.getBook(id).then((data) => {
-            console.log(data)
-            this.fileName = data.title;
-            this.book = data;
-            this.fillOnlineData(data.creatorId);
-            this.imgPreLink = this.dir.imgPreLink;
-            this.updateOldImgs(data.img);
-            this.initializeBookForm(data);
-            this.initializeSubs();
-            this.getAuthorsBooks();
-            if (this.picsServ.pics?.length)
-              this.listsOfValues.img = [...this.listsOfValues.img, ...this.picsServ.pics];
-            setTimeout(() => {
-              Object.keys(this.bookForm.controls).forEach(key => {
-                this.updateSize(key);
-                this.subs.push(this.bookForm.controls[key].valueChanges.subscribe(() => {
-                  this.updateSize(key);
-                }));
-              });
-            }, 1000);
-          }).catch((e) => {
-            console.error('getBook failed: ');
-            console.error(e);
-          });
+    this.initialize().then(() => {
+      this.fillOnlineData(this.book.creatorIds[0]);
+      this.updateOldImgs(this.book.img);
+      this.initializeBookForm(this.book);
+      this.initializeSubs();
+      if (this.picsServ.pics?.length)
+        this.listsOfValues.img = [...this.listsOfValues.img, ...this.picsServ.pics];
+  
+      this.showAble = this.webScrapper.showAble;
+    });
+  }
+
+  private async initialize() {
+    const bookId = await this.getParams();
+    if (!(await this.dbIsReady())) return;
+    this.book = await this.db.getBook(bookId);
+    console.log(this.book);
+  }
+
+  private getParams(): Promise<number> {
+    return new Promise((resolve, reject) => {
+      this.subs.push(this.route.paramMap.subscribe({
+        next: (params) => {
+          resolve(+params.get('id'));
+        },
+        error: (error) => {
+          console.error(error);
+          reject(error);
         }
       }));
-      this.showAble = this.webScrapper.showAble;
+    });
+  }
+
+  private dbIsReady(): Promise<boolean> {
+    return new Promise((resolve) => {
+      this.subs.push(this.db.getDatabaseState().subscribe({
+        next: (ready) => {
+          resolve(ready);
+        },
+        error: (error) => {
+          console.error(error);
+          resolve(false);
+        }
+      }));
     });
   }
 
@@ -209,11 +219,11 @@ export class BookComponent implements OnInit, OnDestroy {
     }, 200);
   }
 
-  private fillOnlineData(creatorId: number): void {
-    if (this.bookServ.onlineData && this.bookServ.onlineData[creatorId]) {
-      this.onlineAllBooksList = this.bookServ.onlineData[creatorId].onlineAllBooksList;
-      this.onlineBookListLegie = this.bookServ.onlineData[creatorId].onlineBookListLegie;
-      this.onlineShortStoriesListLegie = this.bookServ.onlineData[creatorId].onlineShortStoriesListLegie;
+  private fillOnlineData(creatorIds: number): void {
+    if (this.bookServ.onlineData && this.bookServ.onlineData[creatorIds]) {
+      this.onlineAllBooksList = this.bookServ.onlineData[creatorIds].onlineAllBooksList;
+      this.onlineBookListLegie = this.bookServ.onlineData[creatorIds].onlineBookListLegie;
+      this.onlineShortStoriesListLegie = this.bookServ.onlineData[creatorIds].onlineShortStoriesListLegie;
     }
   }
 
@@ -299,6 +309,15 @@ export class BookComponent implements OnInit, OnDestroy {
         if (val !== newVal) this.bookForm.controls[key].setValue(newVal, { emitEvent: false });
       }));
     });
+
+    setTimeout(() => {
+      Object.keys(this.bookForm.controls).forEach(key => {
+        this.updateSize(key);
+        this.subs.push(this.bookForm.controls[key].valueChanges.subscribe(() => {
+          this.updateSize(key);
+        }));
+      });
+    }, 1000);
   }
 
   protected onInput(fc: string, value: string) {
@@ -338,7 +357,7 @@ export class BookComponent implements OnInit, OnDestroy {
   private getPath(): string {
     const path = this.book.path.substring(0, this.book.path.lastIndexOf('/'));
     const suffix = this.book.img.substring(this.book.img.lastIndexOf('.') + 1);
-    return `${path}/${this.book.title}.${suffix}`.replace(/[,:\s/]/g, '_');
+    return `${path}/${this.book.title.replace(/[,:\s/]/g, '_')}.${suffix}`;
   }
 
   protected editable() {
@@ -366,7 +385,7 @@ export class BookComponent implements OnInit, OnDestroy {
     dialogRef.afterClosed().pipe(first()).subscribe(async (selected) => {
       if (selected === 0) {
         const bookId = this.book.id;
-        const authorId = this.book.creatorId;
+        const authorId = this.book.creatorIds;
         try {
           await this.onRemovePic(this.book.img);
           await this.removeBookFile();
@@ -431,41 +450,41 @@ export class BookComponent implements OnInit, OnDestroy {
     }
   }
 
-  protected getAuthorsBooks() {
-    const authorsId = this.book.creatorId;
-    this.db.getAuthor(authorsId).then((author) => {
-      const authorsIdInJson = author.idInJson;
-      if (authorsIdInJson) {
-        let jsonAuthor = this.jsonServ.getAuthor(authorsIdInJson);
-        if (jsonAuthor) {
-          this.jsonBooks = jsonAuthor.books;
-        } else {
-          this.jsonServ.jsonAuthorsData().then(() => {
-            jsonAuthor = this.jsonServ.getAuthor(authorsIdInJson);
-            if (jsonAuthor) {
-              this.jsonBooks = jsonAuthor.books;
-            }
-          });
-        }
-      }
-    });
-  }
+  // protected getAuthorsBooks() {
+  //   const authorsId = this.book.creatorIds;
+  //   this.db.getAuthor(authorsId).then((author) => {
+  //     const authorsIdInJson = author.idInJson;
+  //     if (authorsIdInJson) {
+  //       let jsonAuthor = this.jsonServ.getAuthor(authorsIdInJson);
+  //       if (jsonAuthor) {
+  //         this.jsonBooks = jsonAuthor.books;
+  //       } else {
+  //         this.jsonServ.jsonAuthorsData().then(() => {
+  //           jsonAuthor = this.jsonServ.getAuthor(authorsIdInJson);
+  //           if (jsonAuthor) {
+  //             this.jsonBooks = jsonAuthor.books;
+  //           }
+  //         });
+  //       }
+  //     }
+  //   });
+  // }
 
-  protected getBookData(index: any) {
-    let jsonBook = this.jsonServ.getBook(index);
-    if (jsonBook) {
-      jsonBook[`length`] = jsonBook.pages;
-      this.fillData(jsonBook);
-    } else {
-      this.workingServ.busy();
-      this.jsonServ.jsonBooksData().then(() => {
-        this.workingServ.done();
-        jsonBook = this.jsonServ.getBook(index);
-        jsonBook[`length`] = jsonBook.pages;
-        this.fillData(jsonBook);
-      });
-    }
-  }
+  // protected getBookData(index: any) {
+  //   let jsonBook = this.jsonServ.getBook(index);
+  //   if (jsonBook) {
+  //     jsonBook[`length`] = jsonBook.pages;
+  //     this.fillData(jsonBook);
+  //   } else {
+  //     this.workingServ.busy();
+  //     this.jsonServ.jsonBooksData().then(() => {
+  //       this.workingServ.done();
+  //       jsonBook = this.jsonServ.getBook(index);
+  //       jsonBook[`length`] = jsonBook.pages;
+  //       this.fillData(jsonBook);
+  //     });
+  //   }
+  // }
 
   protected fillData(jsonBook) {
     Object.keys(jsonBook).forEach(key => {
@@ -499,7 +518,7 @@ export class BookComponent implements OnInit, OnDestroy {
   }
 
   protected async onGetBooksList() {
-    const author = await this.db.getAuthor(this.book.creatorId);
+    const author = await this.db.getAuthor(this.book.creatorIds[0]);
     const dialogRef = this.dialog.open(DialogComponent, {
       data: {
         message: 'Choose a source.',
@@ -536,9 +555,7 @@ export class BookComponent implements OnInit, OnDestroy {
         if (!this.onlineBookList.length && !author.pseudonym) {
           this.onlineBookList = await this.webScrapper.getBooksListOfAuthor(authorsName);
         }
-        if (!this.onlineBookList.length) {
-          this.onlineBookList = data;
-        }
+        this.onlineBookList.push(...data);
       }
       this.workingServ.done();
       setTimeout(() => {
@@ -744,9 +761,10 @@ export class BookComponent implements OnInit, OnDestroy {
             }\
           }\
           a(document.querySelector('#abinfo > a'),'click');\
+          a(document.querySelector('.show_hide_more'),'click');\
           setTimeout(() => {\
             var o={\
-              annotation:a(document.querySelector('.justify.new2.odtop_big'),'textContent'),\
+              annotation:a(document.querySelector('.justify.new2.odtop'),'textContent'),\
               genre:a(document.querySelector('[itemprop=genre]'),'innerText'),\
               img:a(document.querySelector('.kniha_img'),'src'),\
               language:a(document.querySelector('[itemprop=language]'),'innerText'),\
@@ -818,7 +836,7 @@ export class BookComponent implements OnInit, OnDestroy {
   }
 
   protected onGetImgSrc(img: string) {
-    return img?.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink + img) : img;
+    return img?.startsWith('/') ? Capacitor.convertFileSrc(this.dir.imgPreLink + img) + `?ver=${this.imgSuffix}` : img;
   }
 
   protected onSkipKey(ev: Event) {
@@ -834,7 +852,7 @@ export class BookComponent implements OnInit, OnDestroy {
     this.bookServ.onlineData = null;
     if (this.onlineAllBooksList || this.onlineBookListLegie || this.onlineShortStoriesListLegie) {
       this.bookServ.onlineData = {};
-      this.bookServ.onlineData[this.book.creatorId] = {
+      this.bookServ.onlineData[this.book.creatorIds[0]] = {
         onlineAllBooksList: this.onlineAllBooksList,
         onlineBookListLegie: this.onlineBookListLegie,
         onlineShortStoriesListLegie: this.onlineShortStoriesListLegie,

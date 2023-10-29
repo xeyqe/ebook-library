@@ -5,11 +5,10 @@ import { FormControl, FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { animate, AUTO_STYLE, state, style, transition, trigger } from '@angular/animations';
 
-import { Observable, Subscription } from 'rxjs';
-import { first, map, startWith } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
+import { first } from 'rxjs/operators';
 
 import { MatDialog } from '@angular/material/dialog';
-import { MatFormField } from '@angular/material/form-field';
 
 import { Capacitor } from '@capacitor/core';
 
@@ -19,11 +18,14 @@ import { DatabaseService } from 'src/app/services/database.service';
 import { DirectoryService } from 'src/app/services/directory.service';
 import { FileReaderService } from 'src/app/services/file-reader.service';
 import { WebScraperService } from 'src/app/services/web-scraper.service';
-import { JsonDataParserService } from 'src/app/services/json-data-parser.service';
 import { AUTHOR, WIKIPEDIADATA, ONLINEAUTHORLINK, AUTHORSBOOKS } from 'src/app/services/interfaces';
 
 import { DialogComponent } from 'src/app/material/dialog/dialog.component';
+import { register } from 'swiper/element/bundle';
+import { IonicSlides } from '@ionic/angular';
 
+
+register();
 
 @Component({
   selector: 'app-author',
@@ -39,6 +41,12 @@ import { DialogComponent } from 'src/app/material/dialog/dialog.component';
   ]
 })
 export class AuthorComponent implements OnInit, OnDestroy {
+  @ViewChild('swiperRef') swiperRef: ElementRef | undefined;
+  @ViewChild(IonContent) content: IonContent;
+  @ViewChild('target1') target1: ElementRef;
+  @ViewChild('target2') target2: ElementRef;
+
+  protected swiperModules = [IonicSlides];
   protected author: AUTHOR = null;
   protected books: AUTHORSBOOKS[] = [];
   protected biography = '';
@@ -49,7 +57,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
   protected wikiOutputBoolean = false;
   protected listOfPictures: string[];
   protected authorId: number;
-  protected jsonOfAuthorsIndex;
+  // protected jsonOfAuthorsIndex;
   protected fullHeight = false;
   protected onlineAuthorsList: ONLINEAUTHORLINK[];
   protected onlineAuthorsListLegie: ONLINEAUTHORLINK[];
@@ -62,7 +70,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
   }[];
   protected showAble = false;
 
-  protected filteredOptions: Observable<any[]>;
+  // protected filteredOptions: Observable<any[]>;
   protected authorForm: FormGroup<{
     img: FormControl<string>,
     name: FormControl<string>,
@@ -92,10 +100,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
   protected seriesCont: { name: string, open: boolean, books: AUTHORSBOOKS[] }[];
 
   private subs: Subscription[] = [];
-
-  @ViewChild(IonContent) content: IonContent;
-  @ViewChild('target1') target1: ElementRef;
-  @ViewChild('target2') target2: ElementRef;
+  protected imgIndex: number;
 
   constructor(
     private db: DatabaseService,
@@ -103,7 +108,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
     private directoryServ: DirectoryService,
     private fs: FileReaderService,
     private http: HTTP,
-    private jsonServ: JsonDataParserService,
+    // private jsonServ: JsonDataParserService,
     private picsServ: NonusedPicsService,
     private renderer: Renderer2,
     private route: ActivatedRoute,
@@ -114,14 +119,16 @@ export class AuthorComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.initialize();
-
-    this.jsonServ.jsonAuthorsIndexesData().then(() => {
-      this.jsonOfAuthorsIndex = this.jsonServ.getListOfAuthors();
-    }).catch((e) => {
-      console.error('jsonServ failed');
-      console.error(e);
-    });
     this.showAble = this.webScraper.showAble;
+  }
+
+  ionViewDidEnter() {
+    this.db.getBooksOfAuthor(this.author.booksIds).then(books => {
+      console.log(books)
+      this.updateOldBooksImgs(books);
+      this.takeCareOfSeries(books);
+      this.loadUnusedPics([...books.map(bk => bk.img), this.author.img]);
+    });
   }
 
   private async initialize() {
@@ -133,12 +140,6 @@ export class AuthorComponent implements OnInit, OnDestroy {
     this.updateOldImgs(this.author.img);
     this.initializeForm(this.author);
     this.fs.addBooksOfAuthor(this.author.id, this.author.path);
-
-    const books = await this.db.getBooksOfAuthor(this.author.id);
-    console.log(books)
-    this.updateOldBooksImgs(books);
-    this.takeCareOfSeries(books);
-    this.loadUnusedPics([...books.map(bk => bk.img), this.author.img]);
 
     setTimeout(() => {
       Object.keys(this.authorForm.controls).forEach(key => {
@@ -214,10 +215,10 @@ export class AuthorComponent implements OnInit, OnDestroy {
       }));
     });
 
-    this.filteredOptions = this.authorForm.get('surname').valueChanges.pipe(
-      startWith(''),
-      map((value) => this._filter(value))
-    );
+    // this.filteredOptions = this.authorForm.get('surname').valueChanges.pipe(
+    //   startWith(''),
+    //   map((value) => this._filter(value))
+    // );
 
     this.subs.push(this.authorForm.valueChanges.subscribe(() => {
       this.authorChanged = true;
@@ -246,6 +247,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
 
   private takeCareOfSeries(books: AUTHORSBOOKS[]) {
     const seriesNames = [];
+    const oldSeries = this.seriesCont ? [...this.seriesCont] : [];
     this.seriesCont = [];
 
     const serieLessBooks: AUTHORSBOOKS[] = [];
@@ -256,7 +258,8 @@ export class AuthorComponent implements OnInit, OnDestroy {
       }
       if (!seriesNames.includes(book.serie)) {
         seriesNames.push(book.serie);
-        this.seriesCont.push({ name: book.serie, open: false, books: [book] });
+        const open = oldSeries.find(itm => itm.name === book.serie)?.open || false;
+        this.seriesCont.push({ name: book.serie, open, books: [book] });
       } else {
         const item = this.seriesCont.find(itm => itm.name === book.serie);
         item.books.push(book);
@@ -266,7 +269,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
       return a.name.localeCompare(b.name);
     });
 
-    
+
     this.books = serieLessBooks;
     if (!seriesNames?.length) return;
     this.db.getSeriesBooks(seriesNames, this.author.id).then(otherBooks => {
@@ -287,38 +290,38 @@ export class AuthorComponent implements OnInit, OnDestroy {
     this.picsServ.pics = unUsed.length ? unUsed : null;
   }
 
-  protected async onGetPosts(index: string) {
-    this.workingServ.busy();
-    await this.jsonServ.jsonAuthorsData();
-    const jsonAuthor = this.jsonServ.getAuthor(index);
+  // protected async onGetPosts(index: string) {
+  //   this.workingServ.busy();
+  //   await this.jsonServ.jsonAuthorsData();
+  //   const jsonAuthor = this.jsonServ.getAuthor(index);
 
-    if (jsonAuthor) {
-      Object.entries(this.authorForm.controls).forEach(ent => {
-        const key = ent[0];
-        const fc = ent[1];
-        fc.setValue((jsonAuthor[key] || null) as never);
-        if (jsonAuthor[key] && !this.listsOfValues[key].includes(jsonAuthor[key]))
-          this.listsOfValues[key].push(jsonAuthor[key]);
-      });
-      this.authorForm.get('idInJson').setValue(index);
-      this.workingServ.done();
-    }
-  }
+  //   if (jsonAuthor) {
+  //     Object.entries(this.authorForm.controls).forEach(ent => {
+  //       const key = ent[0];
+  //       const fc = ent[1];
+  //       fc.setValue((jsonAuthor[key] || null) as never);
+  //       if (jsonAuthor[key] && !this.listsOfValues[key].includes(jsonAuthor[key]))
+  //         this.listsOfValues[key].push(jsonAuthor[key]);
+  //     });
+  //     this.authorForm.get('idInJson').setValue(index);
+  //     this.workingServ.done();
+  //   }
+  // }
 
-  private _filter(value: string): string[] {
-    if (!value || value.length < 4) {
-      return null;
-    }
+  // private _filter(value: string): string[] {
+  //   if (!value || value.length < 4) {
+  //     return null;
+  //   }
 
-    if (this.jsonOfAuthorsIndex && value && value.length) {
-      const filterValue = value.toLowerCase();
-      return this.jsonOfAuthorsIndex.filter((option) =>
-        option.name.toLowerCase().includes(filterValue)
-      );
-    } else {
-      return undefined;
-    }
-  }
+  //   if (this.jsonOfAuthorsIndex && value && value.length) {
+  //     const filterValue = value.toLowerCase();
+  //     return this.jsonOfAuthorsIndex.filter((option) =>
+  //       option.name.toLowerCase().includes(filterValue)
+  //     );
+  //   } else {
+  //     return undefined;
+  //   }
+  // }
 
   protected displayFn(subject) {
     if (subject && !subject.name) {
@@ -558,7 +561,12 @@ export class AuthorComponent implements OnInit, OnDestroy {
     this.workingServ.busy();
     this.fs.downloadPicture(uri, path, filename).then((src) => {
       this.workingServ.done();
-      this.authorForm.get('img').setValue(src?.replace(/^.*ebook-library/, '/ebook-library'));
+      const img = src?.replace(/^.*ebook-library/, '/ebook-library');
+      this.authorForm.get('img').setValue(img);
+      // const imgIndex = this.listsOfValues.img.indexOf(uri);
+      console.log(this.listsOfValues.img)
+      this.listsOfValues.img.splice(this.imgIndex, 1, img);
+      console.log(this.listsOfValues.img)
       this.content.scrollToTop();
     }).catch((e) => {
       this.workingServ.done();
@@ -736,31 +744,33 @@ export class AuthorComponent implements OnInit, OnDestroy {
   // }
 
   protected onIsImgLocal(path: string): boolean {
-    return path && path.startsWith('/');
+    return path?.startsWith('/');
   }
 
   protected onGetImgSrc(img: string) {
     return img?.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink + img) : img;
   }
 
-  protected delayedResize(label: HTMLElement, field: MatFormField, input: HTMLInputElement) {
-    setTimeout(() => {
-      this.log(label, field, input);
-    }, 200);
+  private async wait(n: number) {
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        resolve();
+      }, n);
+    });
   }
 
-  log(label: HTMLElement, field: MatFormField, input: HTMLInputElement) {
-    // a.nativeElement.getDebou
-    // console.log(input)
-    input.size = input.value.length + 1;
-    const width = Math.min(window.innerWidth, Math.max(label.getBoundingClientRect().width + 20, input.getBoundingClientRect().width));
-    console.log(width)
-    // console.log(a.style.width)
-    // const width = a.getBoundingClientRect().width;
-    // console.log(b._elementRef.nativeElement)
-    // console.log(b._elementRef.nativeElement.style)
-    this.renderer.setStyle(field._elementRef.nativeElement, 'width', `${Math.floor(width)}px`);
-    // console.log(b._elementRef.nativeElement.style.width)
+  protected async onResizeSwiper() {
+    if (!this.swiperRef?.nativeElement) await this.wait(200);
+    if (!this.swiperRef?.nativeElement) return;
+    const height = this.swiperRef.nativeElement.querySelector('img').getBoundingClientRect().height;
+    this.renderer.setStyle(this.swiperRef.nativeElement, 'height', `${height}px`);
+    console.log(this.swiperRef?.nativeElement.swiper.activeIndex);
+    if (this.imgIndex !== this.swiperRef?.nativeElement.swiper.activeIndex)
+      this.imgIndex = this.swiperRef?.nativeElement.swiper.activeIndex;
+    const img = this.listsOfValues.img[this.imgIndex];
+    if (this.authorForm.controls.img.value !== img) {
+      this.authorForm.controls.img.setValue(img);
+    }
   }
 
   ngOnDestroy() {

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { Platform, ToastController } from '@ionic/angular';
+import { NavController, Platform, ToastController } from '@ionic/angular';
 
 import { Subscription } from 'rxjs';
 
@@ -28,6 +28,7 @@ export class AppComponent implements OnInit {
     private backgroundMode: BackgroundMode,
     private db: DatabaseService,
     private fr: FileReaderService,
+    private navCtrl: NavController,
     private platform: Platform,
     private router: Router,
     private statusBar: StatusBar,
@@ -127,7 +128,7 @@ export class AppComponent implements OnInit {
 
   private hwBackButtonFunction(): void {
     const url = this.router.url;
-
+    
     if (url === '/authors') {
       if (this.lastTimeBackPress + 2000 > new Date().getTime()) {
         navigator['app'].exitApp();
@@ -135,21 +136,8 @@ export class AppComponent implements OnInit {
         this.lastTimeBackPress = new Date().getTime();
         this.presentToast();
       }
-    } else if (/^(\/author\/[0-9]+)$/.test(url)) {
-      this.router.navigate(['/authors']);
-    } else if (/^(\/book\/[0-9]+)$/.test(url)) {
-      const bookId = parseInt(url.substring(url.lastIndexOf('/') + 1), 10);
-      this.db.getBook(bookId).then((book) => {
-        this.db.getAuthor(book.creatorId).then((author) => {
-          const authorId = author.id + '';
-          this.router.navigate(['/author', authorId]);
-        });
-      });
-    } else if (/^\/tts\/[0-9]+;type=[a-z]+$/.test(url)) {
-      const bookId = url.slice(url.lastIndexOf('/') + 1, url.lastIndexOf(';'));
-      this.router.navigate(['/book', bookId]);
     } else {
-      console.error('else ?');
+      this.navCtrl.back();
     }
   }
 

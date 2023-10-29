@@ -7,7 +7,7 @@ import { WebView } from '@awesome-cordova-plugins/ionic-webview/ngx';
 import { DirectoryService } from './directory.service';
 import { DatabaseService } from 'src/app/services/database.service';
 
-import { BOOK } from 'src/app/services/interfaces';
+import { AUTHOR, BOOK } from 'src/app/services/interfaces';
 
 
 @Injectable({
@@ -41,6 +41,27 @@ export class FileReaderService {
     });
   }
 
+  public async createEbookLibraryFolder() {
+    console.log('createEbookLibraryFolder')
+    return new Promise<void>((resolve) => {
+      Filesystem.readdir({
+        directory: this.dir.dir,
+        path: ''
+      }).then(item => {
+        if (item.files.some(it => it.name === 'ebook-library')) resolve();
+        else {
+          Filesystem.mkdir({
+            directory: this.dir.dir,
+            path: 'ebook-library'
+          }).then(() => {
+            resolve();
+          });
+        }
+      });
+    });
+  }
+
+
   public async createApplicationFolder() {
     console.log('createApplicationFolder')
     return new Promise<void>((resolve) => {
@@ -64,15 +85,17 @@ export class FileReaderService {
     });
   }
 
-  public downloadDorian(): Promise<any> {
-    return Filesystem.downloadFile({
-      directory: this.dir.dir,
-      path: 'ebook-library/Wilde, Oscar/The Picture of Dorian Gray.epub',
-      url: 'https://www.gutenberg.org/ebooks/174.epub.noimages?session_id=931e40dbce8a034672c993b24b343cb40c0e667d'
-    }).catch(e => {
+  public async downloadDorian(): Promise<any> {
+    try {
+      return await Filesystem.downloadFile({
+        directory: this.dir.dir,
+        path: 'ebook-library/Wilde, Oscar/The Picture of Dorian Gray.epub',
+        url: 'https://www.gutenberg.org/ebooks/174.epub.noimages?session_id=931e40dbce8a034672c993b24b343cb40c0e667d'
+      });
+    } catch (e) {
       console.error('downloadDorian failed!');
       console.error(e);
-    })
+    }
   }
 
   public async listOfAuthors() {
@@ -113,30 +136,15 @@ export class FileReaderService {
           if (!allAuthorsPaths.includes(`/ebook-library/${authorFolder.name}`) && !allAuthorsPaths.includes(`/ebook-library/${authorFolder.name}/`)) {
             const name = authorFolder.name.substring(authorFolder.name.lastIndexOf('/') + 1).split(',');
             const surname = name[0].trim();
-            let firstName = '';
+            let forename = '';
             if (name[1]) {
-              firstName = name[1].trim();
+              forename = name[1].trim();
             }
             let authorId: number;
 
             try {
-              authorId = await this.db.addAuthor({
-                id: null,
-                name: firstName,
-                surname,
-                pseudonym: null,
-                nationality: null,
-                birth: null,
-                death: null,
-                biography: null,
-                img: null,
-                rating: null,
-                path: `/ebook-library/${authorFolder.name}`,
-                idInJson: null,
-                dtbkId: null,
-                lgId: null,
-                cbdbId: null,
-              });
+              const author = this.createAuthor({ forename, surname, path: `/ebook-library/${authorFolder.name}` });
+              authorId = await this.db.addAuthor(author);
               console.log(`authorId: ${authorId}`);
             } catch (e) {
               console.error('authorId = await this.db.addAuthor failed')
@@ -167,9 +175,17 @@ export class FileReaderService {
     }
   }
 
+  private createAuthor(dt: { forename: string, surname: string, path: string }): AUTHOR {
+    return {
+      id: null, name: dt.forename, surname: dt.surname, pseudonym: null, nationality: null,
+      birth: null, death: null, biography: null, img: null, rating: null, path: dt.path,
+      idInJson: null, dtbkId: null, lgId: null, cbdbId: null, booksIds: null,
+    };
+  }
+
   public addBooksOfAuthor(authorId: number, path: string) {
-    console.log('addBooksOfAuthor')
-    console.log(arguments)
+    console.log('addBooksOfAuthor');
+    console.log(authorId, path);
     if (this.ready2addBooks) {
       this.ready2addBooks = false;
       this.db.authorsBooksPaths(authorId).then((paths) => {
@@ -180,7 +196,7 @@ export class FileReaderService {
 
   public async getNonBookFilesOfFolder(path: string): Promise<string[]> {
     console.log('getNonBookFilesOfFolder')
-    console.log(arguments)
+    console.log(path);
     const item = await Filesystem.readdir({
       directory: this.dir.dir,
       path
@@ -201,11 +217,9 @@ export class FileReaderService {
     return foundFiles;
   }
 
-  private _booksOfAuthor(folderPath: string, authorId: number, paths: string[]) {
+  private async _booksOfAuthor(folderPath: string, authorId: number, paths: string[]) {
     console.log('_booksOfAuthor')
-    console.log(arguments)
-    console.log(this.dir)
-    console.log(this.dir.dir)
+    console.log(folderPath, authorId, paths);
     if (folderPath.endsWith('/')) folderPath = folderPath.substring(0, folderPath.length - 1);
     Filesystem.readdir({
       directory: this.dir.dir,
@@ -214,44 +228,9 @@ export class FileReaderService {
       console.log(item)
       for (const file of item.files) {
         if (file.type === 'file') {
-          const extension = file.name.substring(file.name.lastIndexOf('.') + 1);
-          if (extension === 'txt' || extension === 'epub') {
-            if (!paths.includes(`${folderPath}/${file.name}`) && !paths.includes(`${folderPath}${file.name}`)) {
-              const id = authorId;
-              const name = file.name.substring(0, file.name.lastIndexOf('.'));
-              const book: BOOK = {
-                id: null,
-                title: name,
-                creatorId: id,
-                originalTitle: null,
-                annotation: null,
-                publisher: null,
-                published: null,
-                genre: null,
-                length: null,
-                language: 'cs-CZ',
-                translator: null,
-                ISBN: null,
-                path: `${folderPath}/${file.name}`,
-                progress: null,
-                rating: null,
-                img: null,
-                serie: null,
-                serieOrder: null,
-                dtbkId: null,
-                lgId: null,
-                cbdbId: null,
-                added: new Date(),
-                lastRead: null,
-                finished: null
-              };
-              console.log('added book')
-              console.log(book)
-              this.db.addBook(book);
-            }
-          }
+          await this.addBook({ file, paths, folderPath, authorId });
         } else {
-          this._booksOfAuthor(folderPath + '/' + file.name, authorId, paths);
+          await this._booksOfAuthor(folderPath + '/' + file.name, authorId, paths);
         }
       }
       this.ready2addBooks = true;
@@ -263,9 +242,29 @@ export class FileReaderService {
     });
   }
 
+  private async addBook(dt: { file: FileInfo, paths: string[], folderPath: string, authorId: number },) {
+    const extension = dt.file.name.substring(dt.file.name.lastIndexOf('.') + 1);
+    if (extension !== 'txt' && extension !== 'epub') return;
+    if (dt.paths.includes(`${dt.folderPath}/${dt.file.name}`) || dt.paths.includes(`${dt.folderPath}${dt.file.name}`)) return;
+    const title = dt.file.name.substring(0, dt.file.name.lastIndexOf('.'));
+    const book = this.createBook({ title, creatorIds: [dt.authorId], path: `${dt.folderPath}/${dt.file.name}` });
+    console.log('added book')
+    console.log(book)
+    await this.db.addBook(book);
+  }
+
+  private createBook(dt: { title: string, creatorIds: number[], path: string }): BOOK {
+    return {
+      id: null, title: dt.title, creatorIds: dt.creatorIds, originalTitle: null, annotation: null,
+      publisher: null, published: null, genre: null, length: null, language: 'cs-CZ', translator: null,
+      ISBN: null, path: dt.path, progress: null, rating: null, img: null, serie: null, serieOrder: null,
+      dtbkId: null, lgId: null, cbdbId: null, added: new Date(), lastRead: null, finished: null
+    };
+  }
+
   public async readTextFile(fullPath: string): Promise<string> {
     console.log('readTextFile')
-    console.log(arguments)
+    console.log(fullPath)
     const resp = await Filesystem.readFile({
       directory: this.dir.dir,
       path: fullPath,
@@ -275,20 +274,8 @@ export class FileReaderService {
   }
 
   public async downloadPicture(Uri: string, path: string, fileName: string): Promise<string> {
-    console.log('downloadPicture')
-    console.log(arguments)
-    // const request: DownloadRequest = {
-    //   uri: Uri,
-    //   title: fileName.substring(fileName.lastIndexOf('/') + 1),
-    //   description: '',
-    //   mimeType: '',
-    //   visibleInDownloadsUi: true,
-    //   notificationVisibility: NotificationVisibility.VisibleNotifyCompleted,
-    //   destinationInExternalPublicDir: {
-    //     dirType: path,
-    //     subPath: fileName,
-    //   },
-    // };
+    console.log('downloadPicture');
+    console.log(Uri, path, fileName);
 
     if (path[0] === '/') {
       path = path.substring(1);
@@ -311,7 +298,7 @@ export class FileReaderService {
       }).then(() => {
         resolve(src);
       }).catch(() => {
-        const filePath = pth.replace(/[,:\s/]/g, '_');
+        const filePath = pth.slice(0, pth.lastIndexOf('/')) + '/' + pth.slice(pth.lastIndexOf('/') + 1).replace(/[,:\s/]/g, '_');
         Filesystem.downloadFile({
           directory: this.dir.dir,
           path: filePath,
@@ -326,8 +313,8 @@ export class FileReaderService {
   }
 
   public removeFile(path: string) {
-    console.log('removeFile')
-    console.log(arguments)
+    console.log('removeFile');
+    console.log(path);
     return Filesystem.deleteFile({
       directory: this.dir.dir,
       path
@@ -338,8 +325,8 @@ export class FileReaderService {
   }
 
   public async write2File(text: string, dbVersion: number) {
-    console.log('write2File')
-    console.log(arguments)
+    console.log('write2File');
+    console.log(text, dbVersion);
     const path = `/ebook-library/db${dbVersion}_${new Date().toJSON().replace(/[,:\s/]/g, '_')}.json`;
     await Filesystem.writeFile({
       directory: this.dir.dir,

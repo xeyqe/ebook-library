@@ -67,6 +67,7 @@ export class TtsComponent implements OnInit, OnDestroy {
 
   private lastReadSet: boolean;
   private progressObj: { [progress: number]: number, toAdd: number };
+  private spProgress: number;
 
 
   constructor(
@@ -137,7 +138,7 @@ export class TtsComponent implements OnInit, OnDestroy {
       const params = await this.getRouteParams();
       this.id = +params.id;
       const lastListened = await this.db.getValue('as');
-      this.db.saveValue('as', JSON.stringify({ id: this.id, type: params.type}));
+      this.db.saveValue('as', JSON.stringify({ id: this.id, type: params.type }));
 
       this.spritzObj.isSpritz = params.type === 'spritz';
       if (this.spritzObj.isSpritz) {
@@ -190,6 +191,7 @@ export class TtsComponent implements OnInit, OnDestroy {
       const percents = this.progress / +progressArray[1];
       this.progress = Math.floor(this.texts.length * percents);
     }
+    this.spProgress = this.progress;
 
     this.progressObj = { 0: 0, toAdd: 0 };
     this.texts.forEach((str, index) => {
@@ -199,7 +201,7 @@ export class TtsComponent implements OnInit, OnDestroy {
 
     this.working.done();
 
-    const author = await this.db.getAuthor(book.creatorId);
+    const author = await this.db.getAuthor(book.creatorIds[0]);
     this.htmlData.authorName = (author.name || '') + ' ' + (author.surname || '');
     this.initialized = true;
   }
@@ -231,6 +233,7 @@ export class TtsComponent implements OnInit, OnDestroy {
     if (loadedValue && loadedValue.engine !== engine)
       await TTS.switchEngine({ engineName: loadedValue.engine });
 
+    console.log('before progressEvent')
     TTS.addListener('progressEvent', (a) => {
       if ((this.progressObj.toAdd + a.end) > this.progressObj[this.progress + 1]) {
         this.progress++;
@@ -319,47 +322,50 @@ export class TtsComponent implements OnInit, OnDestroy {
   }
 
   protected speak() {
-    if (this.texts) {
-      if (!this.working.isSpeaking) this.working.isSpeaking = true;
-      this.speechObj.isSpeaking = true;
-      this.saveAuthorTitle();
-      let text2Speak = this.texts[this.progress];
-      let add2Progress = 1;
+    if (!this.texts) return;
+    if (!this.working.isSpeaking) this.working.isSpeaking = true;
+    this.speechObj.isSpeaking = true;
+    this.saveAuthorTitle();
+    let text2Speak = this.texts[this.progress];
+    if (this.spProgress > this.progress) {
+      console.log(this.spProgress, this.progress);
+      this.progress = this.spProgress;
+    }
+    let add2Progress = 1;
 
-      this.progressObj.toAdd = this.progressObj[this.progress];
+    this.progressObj.toAdd = this.progressObj[this.progress];
 
-      do {
-        if (this.texts[this.progress + add2Progress]) {
-          text2Speak = text2Speak + this.texts[this.progress + add2Progress];
-        }
-        add2Progress++;
-      } while (
-        this.texts[this.progress + add2Progress] &&
-        text2Speak.length + this.texts[this.progress + add2Progress].length < this.speechObj.maxSpeechLength
-      );
-      const params = {
-        text: text2Speak,
-        rate: this.htmlData.speed / 10,
-      };
-      if (this.speechObj.voice) params[`voiceURI`] = this.speechObj.voice;
-      TTS.speak(params).then(() => {
-        if (this.progress < this.texts.length) {
-          // this.changeProgress(this.progress + add2Progress);
-          this.progress++;
-          this.setProgress2DB();
-          // this.db.updateBookProgress(this.bookId, this.progress + '/' + this.texts.length);
-          this.speak();
-        } else {
-          this.working.isSpeaking = false;
-          this.speechObj.isSpeaking = false;
-        }
-      }).catch((reason) => {
+    do {
+      if (this.texts[this.progress + add2Progress]) {
+        text2Speak = text2Speak + this.texts[this.progress + add2Progress];
+      }
+      add2Progress++;
+    } while (
+      this.texts[this.progress + add2Progress] &&
+      text2Speak.length + this.texts[this.progress + add2Progress].length < this.speechObj.maxSpeechLength
+    );
+    const params = {
+      text: text2Speak,
+      rate: this.htmlData.speed / 10,
+    };
+    if (this.speechObj.voice) params[`voiceURI`] = this.speechObj.voice;
+    this.spProgress = this.progress + add2Progress - 1;
+    TTS.speak(params).then(() => {
+      if (this.progress < this.texts.length) {
+        this.progress++;
+        this.setProgress2DB();
+        this.speak();
+      } else {
         this.working.isSpeaking = false;
         this.speechObj.isSpeaking = false;
-        console.error('tts speak failed: ');
-        console.error(reason);
-      });
-    }
+      }
+    }).catch((reason) => {
+      this.working.isSpeaking = false;
+      this.speechObj.isSpeaking = false;
+      console.error('tts speak failed: ');
+      console.error(reason);
+    });
+
   }
 
   private saveAuthorTitle() {
@@ -412,6 +418,7 @@ export class TtsComponent implements OnInit, OnDestroy {
         }
         await this.wait(1);
         this.progress = n ? this.progress + 1 : this.progress - 1;
+        this.spProgress = this.progress;
       }
 
       this.isRewinding = false;
@@ -428,6 +435,7 @@ export class TtsComponent implements OnInit, OnDestroy {
         } else {
           this.progress = this.progress - 1 < 0 ? 0 : this.progress - 1;
         }
+        this.spProgress = this.progress;
         this.stopStartSpeaking();
       } else {
         this.stopRewind = true;
@@ -449,6 +457,7 @@ export class TtsComponent implements OnInit, OnDestroy {
         }
       }
     }
+    this.spProgress = this.progress;
   }
 
   private setProgress2DB() {

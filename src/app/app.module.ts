@@ -23,7 +23,6 @@ import { DatabaseService } from './services/database.service';
 import { DirectoryService } from './services/directory.service';
 import { FileReaderService } from './services/file-reader.service';
 import { WebScraperService } from './services/web-scraper.service';
-import { JsonDataParserService } from './services/json-data-parser.service';
 
 import { AppRoutingModule } from 'src/app/app-routing.module';
 
@@ -51,7 +50,6 @@ import { AppComponent } from 'src/app/app.component';
         FilePath,
         FileReaderService,
         HTTP,
-        JsonDataParserService,
         SplashScreen,
         SQLite,
         SQLitePorter,

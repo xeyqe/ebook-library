@@ -104,8 +104,8 @@
                 [ngClass]="ready2editing ? 'white' : 'gray'" autoGrow="true">
             </ion-textarea>
             <ng-container *ngFor="let originalTitle of listsOfValues.originalTitle">
-                <mat-option *ngIf="bookForm.controls.originalTitle.value !== originalTitle && ready2editing" [value]="originalTitle"
-                    (onSelectionChange)="onInput('originalTitle', originalTitle)">
+                <mat-option *ngIf="bookForm.controls.originalTitle.value !== originalTitle && ready2editing"
+                    [value]="originalTitle" (onSelectionChange)="onInput('originalTitle', originalTitle)">
                     {{ originalTitle }}
                 </mat-option>
             </ng-container>
@@ -250,7 +250,7 @@
 
         <div #target *ngIf="ready2editing &&
             (onlineAllBooksList?.length || onlineBookList?.length || onlineBookListLegie?.length ||
-             onlineShortStoriesListLegie?.length || onlineBookListOfAuthorCBDB?.length || onlineBookListCBDB)">
+                onlineShortStoriesListLegie?.length || onlineBookListOfAuthorCBDB?.length || onlineBookListCBDB)">
             <div class="online-item" *ngFor="let item of onlineBookList" (click)="downloadBookInfo(item)">
                 <ion-avatar *ngIf="item.img">
                     <img [src]="item.img" alt="img" />

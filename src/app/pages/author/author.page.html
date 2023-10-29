@@ -28,100 +28,118 @@
 <ion-content>
     <form [formGroup]="authorForm" *ngIf="author && authorForm">
         <div class="pic-container">
-            <div class="bu-change-pic" *ngIf="ready2editing">
-                <ion-button *ngIf="!onIsImgLocal(authorForm.get('img').value)" (click)="onDownloadPicture()">
+            <div class="bu-change-pic" *ngIf="ready2editing && authorForm.controls.img.value">
+                <ion-button *ngIf="!onIsImgLocal(authorForm.controls.img.value)" (click)="onDownloadPicture()">
                     <ion-icon slot="icon-only" name="download-sharp"></ion-icon>
                 </ion-button>
-                <ion-button *ngIf="listsOfValues.img.length > 1" (click)="onChangePicture()">
+                <!-- <ion-button *ngIf="listsOfValues.img.length > 1" (click)="onChangePicture()">
                     <ion-icon slot="icon-only" name="arrow-forward-circle"></ion-icon>
-                </ion-button>
-                <ion-button *ngIf="authorForm.get('img').value" (click)="onRemovePic()">
+                </ion-button> -->
+                <ion-button *ngIf="authorForm.controls.img.value?.at(0) === '/'" (click)="onRemovePic()">
                     <ion-icon slot="icon-only" name="remove"></ion-icon>
                 </ion-button>
             </div>
-            <img *ngIf="authorForm.get('img').value" height="auto" width="auto"
-                [src]="onGetImgSrc(authorForm.get('img').value)" alt="img">
-            <img *ngIf="!authorForm.get('img').value && ready2editing" style="background-color: #413d3d;"
-                src="https://upload.wikimedia.org/wikipedia/commons/7/7c/User_font_awesome.svg" alt="img">
+            <div *ngIf="listsOfValues?.img?.length && ready2editing">
+                <swiper-container [modules]="swiperModules"
+                    (slidechange)="onResizeSwiper()" (init)="onResizeSwiper()" #swiperRef>
+                    <swiper-slide *ngFor="let img of listsOfValues.img">
+                        <img height="auto" width="auto" [src]="onGetImgSrc(img)" alt="img">
+                    </swiper-slide>
+                    <!-- <swiper-slide>
+                        <img height="auto" width="auto" [src]="onGetImgSrc(authorForm.controls.img.value)" alt="img">
+                    </swiper-slide> -->
+                    <swiper-slide>
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/7/7c/User_font_awesome.svg" alt="img">
+                    </swiper-slide>
+                </swiper-container>
+                <span>{{(imgIndex + 1) + '/' + (listsOfValues.img.length + 1)}}</span>
+            </div>
+            <img height="auto" width="auto" *ngIf="authorForm.controls.img.value && !ready2editing"
+                [src]="onGetImgSrc(authorForm.controls.img.value)" alt="img">
+
+            <!-- <img *ngIf="!authorForm.controls.img.value && ready2editing"
+                src="https://upload.wikimedia.org/wikipedia/commons/7/7c/User_font_awesome.svg" alt="img"> -->
         </div>
 
         <div class="flexed">
-            <mat-form-field subscriptSizing="dynamic" *ngIf="authorForm.get('name').value || ready2editing" id="name">
+            <mat-form-field subscriptSizing="dynamic" *ngIf="authorForm.controls.name.value || ready2editing" id="name">
                 <mat-label class="red" position="floating">Name</mat-label>
                 <input type="text" matInput [matAutocomplete]="autoName" formControlName="name"
                     [ngClass]="ready2editing ? 'white' : 'gray'" (blur)="delayedUpdateSize('name')">
                 <mat-autocomplete #autoName="matAutocomplete" [panelWidth]="'auto'">
                     <ng-container *ngFor="let name of listsOfValues.name">
-                        <mat-option *ngIf="authorForm.get('name').value !== name" [value]="name">
+                        <mat-option *ngIf="authorForm.controls.name.value !== name" [value]="name">
                             {{ name }}
                         </mat-option>
                     </ng-container>
                 </mat-autocomplete>
             </mat-form-field>
 
-            <mat-form-field subscriptSizing="dynamic" *ngIf="authorForm.get('surname').value || ready2editing"
+            <mat-form-field subscriptSizing="dynamic" *ngIf="authorForm.controls.surname.value || ready2editing"
                 id="surname">
                 <mat-label class="red">Surname</mat-label>
-                <input type="text" matInput [matAutocomplete]="auto" formControlName="surname"
+                <input type="text" matInput formControlName="surname" [ngClass]="ready2editing ? 'white' : 'gray'"
+                    (blur)="delayedUpdateSize('surname')">
+                <!-- <input type="text" matInput [matAutocomplete]="auto" formControlName="surname"
                     [ngClass]="ready2editing ? 'white' : 'gray'" (blur)="delayedUpdateSize('surname')">
                 <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onGetPosts($event.option.value.index)"
                     [displayWith]="displayFn" [panelWidth]="'auto'">
                     <mat-option *ngFor="let option of filteredOptions | async" [value]="option">
                         {{ option.name }}
                     </mat-option>
-                </mat-autocomplete>
+                </mat-autocomplete> -->
             </mat-form-field>
 
-            <mat-form-field subscriptSizing="dynamic" *ngIf="authorForm.get('pseudonym').value || ready2editing"
+            <mat-form-field subscriptSizing="dynamic" *ngIf="authorForm.controls.pseudonym.value || ready2editing"
                 id="pseudonym">
                 <mat-label class="red">Pseudonym</mat-label>
                 <input type="text" matInput [matAutocomplete]="autoPseudonym" formControlName="pseudonym"
                     [ngClass]="ready2editing ? 'white' : 'gray'" (blur)="delayedUpdateSize('pseudonym')">
                 <mat-autocomplete #autoPseudonym="matAutocomplete" panelWidth="auto">
                     <ng-container *ngFor="let pseudonym of listsOfValues.pseudonym">
-                        <mat-option *ngIf="authorForm.get('pseudonym').value !== pseudonym" [value]="pseudonym">
+                        <mat-option *ngIf="authorForm.controls.pseudonym.value !== pseudonym" [value]="pseudonym">
                             {{ pseudonym }}
                         </mat-option>
                     </ng-container>
                 </mat-autocomplete>
             </mat-form-field>
 
-            <mat-form-field subscriptSizing="dynamic" *ngIf="authorForm.get('nationality').value || ready2editing"
+            <mat-form-field subscriptSizing="dynamic" *ngIf="authorForm.controls.nationality.value || ready2editing"
                 id="nationality">
                 <mat-label class="red" position="floating">Nationality</mat-label>
                 <input type="text" matInput [matAutocomplete]="autoNationality" formControlName="nationality"
                     [ngClass]="ready2editing ? 'white' : 'gray'" (blur)="delayedUpdateSize('nationality')">
                 <mat-autocomplete #autoNationality="matAutocomplete" [panelWidth]="'auto'">
                     <ng-container *ngFor="let nationality of listsOfValues.nationality">
-                        <mat-option *ngIf="authorForm.get('nationality').value !== nationality" [value]="nationality">
+                        <mat-option *ngIf="authorForm.controls.nationality.value !== nationality" [value]="nationality">
                             {{ nationality }}
                         </mat-option>
                     </ng-container>
                 </mat-autocomplete>
             </mat-form-field>
 
-            <mat-form-field subscriptSizing="dynamic" *ngIf="authorForm.get('birth').value || ready2editing"
+            <mat-form-field subscriptSizing="dynamic" *ngIf="authorForm.controls.birth.value || ready2editing"
                 class="reduced-width">
                 <mat-label class="red" position="floating">Birth</mat-label>
                 <input type="number" matInput [matAutocomplete]="autoBirth" formControlName="birth"
                     [ngClass]="ready2editing ? 'white' : 'gray'" (blur)="delayedUpdateSize('birth')">
                 <mat-autocomplete #autoBirth="matAutocomplete" [panelWidth]="'auto'">
                     <ng-container *ngFor="let birth of listsOfValues.birth">
-                        <mat-option *ngIf="authorForm.get('birth').value !== birth" [value]="birth">
+                        <mat-option *ngIf="authorForm.controls.birth.value !== birth" [value]="birth">
                             {{ birth }}
                         </mat-option>
                     </ng-container>
                 </mat-autocomplete>
             </mat-form-field>
 
-            <mat-form-field subscriptSizing="dynamic" *ngIf="authorForm.get('death').value || ready2editing"
+            <mat-form-field subscriptSizing="dynamic" *ngIf="authorForm.controls.death.value || ready2editing"
                 class="reduced-width">
                 <mat-label class="red" position="floating">Death</mat-label>
                 <input type="number" matInput [matAutocomplete]="autoDeath" formControlName="death"
                     [ngClass]="ready2editing ? 'white' : 'gray'" (blur)="delayedUpdateSize('death')">
                 <mat-autocomplete #autoDeath="matAutocomplete" [panelWidth]="'auto'">
                     <ng-container *ngFor="let death of listsOfValues.death">
-                        <mat-option *ngIf="authorForm.get('death').value !== death" [value]="death">
+                        <mat-option *ngIf="authorForm.controls.death.value !== death" [value]="death">
                             {{ death }}
                         </mat-option>
                     </ng-container>
@@ -129,12 +147,12 @@
             </mat-form-field>
 
         </div>
-        <div class="marged" *ngIf="authorForm.get('biography').value || ready2editing">
+        <div class="marged" *ngIf="authorForm.controls.biography.value || ready2editing">
             <mat-label class="red">Biography</mat-label>
             <div (click)="onReduceHeight()">
                 <p class="contenteditable" [editable]="ready2editing" formControlName="biography" matInput
                     [class]="ready2editing ? 'white' : 'gray'"
-                    [ngClass]="{'reduced': authorForm.get('biography').disabled && _textAreaReduced}">
+                    [ngClass]="{'reduced': authorForm.controls.biography.disabled && _textAreaReduced}">
                 </p>
             </div>
         </div>

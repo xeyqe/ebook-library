@@ -14,12 +14,13 @@ export interface AUTHOR {
   dtbkId: string;
   lgId: string;
   cbdbId: string;
+  booksIds: number[];
 }
 
 export interface BOOK {
   id: number;
   title: string;
-  creatorId: number;
+  creatorIds: number[];
   originalTitle: string;
   annotation: string;
   publisher: string;
@@ -49,13 +50,13 @@ export interface BOOKSIMPLIFIED {
   img: string;
   progress: string;
   rating: number;
-  creatorId: number;
+  creatorIds: number[];
 }
 
 export interface AUTHORSBOOKS {
   id: string,
   title: string,
-  creatorId: string,
+  creatorIds: string,
   progress: string,
   img: string,
   serie: string,
@@ -189,7 +190,7 @@ export interface DBJSON {
 			books: BOOK[],
 			dbInfo: {
 				version: number
-			}
+			}[]
 		}
 	},
 	structure: {

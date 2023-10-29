@@ -1,5 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { FormControl } from '@angular/forms';
+import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { MatDialog } from '@angular/material/dialog';
@@ -11,7 +10,7 @@ import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
 import { FileChooser } from '@awesome-cordova-plugins/file-chooser/ngx';
 
 import { Subscription } from 'rxjs';
-import { first, debounceTime } from 'rxjs/operators';
+import { first } from 'rxjs/operators';
 
 import { BusyService } from 'src/app/services/busy.service';
 import { DatabaseService } from './../../services/database.service';
@@ -28,24 +27,22 @@ import { BOOKSIMPLIFIED, AUTHORSIMPLIFIED } from 'src/app/services/interfaces';
   templateUrl: './authors.page.html',
   styleUrls: ['./authors.page.scss'],
 })
-export class AuthorsComponent implements OnInit, OnDestroy {
+export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
+  private subs: Subscription[] = [];
   protected authors: AUTHORSIMPLIFIED[] = [];
   protected books: BOOKSIMPLIFIED[] = [];
   protected author: AUTHORSIMPLIFIED;
   protected lastListened: { id: number, type: 'speech' | 'spritz' };
   protected hideCharacters = false;
   protected where2Search: string;
-
+  protected selectedCharacter: string;
   protected selectedView = 'TODO';
+  protected imgPreLink: string;
+  protected bookSearchBy: 'liked' | 'started' | 'finished';
   protected alphabet = [
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
     'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#',
   ];
-  protected selectedCharacter: string;
-
-  private subs: Subscription[] = [];
-  protected imgPreLink: string;
-  protected searchFc: FormControl<string>;
 
 
   constructor(
@@ -60,30 +57,30 @@ export class AuthorsComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.searchFc = new FormControl();
-    this.subs.push(this.db.getDatabaseState().subscribe(async (ready) => {
-      if (ready) {
-        this.imgPreLink = this.dir.imgPreLink;
-        this.subs.push(this.db.getAuthors().subscribe((authors) => {
-          this.authors = authors;
-        }));
-        this.subs.push(this.db.getAllBooks().subscribe((books) => {
-          this.books = books;
-        }));
-      }
-    }));
-    this.subs.push(this.searchFc.valueChanges.pipe(debounceTime(200)).subscribe(val => {
-      if (!val) {
-        this.onSearchClear();
-        return;
-      }
-      if (val.length < 3) return;
-      if (this.where2Search === 'A') {
-        this.db.findAuthors(val);
-      } else {
-        this.db.findBooks(val);
-      }
-    }));
+    this.initialize();
+  }
+
+  private async initialize() {
+    if (!await this.dbIsReady()) return;
+    this.imgPreLink = this.dir.imgPreLink;
+  }
+
+  private dbIsReady(): Promise<boolean> {
+    return new Promise((resolve) => {
+      this.subs.push(this.db.getDatabaseState().subscribe({
+        next: (ready) => {
+          resolve(ready);
+        },
+        error: (error) => {
+          console.error(error);
+          resolve(false);
+        }
+      }));
+    });
+  }
+
+  ngAfterViewInit(): void {
+    SplashScreen.hide();
   }
 
   protected async ionViewWillEnter() {
@@ -91,7 +88,7 @@ export class AuthorsComponent implements OnInit, OnDestroy {
     if (!as) {
       this.lastListened = { id: 1, type: 'speech' };
     } else if (/^[\d]+$/.test(as)) {
-      this.lastListened = { id: as.slice(0, -1), type: +as.slice(-1) ? 'spritz' : 'speech'}
+      this.lastListened = { id: as.slice(0, -1), type: +as.slice(-1) ? 'spritz' : 'speech' }
       this.db.saveValue('as', JSON.stringify(this.lastListened));
     } else {
       this.lastListened = JSON.parse(as);
@@ -100,34 +97,40 @@ export class AuthorsComponent implements OnInit, OnDestroy {
     const where2Search = await this.db.getValue('where2Search');
     this.where2Search = where2Search || 'A';
 
-    const character = await this.db.getValue('character');
-    this.selectedCharacter = character || 'W';
+    this.selectedCharacter = await this.db.getValue('character');
+    this.bookSearchBy = await this.db.getValue('bookSearchBy') as any;
 
     if (this.where2Search === 'A') {
-      this.authors = this.db.getAuthors().getValue();
-      if (!this.authors.length) this.db.loadAuthors(this.selectedCharacter);
+      this.authors = await this.db.loadAuthors(this.selectedCharacter || 'W');
     } else {
-      this.books = this.db.getAllBooks().getValue();
-      if (!this.books.length) this.db.loadBooks('started');
+      this.books = await this.db.loadBooks((this.bookSearchBy as any) || 'started');
     }
-    SplashScreen.hide();
   }
 
-  protected changeSelectedChar(type: string, whichOne: 'authors' | 'books') {
-    this.db.saveValue('character', type);
-    this.selectedCharacter = type;
-    whichOne === 'authors' ? this.db.loadAuthors(type) : this.db.loadBooks(type as any);
+  protected async changeSelectedChar(value: string, whichOne: 'authors' | 'books') {
+    if (whichOne === 'authors') {
+      this.db.saveValue('character', value);
+      this.selectedCharacter = value;
+      this.authors = await this.db.loadAuthors(value);
+    } else if (whichOne === 'books') {
+      this.db.saveValue('bookSearchBy', value);
+      this.bookSearchBy = value as any;
+      this.books = await this.db.loadBooks(value as any);
+    }
   }
 
-  protected where2SearchFn() {
+  protected async where2SearchFn() {
     if (this.where2Search === 'A') {
       this.where2Search = 'B';
-      this.selectedCharacter = 'liked';
+      this.bookSearchBy = this.bookSearchBy || 'liked';
+      if (!this.books.length) this.books = await this.db.loadBooks(this.bookSearchBy as any);
     } else {
       this.where2Search = 'A';
-      this.selectedCharacter = 'A';
+      this.selectedCharacter = this.selectedCharacter || 'A';
+      if (!this.authors.length) this.authors = await this.db.loadAuthors(this.selectedCharacter as any);
     }
-    this.db.saveValue('character', this.selectedCharacter);
+    this.db.saveValue('character', this.selectedCharacter || 'A');
+    this.db.saveValue('bookSearchBy', this.bookSearchBy || 'liked');
     this.db.saveValue('where2Search', this.where2Search);
   }
 
@@ -202,7 +205,7 @@ export class AuthorsComponent implements OnInit, OnDestroy {
     if (this.where2Search === 'A') {
       this.db.loadAuthors(this.selectedCharacter);
     } else {
-      this.db.loadBooks(this.selectedCharacter as any);
+      this.db.loadBooks(this.bookSearchBy as any);
     }
   }
 
@@ -229,6 +232,16 @@ export class AuthorsComponent implements OnInit, OnDestroy {
 
   protected onGo2Last() {
     this.router.navigate(['/tts', this.lastListened.id, { type: this.lastListened.type }]);
+  }
+
+  protected onSearch(event: Event) {
+    const val = event.target['value'];
+    if (!val) {
+      this.onSearchClear();
+      return;
+    }
+    if (val.length < 3) return;
+    this.where2Search === 'A' ? this.db.findAuthors(val) : this.db.findBooks(val);
   }
 
   ngOnDestroy() {

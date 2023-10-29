@@ -44,16 +44,17 @@ export class WebScraperService {
       dtbkId,
     };
 
-    if (data.querySelector('.circle-avatar')) {
-      output.img = (data.querySelector('.circle-avatar') as HTMLElement).style.backgroundImage;
-      output.img = output.img.substring(5, output.img.length - 2);
+    if (data.querySelector('.img_author_detail')) {
+      output.img = (data.querySelector('.img_author_detail') as HTMLElement)?.style?.backgroundImage?.replace(/url\("(.*)"\)/, "$1") || null;
     }
-    if (data.querySelector('[itemprop="name"]')) {
-      output.surname = data.querySelector('[itemprop="name"]').innerHTML;
-    }
-    if (output.surname.includes(' ')) {
-      output.name = output.surname.substring(0, output.surname.lastIndexOf(' '));
-      output.surname = output.surname.substring(output.surname.lastIndexOf(' ') + 1);
+    const names = (data.querySelector('#left_less h1') as HTMLElement)?.textContent?.trim();
+    if (names) {
+      output.name = names.slice(0, names.lastIndexOf(' ')) || null;
+      output.surname = names.slice(names.lastIndexOf(' ') + 1) || null;
+      if (!output.surname) {
+        output.surname = output.name;
+        output.name = null;
+      }
     }
     const birthDeath = (data.querySelector('.norma') as HTMLElement)?.innerText?.match(/[0-9]+/g) || null;
 
@@ -115,10 +116,12 @@ export class WebScraperService {
     dtbkId: string,
   }[]> {
     const doc = await this._getHtml(url);
-    const pages = doc.querySelector('.pager')?.childElementCount || 0;
+    const _href = (doc.querySelector('.pager .last a') as any)?.href;
+    const pages = +_href?.slice(_href.lastIndexOf('=') + 1);
+
     const parsedList = this._booksFromAuthorsDoc(doc);
     for (let i = 2; i < pages + 1; i++) {
-      const doc2 = await this._getHtml(`${url}?orderBy=&filtr=&id=${i}`);
+      const doc2 = await this._getHtml(`${url}?page=${i}`);
       parsedList.push(...this._booksFromAuthorsDoc(doc2));
     }
 
@@ -133,14 +136,14 @@ export class WebScraperService {
     dtbkId: string,
   }[] {
     const parsedList = [];
-    const list = doc.querySelectorAll('#tabcontent .new2');
+    const list = doc.querySelectorAll('#left_less .new2');
     list.forEach(item => {
       const link = item.querySelector('a')?.href;
       parsedList.push({
         link,
         img: (item.previousElementSibling.querySelector('img') as HTMLImageElement)?.src,
         title: item.querySelector('a')?.textContent,
-        comment: item.querySelector('.pozn.odl')?.textContent,
+        comment: (item.querySelector('.pozn.odl') as any)?.textContent?.replace(/\n/g, '')?.replace(/\s{2,}/g, ' ')?.replace(' )', ')')?.trim(),
         dtbkId: link?.substring(link.lastIndexOf('/') + 1)
       });
     });
@@ -455,7 +458,7 @@ export class WebScraperService {
       };
     });
     console.log(partly)
-    return { list: { main, foreign, partly }};
+    return { list: { main, foreign, partly } };
   }
 
   public async getCBDBBooksOfAuthor(cbdbId: string): Promise<{

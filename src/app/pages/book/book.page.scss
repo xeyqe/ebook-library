@@ -63,7 +63,8 @@ mat-option:hover {
     overflow: hidden;
 }
 
-mat-form-field, .marged {
+mat-form-field,
+.marged {
     margin: .5rem;
     max-width: 95vw;
 }
@@ -73,14 +74,14 @@ mat-form-field, .marged {
     flex-wrap: wrap;
     justify-content: space-between;
 
-    & > * {
+    &>* {
         flex-grow: 1;
     }
 }
 
 .reduced {
     max-height: 10rem;
-}   
+}
 
 mat-select {
     width: 5rem;
@@ -95,8 +96,20 @@ mat-select {
 
 .online-item {
     display: flex;
+    align-items: center;
+    margin: .5rem 0;
+
     ion-avatar {
         margin-right: .5rem;
+    }
+
+    .ion-text-wrap {
+        display: flex;
+        flex-direction: column;
+        
+        &>* {
+            margin: 0;
+        }
     }
 }
 
@@ -112,6 +125,7 @@ mat-select {
         display: flex;
         justify-content: space-between;
         align-items: center;
+
         h2 {
             margin-bottom: 0;
             width: fit-content;

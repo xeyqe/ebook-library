@@ -167,12 +167,12 @@ export class EpubService {
       const xml = parser.parseFromString(chapterHtmlText, 'text/xml');
 
       const output = [];
-      xml.querySelector('body').innerHTML.replace(/<\/p>/g, '\n').replace(/<[^>]*>/g, '')
-        .split(/(?=[.!?][\n\s])|(?<=[.!?][\n\s])/).forEach((it, i) => {
+      xml.querySelector('body').innerHTML.replace(/<\/p>/g, ' ').replace(/<[^>]*>/g, '').replace(/\n/g, ' ').replace(/\s{2,}/g, ' ')
+        .split(/(?=[.!?][“"\n\s])|(?<=[.!?][“"\n\s])/).forEach((it, i) => {
           if (i % 2 === 0) output.push(it);
           else output[output.length - 1] += it;
         });
-      resolve(output);
+      resolve(output.map(it => it.trim()).filter(it => !/^[\s]*$/.test(it)));
     });
   }
 
