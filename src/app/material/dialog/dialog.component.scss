@@ -13,12 +13,15 @@
 
     ion-icon {
         position: absolute;
-        right: -1rem;
-        top: -1rem;
+        right: 0rem;
     }
 
     ion-button {
         font-size: 12px;
         text-transform: none;
+    }
+
+    .message {
+        margin-left: 1rem;
     }
 }

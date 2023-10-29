@@ -552,7 +552,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
 
   protected onDownloadPicture() {
     if (!navigator.onLine) {
-      alert('Not connected to internet!');
+      alert('No internet connection!');
       return;
     }
     const uri = this.authorForm.get('img').value;
@@ -582,7 +582,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
 
   protected onGetAuthor() {
     if (!navigator.onLine) {
-      alert('Not connected to internet!');
+      alert('No internet connection!');
       return;
     }
     let authorsName: string;

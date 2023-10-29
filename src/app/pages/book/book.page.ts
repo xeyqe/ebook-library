@@ -502,7 +502,7 @@ export class BookComponent implements OnInit, OnDestroy {
 
   protected downloadPicture() {
     if (!navigator.onLine) {
-      alert('Not connected to internet!');
+      alert('No internet connection!');
       return;
     }
     const uri = this.bookForm.get('img').value;
@@ -523,7 +523,7 @@ export class BookComponent implements OnInit, OnDestroy {
 
   protected async onGetBooksList() {
     if (!navigator.onLine) {
-      alert('Not connected to internet!');
+      alert('No internet connection!');
       return;
     }
     const author = await this.db.getAuthor(this.book.creatorIds[0]);
