@@ -123,7 +123,7 @@ export class TtsComponent implements OnInit, OnDestroy {
 
   private getRouteParams(): Promise<{ id: string, type: 'speech' | 'spritz' }> {
     return new Promise((resolve, reject) => {
-      const sub = this.route.paramMap.subscribe({
+      this.route.paramMap.subscribe({
         next: (params) => {
           resolve({
             id: params.get('id'),
@@ -197,6 +197,7 @@ export class TtsComponent implements OnInit, OnDestroy {
       this.progress = Math.floor(this.texts.length * percents);
     }
     this.spProgress = this.progress;
+    this.setProgress2DB();
 
     this.progressObj = { 0: 0, toAdd: 0 };
     this.texts.forEach((str, index) => {
@@ -332,7 +333,7 @@ export class TtsComponent implements OnInit, OnDestroy {
     PDFJS.GlobalWorkerOptions.workerSrc = pdfjsWorker;
     const path = Capacitor.convertFileSrc(this.directoryServ.imgPreLink + this.path);
     const pdf = await PDFJS.getDocument(path).promise;
-  
+
     console.log((await pdf.getMetadata()));
     const output = [];
     for (let i = 1; i <= pdf.numPages; i++) {
@@ -489,12 +490,8 @@ export class TtsComponent implements OnInit, OnDestroy {
 
   private setProgress2DB() {
     if (this.texts) {
-      let progress2DB: string;
-      if (this.progress) {
-        progress2DB = this.progress + '/' + this.texts.length;
-      } else {
-        progress2DB = null;
-      }
+      const progress2DB = (this.progress || 0) + '/' + this.texts.length;
+
       this.db.updateBookProgress(this.id, progress2DB).then(() => {
         if (this.progress === this.texts.length) this.db.updateBookFinished(this.id, new Date());
       });

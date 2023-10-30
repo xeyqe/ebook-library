@@ -69,6 +69,7 @@ export interface AUTHORSIMPLIFIED {
   pseudonym: string;
   img: string;
   id: number;
+  progress: number;
 }
 
 export interface METADATA {

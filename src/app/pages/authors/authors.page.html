@@ -36,10 +36,12 @@
                 <ion-avatar>
                     <img [src]="onGetImgSrc(author.img)" alt="img" />
                 </ion-avatar>
-
+                
                 <ion-label>
                     <h2>{{ author.surname }}</h2>
                     <p>{{ author.name }}</p>
+                    <ion-progress-bar *ngIf="author.progress" [value]="author.progress">
+                    </ion-progress-bar>
                 </ion-label>
             </ion-item>
         </ng-container>

@@ -376,7 +376,8 @@ export class DatabaseService {
       );
     } catch (e) {
       console.error(e);
-      data = e;
+      if (e?.rows?.length) data = e;
+      else throw e;
     }
     const books = [];
 
@@ -404,7 +405,7 @@ export class DatabaseService {
     });
   }
 
-  public async importDB(json: string, characted: string): Promise<any> {
+  public async importDB(json: string): Promise<any> {
     try {
       await this.sqlitePorter.wipeDb(this.database);
       console.log('this.database successfully wiped');
@@ -455,12 +456,6 @@ export class DatabaseService {
       console.error('takeCareOfUpdateDB failed')
       console.error(e)
     }
-    try {
-      await this.loadAuthors(characted);
-    } catch (e) {
-      console.error('loading authors failed');
-      console.error(e);
-    }
   }
 
   private async initializeDb(tables: { authors: string; books: string; dbInfo: string; }) {
@@ -492,7 +487,7 @@ export class DatabaseService {
         });
       } else {
         data = await this.database.executeSql(
-          `SELECT id, name, surname, img FROM authors WHERE surname LIKE "${character}%" ORDER BY surname COLLATE NOCASE ASC`,
+          `SELECT id, name, surname, img, booksIds FROM authors WHERE surname LIKE "${character}%" ORDER BY surname COLLATE NOCASE ASC`,
           []
         ).catch(e => {
           console.error('loadAuthors failed');
@@ -503,23 +498,60 @@ export class DatabaseService {
 
       if (data.rows.length > 0) {
         for (let i = 0; i < data.rows.length; i++) {
-          authors.push({
+          const author = {
             id: data.rows.item(i).id,
             name: data.rows.item(i).name,
             surname: data.rows.item(i).surname,
             img: data.rows.item(i).img,
+            progress: 0,
+          };
+          this.getAuthorsProgress(data.rows.item(i).booksIds?.split(',')?.map(it => +it)).then(progress => {
+            author.progress = progress;
           });
+          authors.push(author);
         }
       }
       if (character === '#') {
         authors = authors.filter(auth => !/^[a-zA-Z]$/.test(auth.surname[0]));
       }
       return authors;
-      // this.authors.next(authors);
     } catch (e) {
       console.error('loadAuthors failed: ');
       console.error(e);
     }
+  }
+
+  private async getAuthorsProgress(booksIds: number[]): Promise<number> {
+    if (!booksIds?.length) return 0;
+    const progresses = { start: 0, end: 0 };
+    let data;
+    try {
+      data = await this.database.executeSql(`SELECT progress FROM books WHERE id IN ( ${booksIds.join(', ')} )`);
+    } catch (e) {
+      if (e?.rows?.length) data = e;
+      else throw e;
+    }
+    if (!data?.rows?.length) return 0;
+    let finished = 0;
+    let notstarted = 0;
+    for (let i = 0; i < data.rows.length; i++) {
+      const progress = data.rows.item(i).progress;
+      if (!progress) notstarted++;
+      else if (progress === '1/1') finished++;
+      else {
+        progresses.start += +progress.split('/')[0];
+        progresses.end += +progress.split('/')[1];
+      }
+    }
+
+    if (progresses.end === 0) return 0;
+    if (finished || notstarted) {
+      const oneBook = progresses.end / (booksIds.length - finished - notstarted);
+      progresses.end = Math.floor(oneBook * booksIds.length);
+      if (finished) progresses.start += Math.floor(oneBook * finished);
+    }
+
+    return progresses.start / progresses.end;
   }
 
   public async addAuthor(author: AUTHOR): Promise<number> {
@@ -560,24 +592,30 @@ export class DatabaseService {
     let data;
     try {
       data = await this.database.executeSql(
-        `SELECT id, name, surname, pseudonym, img FROM authors WHERE name LIKE "%${searchValue}%" OR surname LIKE "%${searchValue}%" OR pseudonym LIKE "%${searchValue}%" ORDER BY surname COLLATE NOCASE ASC`,
+        `SELECT id, name, surname, pseudonym, img, booksIds FROM authors WHERE name LIKE "%${searchValue}%" OR surname LIKE "%${searchValue}%" OR pseudonym LIKE "%${searchValue}%" ORDER BY surname COLLATE NOCASE ASC`,
         []
       );
     } catch (e) {
       console.error('findAuthors failed!');
       console.error(e);
-      data = e;
+      if (e?.rows?.length) data = e;
+      else throw e;
     }
     const authors: AUTHORSIMPLIFIED[] = [];
     if (data.rows.length > 0) {
       for (let i = 0; i < data.rows.length; i++) {
-        authors.push({
+        const author = {
           id: data.rows.item(i).id,
           name: data.rows.item(i).name,
           surname: data.rows.item(i).surname,
           pseudonym: data.rows.item(i).pseudonym,
-          img: data.rows.item(i).img
+          img: data.rows.item(i).img,
+          progress: 0
+        };
+        this.getAuthorsProgress(data.rows.item(i)?.booksIds?.split(',')?.map(it => +it)).then(progress => {
+          author.progress = progress;
         });
+        authors.push(author);
       }
     }
     return authors;
@@ -615,7 +653,8 @@ export class DatabaseService {
       data = await this.database.executeSql(`SELECT id, title, creatorIds, progress, img, serie, serieOrder FROM books WHERE id IN ( ${ids.join(', ')} ) ORDER BY title ASC`);
     } catch (e) {
       console.error('getBooksOfAuthor failed!');
-      data = e;
+      if (e?.rows?.length) data = e;
+      else throw e;
     }
     return this.getAuthorsBooks(data);
   }
