@@ -32,11 +32,11 @@
 
     <ion-list class="ion-padding">
         <ng-container *ngIf="where2Search === 'A'">
-            <ion-item *ngFor="let author of authors" [routerLink]="['/author', author.id]">
+            <ion-item *ngFor="let author of _authors" [routerLink]="['/author', author.id]">
                 <ion-avatar>
                     <img [src]="onGetImgSrc(author.img)" alt="img" />
                 </ion-avatar>
-                
+
                 <ion-label>
                     <h2>{{ author.surname }}</h2>
                     <p>{{ author.name }}</p>
@@ -44,9 +44,12 @@
                     </ion-progress-bar>
                 </ion-label>
             </ion-item>
+            <ion-infinite-scroll (ionInfinite)="onAuthorsIonInfinite($any($event))">
+                <ion-infinite-scroll-content></ion-infinite-scroll-content>
+            </ion-infinite-scroll>
         </ng-container>
         <ng-container *ngIf="where2Search === 'B'">
-            <ion-item *ngFor="let book of books" [routerLink]="['/book', book.id]">
+            <ion-item *ngFor="let book of _books" [routerLink]="['/book', book.id]">
                 <ion-avatar>
                     <img [src]="onGetImgSrc(book.img)" alt="img" />
                 </ion-avatar>
@@ -57,6 +60,9 @@
                     </ion-progress-bar>
                 </ion-label>
             </ion-item>
+            <ion-infinite-scroll (ionInfinite)="onBooksIonInfinite($any($event))">
+                <ion-infinite-scroll-content></ion-infinite-scroll-content>
+            </ion-infinite-scroll>
         </ng-container>
     </ion-list>
 

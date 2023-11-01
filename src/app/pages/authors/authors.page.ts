@@ -1,4 +1,5 @@
-import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, Renderer2 } from '@angular/core';
+import { InfiniteScrollCustomEvent } from '@ionic/angular';
 import { Router } from '@angular/router';
 
 import { MatDialog } from '@angular/material/dialog';
@@ -29,8 +30,10 @@ import { BOOKSIMPLIFIED, AUTHORSIMPLIFIED } from 'src/app/services/interfaces';
 })
 export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
   private subs: Subscription[] = [];
-  protected authors: AUTHORSIMPLIFIED[] = [];
-  protected books: BOOKSIMPLIFIED[] = [];
+  private authors: AUTHORSIMPLIFIED[] = [];
+  protected _authors: AUTHORSIMPLIFIED[] = [];
+  private books: BOOKSIMPLIFIED[] = [];
+  protected _books: BOOKSIMPLIFIED[] = [];
   protected author: AUTHORSIMPLIFIED;
   protected lastListened: { id: number, type: 'speech' | 'spritz' };
   protected hideCharacters = false;
@@ -52,6 +55,7 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
     private fileChooser: FileChooser,
     private filePath: FilePath,
     private fr: FileReaderService,
+    private renderer: Renderer2,
     private router: Router,
     private workingServ: BusyService,
   ) { }
@@ -103,8 +107,10 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (this.where2Search === 'A') {
       this.authors = await this.db.loadAuthors(this.selectedCharacter || 'W');
+      this._authors = this.authors.slice(0, 10);
     } else {
       this.books = await this.db.loadBooks((this.bookSearchBy as any) || 'started');
+      this._books = this.books.slice(0, 10);
     }
   }
 
@@ -113,10 +119,12 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.db.saveValue('character', value);
       this.selectedCharacter = value;
       this.authors = await this.db.loadAuthors(value);
+      this._authors = this.authors.slice(0, 10);
     } else if (whichOne === 'books') {
       this.db.saveValue('bookSearchBy', value);
       this.bookSearchBy = value as any;
       this.books = await this.db.loadBooks(value as any);
+      this._books = this.books.slice(0, 10);
     }
   }
 
@@ -124,11 +132,17 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.where2Search === 'A') {
       this.where2Search = 'B';
       this.bookSearchBy = this.bookSearchBy || 'liked';
-      if (!this.books.length) this.books = await this.db.loadBooks(this.bookSearchBy as any);
+      if (!this._books.length) {
+        this.books = await this.db.loadBooks(this.bookSearchBy as any);
+        this._books = this.books.slice(0, 10);
+      }
     } else {
       this.where2Search = 'A';
       this.selectedCharacter = this.selectedCharacter || 'A';
-      if (!this.authors.length) this.authors = await this.db.loadAuthors(this.selectedCharacter as any);
+      if (!this._authors.length) {
+        this.authors = await this.db.loadAuthors(this.selectedCharacter as any);
+        this._authors = this.authors.slice(0, 10);
+      }
     }
     this.db.saveValue('character', this.selectedCharacter || 'A');
     this.db.saveValue('bookSearchBy', this.bookSearchBy || 'liked');
@@ -207,8 +221,10 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
   protected async onSearchClear() {
     if (this.where2Search === 'A') {
       this.authors = await this.db.loadAuthors(this.selectedCharacter);
+      this._authors = this.authors.slice(0, 10);
     } else {
       this.books = await this.db.loadBooks(this.bookSearchBy as any);
+      this._books = this.books.slice(0, 10);
     }
   }
 
@@ -244,8 +260,25 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
     if (val.length < 3) return;
-    if (this.where2Search === 'A') this.authors = await this.db.findAuthors(val);
-    else this.books = await this.db.findBooks(val);
+    if (this.where2Search === 'A') {
+      this.authors = await this.db.findAuthors(val);
+      this._authors = this.authors.slice(0, 10);
+    } else {
+      this.books = await this.db.findBooks(val);
+      this._books = this.books.slice(0, 10);
+    }
+  }
+
+  protected onAuthorsIonInfinite(event: InfiniteScrollCustomEvent) {
+    if (this._authors.length < this.authors.length)
+      this._authors = this.authors.slice(0, this._authors.length + 10);
+    event.target.complete();
+  }
+
+  protected onBooksIonInfinite(event: InfiniteScrollCustomEvent) {
+    if (this._books.length < this.books.length)
+      this._books = this.books.slice(0, this._books.length + 10);
+    event.target.complete();
   }
 
   ngOnDestroy() {
