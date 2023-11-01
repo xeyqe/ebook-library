@@ -1,4 +1,4 @@
-<ion-header>
+<ion-header [@expandCollapse]="state">
     <ion-toolbar>
         <ion-row>
             <ion-col size="10">
@@ -13,22 +13,21 @@
             </ion-col>
         </ion-row>
     </ion-toolbar>
-</ion-header>
-
-<ion-content>
     <ion-segment scrollable *ngIf="!hideCharacters && where2Search === 'A'" [value]="selectedCharacter">
         <ion-segment-button *ngFor="let character of alphabet" [value]="character"
             (click)="changeSelectedChar(character, 'authors')">
             <ion-label>{{ character }}</ion-label>
         </ion-segment-button>
     </ion-segment>
-
     <ion-segment scrollable *ngIf="!hideCharacters && where2Search === 'B'" [value]="bookSearchBy">
         <ion-segment-button *ngFor="let character of ['liked','started','finished']" [value]="character"
             (click)="changeSelectedChar(character, 'books')">
             <ion-label>{{ character }}</ion-label>
         </ion-segment-button>
     </ion-segment>
+</ion-header>
+
+<ion-content [scrollEvents]="true" (ionScrollStart)="onScrollStart($event)" (ionScrollEnd)="onScrollEnd($event)">
 
     <ion-list class="ion-padding">
         <ng-container *ngIf="where2Search === 'A'">

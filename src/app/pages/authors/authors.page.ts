@@ -1,4 +1,5 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, Renderer2 } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
+import { animate, state, style, transition, trigger } from '@angular/animations';
 import { InfiniteScrollCustomEvent } from '@ionic/angular';
 import { Router } from '@angular/router';
 
@@ -27,6 +28,16 @@ import { BOOKSIMPLIFIED, AUTHORSIMPLIFIED } from 'src/app/services/interfaces';
   selector: 'app-authors',
   templateUrl: './authors.page.html',
   styleUrls: ['./authors.page.scss'],
+  animations: [
+    trigger('expandCollapse', [
+      state('animated', style({
+        'transform-origin': 'top', height: '0px'
+      })),
+      state('default', style({ height: '*' })),
+      transition('animated => default', animate('200ms ease-out')),
+      transition('default => animated', animate('200ms ease-in'))
+    ])
+  ]
 })
 export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
   private subs: Subscription[] = [];
@@ -46,6 +57,8 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
     'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#',
   ];
+  private scrollTop = 0;
+  protected state: 'default' | 'animated' = 'default';
 
 
   constructor(
@@ -55,7 +68,6 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
     private fileChooser: FileChooser,
     private filePath: FilePath,
     private fr: FileReaderService,
-    private renderer: Renderer2,
     private router: Router,
     private workingServ: BusyService,
   ) { }
@@ -112,6 +124,10 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.books = await this.db.loadBooks((this.bookSearchBy as any) || 'started');
       this._books = this.books.slice(0, 10);
     }
+    setTimeout(() => {
+      const el = document.querySelector('ion-list')?.firstElementChild;
+      this.scrollTop = el?.getBoundingClientRect()?.y || 0;
+    });
   }
 
   protected async changeSelectedChar(value: string, whichOne: 'authors' | 'books') {
@@ -281,8 +297,20 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
     event.target.complete();
   }
 
+  protected onScrollStart(event: Event) {
+    if (this.scrollTop > event.target[`firstElementChild`].firstElementChild.getBoundingClientRect().y)
+      this.state = 'animated';
+    else
+      this.state = 'default';
+  }
+
+  protected onScrollEnd(event: Event) {
+    this.scrollTop = event.target[`firstElementChild`].firstElementChild.getBoundingClientRect().y;
+  }
+
   ngOnDestroy() {
     this.subs?.forEach(sub => sub?.unsubscribe());
     this.workingServ.done();
   }
+
 }
