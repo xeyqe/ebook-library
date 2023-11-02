@@ -11,7 +11,6 @@ import { HTTP } from '@awesome-cordova-plugins/http/ngx';
 import { SQLite } from '@awesome-cordova-plugins/sqlite/ngx';
 import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
 import { StatusBar } from '@awesome-cordova-plugins/status-bar/ngx';
-import { WebIntent } from '@awesome-cordova-plugins/web-intent/ngx';
 import { WebView } from '@awesome-cordova-plugins/ionic-webview/ngx';
 import { FileChooser } from '@awesome-cordova-plugins/file-chooser/ngx';
 import { SplashScreen } from '@awesome-cordova-plugins/splash-screen/ngx';
@@ -54,7 +53,6 @@ import { AppComponent } from 'src/app/app.component';
         SQLite,
         SQLitePorter,
         StatusBar,
-        WebIntent,
         WebScraperService,
         WebView,
     ],
