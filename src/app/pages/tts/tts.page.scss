@@ -21,6 +21,10 @@ ion-range-knob {
     color: red;
 }
 
+.mrgt {
+    margin-top: 3rem;
+}
+
 .spinner {
     position: fixed;
     z-index: 1000;
@@ -50,4 +54,15 @@ ion-range-knob {
 form {
     display: flex;
     flex-direction: column;
+}
+
+.overflowed {
+    white-space: pre;
+    overflow: visible;
+    display: flex;
+    width: 0px;
+}
+
+.flexed {
+    display: flex;
 }

@@ -6,6 +6,7 @@ import { FormControl, FormGroup } from '@angular/forms';
 import { Platform } from '@ionic/angular';
 import { TTS } from '@xeyqe/capacitor-tts';
 import { Storage } from '@ionic/storage-angular';
+
 import { Subscription } from 'rxjs';
 
 import { BusyService } from 'src/app/services/busy.service';
@@ -422,9 +423,7 @@ export class TtsComponent implements OnInit, OnDestroy {
 
   private async wait(milliseconds: number): Promise<void> {
     return new Promise<void>(resolve => {
-      setTimeout(() => {
-        resolve();
-      }, milliseconds);
+      setTimeout(() => resolve(), milliseconds);
     });
   }
 
@@ -489,13 +488,13 @@ export class TtsComponent implements OnInit, OnDestroy {
   }
 
   private setProgress2DB() {
-    if (this.texts) {
-      const progress2DB = (this.progress || 0) + '/' + this.texts.length;
+    if (!this.texts?.length) return;
+    const progress2DB = (this.progress || 0) + '/' + this.texts.length;
 
-      this.db.updateBookProgress(this.id, progress2DB).then(() => {
-        if (this.progress === this.texts.length) this.db.updateBookFinished(this.id, new Date());
-      });
-    }
+    this.db.updateBookProgress(this.id, progress2DB).then(() => {
+      if (this.progress === this.texts.length)
+        this.db.updateBookFinished(this.id, new Date());
+    });
   }
 
   protected stopStartSpeaking() {
@@ -544,64 +543,36 @@ export class TtsComponent implements OnInit, OnDestroy {
   }
 
   private async spritz() {
-    const slowRegex = new RegExp('[.,?!]');
-    let addedMs = 0;
-    const timeout = Math.floor(60000 / this.htmlData.speed);
     for (let i = this.progress; i < this.texts.length; i++) {
       if (!this.texts[i]) continue;
       const words = this.texts[i].split(/[\s]+/);
       this.spritzObj.sentense = this.texts[i];
-      for (const word of words) {
-        const slovo = word.trim();
-        const regex = new RegExp('[A-Za-z0-9]+');
-        if (regex.test(slovo)) {
-          for (const index of this.redIndexFinder(slovo.length)) {
-            this.printWord(slovo, index);
-            if (!this.speechObj.isSpeaking) {
-              break;
-            }
-            await new Promise<void>((resolve) => {
-              setTimeout(() => {
-                resolve();
-              }, timeout);
-            });
-            addedMs = 0;
-            if (slowRegex.test(slovo)) {
-              this.printWord(' ', 1);
-              addedMs = Math.floor(timeout / 2);
-              await new Promise<void>((resolve) => {
-                setTimeout(() => {
-                  resolve();
-                }, addedMs);
-              });
-            }
-          }
-          if (!this.speechObj.isSpeaking) {
-            break;
-          }
+      for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        const wordTrimmed = word.trim();
+        if (!/[A-Za-z0-9]+/.test(wordTrimmed)) continue;
+        for (const index of this.redIndexFinder(wordTrimmed.length)) {
+          this.printWord(wordTrimmed, index, words.slice(i + 1).join(' '));
+          if (!this.speechObj.isSpeaking) break;
+          const timeout = Math.floor(60000 / this.htmlData.speed);
+          await this.wait(timeout);
+
+          if (!/[.,?!]/.test(wordTrimmed)) continue;
+          this.printWord(' ', 1, '');
+          await this.wait(Math.floor(timeout/2));
         }
+        if (!this.speechObj.isSpeaking) break;
       }
-      if (this.speechObj.isSpeaking) {
-        this.progress++;
-      } else {
-        break;
-      }
+      if (this.speechObj.isSpeaking) this.progress++;
+      else break;
     }
   }
 
-  private printWord(word: string, index: number) {
-    this.spritzObj.preText = word.substring(0, index - 1);
+  private printWord(word: string, index: number, suffix: string) {
+    this.spritzObj.preText = word.slice(0, index - 1);
     this.spritzObj.redText = word[index - 1];
-    this.spritzObj.postText = word.substring(index);
-  }
-
-  private async waitFn() {
-    const ms = 60000 / this.htmlData.speed;
-    await new Promise<void>((resolve) => {
-      setTimeout(() => {
-        resolve();
-      }, ms);
-    });
+    const postText = word.length >= index ? word.slice(index) : '';
+    this.spritzObj.postText = postText + ' ' + suffix;
   }
 
   protected increaseFontSize() {
