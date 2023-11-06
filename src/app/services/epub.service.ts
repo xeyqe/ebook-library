@@ -111,7 +111,7 @@ export class EpubService {
       const isbnEl = xml.getElementsByTagName('dc:identifier');
       let ISBN: string;
       for (let i = 0; i < isbnEl.length; i++) {
-        if (isbnEl[i].attributes[0].value === 'ISBN') {
+        if (isbnEl[i]?.attributes?.length && isbnEl[i].attributes[0].value === 'ISBN') {
           ISBN = isbnEl[i].innerHTML;
           break;
         }
