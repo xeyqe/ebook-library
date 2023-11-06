@@ -97,8 +97,9 @@ export class PictureComponent {
     }
   }
 
-  public deleteCurrentImg(): void {
-    this.images.splice(this.imgIndex, 1);
+  public deleteCurrentImg(img?: string): void {
+    if (img) this.images.splice(this.imgIndex, 1, img);
+    else this.images.splice(this.imgIndex, 1);
     setTimeout(() => this.onResizeSwiper(), 100);
   }
 

@@ -524,7 +524,7 @@ export class BookComponent implements OnInit, OnDestroy {
       this.workingServ.done();
       this.bookForm.controls.img.setValue(src?.replace(/^.*ebook-library/, '/ebook-library'));
       this.bookChanged = true;
-      this.pictureC.deleteCurrentImg();
+      this.pictureC.deleteCurrentImg(img);
     }).catch((e) => {
       alert(e);
     });

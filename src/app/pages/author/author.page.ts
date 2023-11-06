@@ -212,7 +212,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
       }));
     });
 
-    // this.filteredOptions = this.authorForm.get('surname').valueChanges.pipe(
+    // this.filteredOptions = this.authorForm.controls.surname.valueChanges.pipe(
     //   startWith(''),
     //   map((value) => this._filter(value))
     // );
@@ -301,7 +301,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
   //       if (jsonAuthor[key] && !this.listsOfValues[key].includes(jsonAuthor[key]))
   //         this.listsOfValues[key].push(jsonAuthor[key]);
   //     });
-  //     this.authorForm.get('idInJson').setValue(index);
+  //     this.authorForm.controls.idInJson.setValue(index);
   //     this.workingServ.done();
   //   }
   // }
@@ -383,7 +383,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
   }
 
   protected getFromWikipedia() {
-    const searchValue = this.authorForm.get('name').value + ' ' + this.authorForm.get('surname').value;
+    const searchValue = this.authorForm.controls.name.value + ' ' + this.authorForm.controls.surname.value;
     this.workingServ.busy();
 
     this.http.get(
@@ -472,13 +472,13 @@ export class AuthorComponent implements OnInit, OnDestroy {
 
   protected onChangePicture() {
     if (!this.listsOfValues.img.length) return;
-    if (this.listsOfValues.img.length === 1 && this.authorForm.get('img').value) return;
-    if (this.listsOfValues.img.includes(this.authorForm.get('img').value)) {
-      let index = this.listsOfValues.img.indexOf(this.authorForm.get('img').value);
+    if (this.listsOfValues.img.length === 1 && this.authorForm.controls.img.value) return;
+    if (this.listsOfValues.img.includes(this.authorForm.controls.img.value)) {
+      let index = this.listsOfValues.img.indexOf(this.authorForm.controls.img.value);
       index = (index + 1) % this.listsOfValues.img.length;
-      this.authorForm.get('img').setValue(this.listsOfValues.img[index]);
+      this.authorForm.controls.img.setValue(this.listsOfValues.img[index]);
     } else {
-      this.authorForm.get('img').setValue(this.listsOfValues.img[0]);
+      this.authorForm.controls.img.setValue(this.listsOfValues.img[0]);
     }
   }
 
@@ -553,22 +553,19 @@ export class AuthorComponent implements OnInit, OnDestroy {
       alert('No internet connection!');
       return;
     }
-    const uri = this.authorForm.get('img').value;
+    const uri = this.authorForm.controls.img.value;
     const path = this.author.path;
-    const index = this.authorForm.get('img').value.lastIndexOf('.');
-    const extension = this.authorForm.get('img').value.substring(index);
+    const index = this.authorForm.controls.img.value.lastIndexOf('.');
+    const extension = this.authorForm.controls.img.value.substring(index);
 
-    const filename = this.authorForm.get('name').value + '_' + this.authorForm.get('surname').value + extension;
+    const filename = this.authorForm.controls.name.value + '_' + this.authorForm.controls.surname.value + extension;
 
     this.workingServ.busy();
     this.fs.downloadPicture(uri, path, filename).then((src) => {
       this.workingServ.done();
       const img = src?.replace(/^.*ebook-library/, '/ebook-library');
       this.authorForm.controls.img.setValue(img);
-      // const imgIndex = this.listsOfValues.img.indexOf(uri);
-      console.log(this.listsOfValues.img)
-      this.pictureC.deleteCurrentImg();
-      console.log(this.listsOfValues.img)
+      this.pictureC.deleteCurrentImg(img);
       this.content.scrollToTop();
     }).catch((e) => {
       this.workingServ.done();
@@ -584,10 +581,10 @@ export class AuthorComponent implements OnInit, OnDestroy {
       return;
     }
     let authorsName: string;
-    if (!this.authorForm.get('name').value || this.authorForm.get('name').value.length < 3) {
-      authorsName = this.authorForm.get('surname').value;
+    if (!this.authorForm.controls.name.value || this.authorForm.controls.name.value.length < 3) {
+      authorsName = this.authorForm.controls.surname.value;
     } else {
-      authorsName = this.authorForm.get('name').value + ' ' + this.authorForm.get('surname').value;
+      authorsName = this.authorForm.controls.name.value + ' ' + this.authorForm.controls.surname.value;
     }
     const dialogRef = this.dialog.open(DialogComponent, {
       data: {
@@ -715,9 +712,8 @@ export class AuthorComponent implements OnInit, OnDestroy {
     const img = this.pictureC.getCurrentImg() || this.authorForm.controls.img.value;
     if (img.startsWith('/')) {
       this.fs.removeFile(img).finally(() => {
-        if (this.listsOfValues.img.includes(img))
-          this.listsOfValues.img = this.listsOfValues.img.filter(im => im !== img);
-        this.authorForm.get('img').setValue(null);
+        this.authorForm.controls.img.setValue(null);
+        this.pictureC.deleteCurrentImg();
         this.authorChanged = true;
       }).catch(() => {
         this.dialog.open(
@@ -732,13 +728,13 @@ export class AuthorComponent implements OnInit, OnDestroy {
         );
       });
     } else {
-      this.authorForm.get('img').setValue(null);
+      this.authorForm.controls.img.setValue(null);
       this.authorChanged = true;
     }
   }
 
   protected onReduceHeight() {
-    if (this.authorForm.get('biography').disabled)
+    if (this.authorForm.controls.biography.disabled)
       this._textAreaReduced = !this._textAreaReduced;
   }
 
