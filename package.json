@@ -57,7 +57,6 @@
     "cordova-plugin-background-mode": "bitbucket:TheBosZ/cordova-plugin-run-in-background",
     "cordova-plugin-device": "^2.1.0",
     "cordova-plugin-file": "^8.0.0",
-    "cordova-plugin-file-transfer": "github:Priyansu431/cordova-plugin-file-transfer",
     "cordova-plugin-filechooser": "github:ihadeed/cordova-filechooser",
     "cordova-plugin-filepath": "^1.6.0",
     "cordova-plugin-foreground-service": "^1.1.3",

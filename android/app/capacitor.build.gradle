@@ -18,7 +18,6 @@ dependencies {
     implementation project(':xeyqe-capacitor-tts')
     implementation project(':capacitor-all-files-access-permission')
     implementation project(':capacitor-zip4j')
-    implementation "androidx.core:core:1.1.0"
     implementation "androidx.core:core:1.0.0"
     implementation "androidx.webkit:webkit:1.4.0"
 }
