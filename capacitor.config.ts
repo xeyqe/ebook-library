@@ -5,8 +5,20 @@ const config: CapacitorConfig = {
   appName: 'ebook-library',
   webDir: 'www',
   bundledWebRuntime: false,
-  android: {
-    hideLogs: true
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 3000,
+      launchAutoHide: true,
+      backgroundColor: '#ffffff',
+      androidSplashResourceName: 'splash',
+      androidScaleType: 'CENTER_CROP',
+      androidSpinnerStyle: 'large',
+      showSpinner: true,
+      splashFullScreen: true,
+      splashImmersive: false,
+      layoutName: 'splash_screen',
+      useDialog: false
+    },
   }
 };
 
