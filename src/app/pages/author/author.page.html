@@ -28,37 +28,21 @@
 <ion-content>
     <form [formGroup]="authorForm" *ngIf="author && authorForm">
         <div class="pic-container">
-            <div class="bu-change-pic" *ngIf="ready2editing && authorForm.controls.img.value">
+            <div class="bu-change-pic" *ngIf="ready2editing">
                 <ion-button *ngIf="!onIsImgLocal(authorForm.controls.img.value)" (click)="onDownloadPicture()">
                     <ion-icon slot="icon-only" name="download-sharp"></ion-icon>
                 </ion-button>
-                <!-- <ion-button *ngIf="listsOfValues.img.length > 1" (click)="onChangePicture()">
-                    <ion-icon slot="icon-only" name="arrow-forward-circle"></ion-icon>
-                </ion-button> -->
                 <ion-button *ngIf="authorForm.controls.img.value?.at(0) === '/'" (click)="onRemovePic()">
                     <ion-icon slot="icon-only" name="remove"></ion-icon>
                 </ion-button>
+                <ion-button (click)="onAddPicture()">
+                    <ion-icon slot="icon-only" name="add-circle-sharp"></ion-icon>
+                </ion-button>
             </div>
-            <div *ngIf="listsOfValues?.img?.length && ready2editing">
-                <swiper-container [modules]="swiperModules"
-                    (slidechange)="onResizeSwiper()" (init)="onResizeSwiper()" #swiperRef>
-                    <swiper-slide *ngFor="let img of listsOfValues.img">
-                        <img height="auto" width="auto" [src]="onGetImgSrc(img)" alt="img">
-                    </swiper-slide>
-                    <!-- <swiper-slide>
-                        <img height="auto" width="auto" [src]="onGetImgSrc(authorForm.controls.img.value)" alt="img">
-                    </swiper-slide> -->
-                    <swiper-slide>
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/7/7c/User_font_awesome.svg" alt="img">
-                    </swiper-slide>
-                </swiper-container>
-                <span>{{(imgIndex + 1) + '/' + (listsOfValues.img.length + 1)}}</span>
-            </div>
+            <app-picture *ngIf="ready2editing" [imgPreLink]="imgPreLink" [images]="listsOfValues.img" [dirPath]="author.path"
+                (changeEvent)="onPicChanged($event)" #pictureC></app-picture>
             <img height="auto" width="auto" *ngIf="authorForm.controls.img.value && !ready2editing"
                 [src]="onGetImgSrc(authorForm.controls.img.value)" alt="img">
-
-            <!-- <img *ngIf="!authorForm.controls.img.value && ready2editing"
-                src="https://upload.wikimedia.org/wikipedia/commons/7/7c/User_font_awesome.svg" alt="img"> -->
         </div>
 
         <div class="flexed">
@@ -164,7 +148,7 @@
                     <div *ngFor="let book of serie.books" [routerLink]="['/book', book.id]"
                         [ngStyle]="{'order': book.serieOrder}">
                         <span>{{book.serieOrder}}</span>
-                        <ion-avatar *ngIf="book.img">
+                        <ion-avatar>
                             <img [src]="onGetImgSrc(book.img)" alt="img" />
                         </ion-avatar>
                         <mat-label class="book-title">

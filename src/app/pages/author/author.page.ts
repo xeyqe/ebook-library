@@ -20,12 +20,9 @@ import { FileReaderService } from 'src/app/services/file-reader.service';
 import { WebScraperService } from 'src/app/services/web-scraper.service';
 import { AUTHOR, WIKIPEDIADATA, ONLINEAUTHORLINK, AUTHORSBOOKS } from 'src/app/services/interfaces';
 
+import { PictureComponent } from '../picture/picture.component';
 import { DialogComponent } from 'src/app/material/dialog/dialog.component';
-import { register } from 'swiper/element/bundle';
-import { IonicSlides } from '@ionic/angular';
 
-
-register();
 
 @Component({
   selector: 'app-author',
@@ -41,12 +38,11 @@ register();
   ]
 })
 export class AuthorComponent implements OnInit, OnDestroy {
-  @ViewChild('swiperRef') swiperRef: ElementRef | undefined;
+  @ViewChild('pictureC') pictureC: PictureComponent | undefined;
   @ViewChild(IonContent) content: IonContent;
   @ViewChild('target1') target1: ElementRef;
   @ViewChild('target2') target2: ElementRef;
 
-  protected swiperModules = [IonicSlides];
   protected author: AUTHOR = null;
   protected books: AUTHORSBOOKS[] = [];
   protected biography = '';
@@ -100,7 +96,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
   protected seriesCont: { name: string, open: boolean, books: AUTHORSBOOKS[] }[];
 
   private subs: Subscription[] = [];
-  protected imgIndex: number;
+  private readonly imgSuffix = Math.floor(Math.random() * 1000000);
 
   constructor(
     private db: DatabaseService,
@@ -287,7 +283,8 @@ export class AuthorComponent implements OnInit, OnDestroy {
   private async loadUnusedPics(usedPics: string[]): Promise<void> {
     const allFiles = await this.fs.getNonBookFilesOfFolder(this.author.path);
     const unUsed = allFiles.filter(fl => !usedPics.includes(fl));
-    this.listsOfValues.img = [...this.listsOfValues.img, ...unUsed];
+    const images = new Set([...this.listsOfValues.img, ...unUsed])
+    this.listsOfValues.img = [...images];
     this.picsServ.pics = unUsed.length ? unUsed : null;
   }
 
@@ -340,6 +337,9 @@ export class AuthorComponent implements OnInit, OnDestroy {
   }
 
   protected async onUpdateAuthor() {
+    const img = this.pictureC.getCurrentImg();
+    if (this.authorForm.controls.img.value !== img)
+      this.authorForm.controls.img.setValue(img);
     Object.entries(this.authorForm.controls).forEach(ent => {
       const key = ent[0];
       const val = ent[1].value;
@@ -357,6 +357,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
       this.ready2editing = false;
       this.fromWiki = null;
     }).catch((e) => {
+      console.log(this.author);
       console.error('updateAuthor failed: ');
       console.error(e);
     });
@@ -563,10 +564,10 @@ export class AuthorComponent implements OnInit, OnDestroy {
     this.fs.downloadPicture(uri, path, filename).then((src) => {
       this.workingServ.done();
       const img = src?.replace(/^.*ebook-library/, '/ebook-library');
-      this.authorForm.get('img').setValue(img);
+      this.authorForm.controls.img.setValue(img);
       // const imgIndex = this.listsOfValues.img.indexOf(uri);
       console.log(this.listsOfValues.img)
-      this.listsOfValues.img.splice(this.imgIndex, 1, img);
+      this.pictureC.deleteCurrentImg();
       console.log(this.listsOfValues.img)
       this.content.scrollToTop();
     }).catch((e) => {
@@ -711,8 +712,8 @@ export class AuthorComponent implements OnInit, OnDestroy {
   }
 
   protected onRemovePic() {
-    if (this.authorForm.get('img').value.startsWith('/')) {
-      const img = this.authorForm.get('img').value;
+    const img = this.pictureC.getCurrentImg() || this.authorForm.controls.img.value;
+    if (img.startsWith('/')) {
       this.fs.removeFile(img).finally(() => {
         if (this.listsOfValues.img.includes(img))
           this.listsOfValues.img = this.listsOfValues.img.filter(im => im !== img);
@@ -741,6 +742,10 @@ export class AuthorComponent implements OnInit, OnDestroy {
       this._textAreaReduced = !this._textAreaReduced;
   }
 
+  protected onAddPicture() {
+    this.pictureC.addPicture();
+  }
+
   // onGetWidth(fcName: string, title: string) {
   //   return {
   //     'max-width': ((String(this.authorForm.get(fcName).value).length * 7) + 7) + 'px',
@@ -753,29 +758,13 @@ export class AuthorComponent implements OnInit, OnDestroy {
   }
 
   protected onGetImgSrc(img: string) {
-    return img?.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink + img) : img;
+    if (!img) img = '/ebook-library/unknown.jpg';
+    return img?.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink + img) + `?ver=${this.imgSuffix}` : img;
   }
 
-  private async wait(n: number) {
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        resolve();
-      }, n);
-    });
-  }
-
-  protected async onResizeSwiper() {
-    if (!this.swiperRef?.nativeElement) await this.wait(200);
-    if (!this.swiperRef?.nativeElement) return;
-    const height = this.swiperRef.nativeElement.querySelector('img').getBoundingClientRect().height;
-    this.renderer.setStyle(this.swiperRef.nativeElement, 'height', `${height}px`);
-    console.log(this.swiperRef?.nativeElement.swiper.activeIndex);
-    if (this.imgIndex !== this.swiperRef?.nativeElement.swiper.activeIndex)
-      this.imgIndex = this.swiperRef?.nativeElement.swiper.activeIndex;
-    const img = this.listsOfValues.img[this.imgIndex];
-    if (this.authorForm.controls.img.value !== img) {
-      this.authorForm.controls.img.setValue(img);
-    }
+  protected onPicChanged(img: string) {
+    this.authorChanged = true;
+    this.authorForm.controls.img.setValue(img);
   }
 
   ngOnDestroy() {
