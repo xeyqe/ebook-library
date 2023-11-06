@@ -40,17 +40,18 @@
                     (click)="downloadPicture()">
                     <ion-icon slot="icon-only" name="download-sharp"></ion-icon>
                 </ion-button>
-                <ion-button (click)="onRemovePic(bookForm.controls.img.value)">
+                <ion-button (click)="onRemovePic()">
                     <ion-icon slot="icon-only" name="remove"></ion-icon>
                 </ion-button>
-                <ion-button *ngIf="listsOfValues.img.length > 1" (click)="onSwitchPic()">
-                    <ion-icon slot="icon-only" name="arrow-forward"></ion-icon>
+                <ion-button (click)="onAddPicture()">
+                    <ion-icon slot="icon-only" name="add-circle-sharp"></ion-icon>
                 </ion-button>
             </div>
 
-            <img *ngIf="bookForm.controls.img.value" [src]="onGetImgSrc(bookForm.controls.img.value)" alt="cover">
-            <img *ngIf="!bookForm.controls.img.value && ready2editing" style="background-color: #413d3d;"
-                src="https://upload.wikimedia.org/wikipedia/commons/7/7c/User_font_awesome.svg" alt="unknown">
+            <app-picture *ngIf="ready2editing" [imgPreLink]="dir.imgPreLink" [images]="listsOfValues.img" [dirPath]="dirPath"
+                (changeEvent)="onPicChanged($event)" #pictureC></app-picture>
+            <img height="auto" width="auto" *ngIf="bookForm.controls.img.value && !ready2editing"
+                [src]="onGetImgSrc(bookForm.controls.img.value)" alt="img">
         </div>
 
         <div class="flexed">

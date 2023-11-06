@@ -25,6 +25,7 @@ import { WebScraperService } from 'src/app/services/web-scraper.service';
 
 import { BOOK, ONLINEBOOKLINK, INDEXOFBOOK, AUTHOR, ONLINEAUTHORLEGIE } from 'src/app/services/interfaces';
 
+import { PictureComponent } from '../picture/picture.component';
 import { DialogComponent } from 'src/app/material/dialog/dialog.component';
 
 
@@ -34,6 +35,8 @@ import { DialogComponent } from 'src/app/material/dialog/dialog.component';
   styleUrls: ['./book.page.scss'],
 })
 export class BookComponent implements OnInit, OnDestroy {
+  @ViewChild('pictureC') pictureC: PictureComponent | undefined;
+
   protected book: BOOK = null;
 
   protected bookChanged = false;
@@ -129,6 +132,7 @@ export class BookComponent implements OnInit, OnDestroy {
   protected _textAreaReduced = true;
   protected imgIsLocal: boolean;
   private readonly imgSuffix = Math.floor(Math.random() * 1000000);
+  protected dirPath: string;
 
   @ViewChild(IonContent) content: IonContent;
   @ViewChild('target') target: ElementRef;
@@ -137,17 +141,16 @@ export class BookComponent implements OnInit, OnDestroy {
     private bookServ: BookService,
     private db: DatabaseService,
     private dialog: MatDialog,
-    private dir: DirectoryService,
     private epub: EpubService,
     private fs: FileReaderService,
     private iab: InAppBrowser,
-    // private jsonServ: JsonDataParserService,
     private picsServ: NonusedPicsService,
     private renderer: Renderer2,
     private route: ActivatedRoute,
     private router: Router,
     private webScrapper: WebScraperService,
     private workingServ: BusyService,
+    protected dir: DirectoryService,
   ) { }
 
   ngOnInit() {
@@ -157,7 +160,7 @@ export class BookComponent implements OnInit, OnDestroy {
       this.initializeBookForm(this.book);
       this.initializeSubs();
       if (this.picsServ.pics?.length)
-        this.listsOfValues.img = [...this.listsOfValues.img, ...this.picsServ.pics];
+        this.listsOfValues.img = [...new Set([...this.listsOfValues.img, ...this.picsServ.pics])];
   
       this.showAble = this.webScrapper.showAble;
     });
@@ -167,6 +170,7 @@ export class BookComponent implements OnInit, OnDestroy {
     const bookId = await this.getParams();
     if (!(await this.dbIsReady())) return;
     this.book = await this.db.getBook(bookId);
+    this.dirPath = this.book.path.slice(0, this.book.path.lastIndexOf('/') + 1);
     console.log(this.book);
   }
 
@@ -325,11 +329,14 @@ export class BookComponent implements OnInit, OnDestroy {
   }
 
   protected async updateBook() {
+    const img = this.pictureC.getCurrentImg();
+    if (this.bookForm.controls.img.value !== img)
+      this.bookForm.controls.img.setValue(img);
     Object.keys(this.bookForm.controls).forEach(key => {
       if (key !== 'progress') this.book[key] = this.bookForm.controls[key].value;
     });
 
-    if (this.book.img[0] === '/' && this.listsOfValues?.img?.includes(this.book.img)) {
+    if (this.book.img?.at(0) === '/' && this.listsOfValues?.img?.includes(this.book.img)) {
       const path = this.getPath();
       await Filesystem.copy({
         directory: this.dir.dir,
@@ -384,7 +391,7 @@ export class BookComponent implements OnInit, OnDestroy {
         const bookId = this.book.id;
         const authorId = this.book.creatorIds;
         try {
-          await this.onRemovePic(this.book.img);
+          await this.onRemovePic();
           await this.removeBookFile();
         } catch (e) {
           // nothing
@@ -397,10 +404,12 @@ export class BookComponent implements OnInit, OnDestroy {
 
   }
 
-  protected async onRemovePic(img: string) {
+  protected async onRemovePic() {
+    const img = this.pictureC.getCurrentImg();
     if (img?.startsWith('/')) {
       await this.fs.removeFile(img).finally(() => {
         this.bookForm.controls.img.setValue(null);
+        this.pictureC.deleteCurrentImg();
         this.bookChanged = true;
       }).catch(e => {
         console.error(e);
@@ -510,9 +519,12 @@ export class BookComponent implements OnInit, OnDestroy {
 
     this.workingServ.busy();
     this.fs.downloadPicture(uri, path, filename).then((src) => {
+      const img = src?.replace(/^.*ebook-library/, '/ebook-library');
+      this.bookForm.controls.img.setValue(img);
       this.workingServ.done();
       this.bookForm.controls.img.setValue(src?.replace(/^.*ebook-library/, '/ebook-library'));
       this.bookChanged = true;
+      this.pictureC.deleteCurrentImg();
     }).catch((e) => {
       alert(e);
     });
@@ -820,18 +832,6 @@ export class BookComponent implements OnInit, OnDestroy {
     });
   }
 
-  protected onSwitchPic() {
-    if (!this.listsOfValues.img.length) return;
-    if (this.listsOfValues.img.length === 1 && this.bookForm.controls.img.value) return;
-    if (this.listsOfValues.img.includes(this.bookForm.controls.img.value)) {
-      let index = this.listsOfValues.img.indexOf(this.bookForm.controls.img.value);
-      index = (index + 1) % this.listsOfValues.img.length;
-      this.bookForm.controls.img.setValue(this.listsOfValues.img[index]);
-    } else {
-      this.bookForm.controls.img.setValue(this.listsOfValues.img[0]);
-    }
-  }
-
   protected onReduceHeight() {
     if (this.bookForm.controls.annotation.disabled)
       this._textAreaReduced = !this._textAreaReduced;
@@ -855,6 +855,15 @@ export class BookComponent implements OnInit, OnDestroy {
 
   protected onGo2(dir: 'spritz' | 'speech') {
     this.router.navigate(['/tts', this.book.id, { type: dir }]);
+  }
+
+  protected onPicChanged(img: string) {
+    this.bookForm.controls.img.setValue(img);
+    this.bookChanged = true;
+  }
+
+  protected onAddPicture() {
+    this.pictureC.addPicture();
   }
 
   ngOnDestroy() {

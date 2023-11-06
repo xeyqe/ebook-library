@@ -11,6 +11,7 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 
 import { InAppBrowser } from '@awesome-cordova-plugins/in-app-browser/ngx';
 
+import { PictureModule } from '../picture/picture.module';
 import { BookPageRoutingModule } from './book-routing.module';
 import { DialogModule } from '../../material/dialog/dialog.module';
 import { ApplicationPipesModuleModule } from 'src/app/application-pipes-module/application-pipes-module.module';
@@ -26,14 +27,15 @@ import { BookComponent } from './book.page';
     ApplicationPipesModuleModule,
     BookPageRoutingModule,
     CommonModule,
+    DialogModule,
     FormsModule,
     IonicModule,
     MatAutocompleteModule,
-    DialogModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
     NgsContenteditableModule,
+    PictureModule,
     ReactiveFormsModule,
   ],
   providers: [InAppBrowser],
