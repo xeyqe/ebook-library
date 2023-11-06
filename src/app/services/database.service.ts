@@ -375,7 +375,6 @@ export class DatabaseService {
         `SELECT * from books`
       );
     } catch (e) {
-      console.error(e);
       if (e?.rows?.length) data = e;
       else throw e;
     }
@@ -556,7 +555,7 @@ export class DatabaseService {
 
   public async addAuthor(author: AUTHOR): Promise<number> {
     if (!author) throw new Error('Wrong input!');
-    if (author.booksIds?.length) author.booksIds = author.booksIds.join() as any;
+    if (author.booksIds?.length && typeof author.booksIds !== 'string') author.booksIds = author.booksIds.join() as any;
     const keys = Object.keys(author).join(', ');
     const params = Object.values(author);
     const questionMarks = new Array(params.length).fill('?').join(', ');
@@ -596,8 +595,6 @@ export class DatabaseService {
         []
       );
     } catch (e) {
-      console.error('findAuthors failed!');
-      console.error(e);
       if (e?.rows?.length) data = e;
       else throw e;
     }
@@ -652,7 +649,6 @@ export class DatabaseService {
     try {
       data = await this.database.executeSql(`SELECT id, title, creatorIds, progress, img, serie, serieOrder FROM books WHERE id IN ( ${ids.join(', ')} ) ORDER BY title ASC`);
     } catch (e) {
-      console.error('getBooksOfAuthor failed!');
       if (e?.rows?.length) data = e;
       else throw e;
     }
@@ -752,14 +748,19 @@ export class DatabaseService {
   }
 
   public async updateAuthor(author: AUTHOR) {
-    if (author.biography) author.biography.replace(/\n/g, '<br>');
-    if (author.booksIds?.length) author.booksIds = author.booksIds.join() as any;
-    const id = author.id;
-    delete author.id;
-    const keys = Object.keys(author).map(it => `${it} = ?`).join(', ');
-    const params = Object.values(author);
-
-    await this.database.executeSql(`UPDATE authors SET ${keys} WHERE id = ${id}`, params);
+    const obj = { ...author };
+    if (obj.biography) obj.biography.replace(/\n/g, '<br>');
+    if (obj.booksIds?.length && typeof obj.booksIds !== 'string') obj.booksIds = obj.booksIds.join() as any;
+    const id = obj.id;
+    delete obj.id;
+    const keys = Object.keys(obj).map(it => `${it} = ?`).join(', ');
+    const params = Object.values(obj);
+    try {
+      await this.database.executeSql(`UPDATE authors SET ${keys} WHERE id = ${id}`, params);
+    } catch (e) {
+      console.error(e);
+      console.log(keys, params)
+    }
   }
 
   public async addBook(book: BOOK) {
@@ -845,21 +846,21 @@ export class DatabaseService {
 
   public async updateBook(book: BOOK) {
     if (!book) throw new Error('No book to update!');
-    const id = book.id;
-    delete book.id;
+    const obj = { ...book};
+    const id = obj.id;
+    delete obj.id;
     try {
-      book.creatorIds = book.creatorIds?.length ? book.creatorIds.join() : null as any;
+      obj.creatorIds = obj.creatorIds?.length ? obj.creatorIds.join() : null as any;
     } catch (e) {
-      console.error(book.creatorIds);
+      console.error(obj.creatorIds);
       console.error(e);
-      book.creatorIds = book.creatorIds?.length ? book.creatorIds : null as any;
+      obj.creatorIds = obj.creatorIds?.length ? obj.creatorIds : null as any;
     }
     ['lastRead', 'added', 'finished'].forEach(key => {
-      if (book[key]) book[key] = this.dt2Str(book[key]);
+      if (obj[key]) obj[key] = this.dt2Str(obj[key]);
     });
-    const values = Object.keys(book).map(it => `${it} = ?`).join(', ');
-
-    const params = Object.values(book);
+    const values = Object.keys(obj).map(it => `${it} = ?`).join(', ');
+    const params = Object.values(obj);
 
     await this.database.executeSql(
       `UPDATE books SET ${values} WHERE id = ${id}`,
