@@ -797,6 +797,8 @@ export class DatabaseService {
 
   private dt2Str(date: Date): string {
     if (!date || !(date instanceof Date)) return null;
+    date = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+
     const [
       years, months, days, hours, minutes, seconds, milliseconds
     ] = date.toISOString().replace(/[-:.ZT]/g, '/').split('/');
