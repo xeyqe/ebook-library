@@ -160,6 +160,19 @@ export class AppComponent implements OnInit {
         this.lastTimeBackPress = new Date().getTime();
         this.presentToast();
       }
+    } else if (/^(\/author\/[0-9]+)$/.test(url)) {
+      this.router.navigate(['/authors']);
+    } else if (/^(\/book\/[0-9]+)$/.test(url)) {
+      const bookId = parseInt(url.substring(url.lastIndexOf('/') + 1), 10);
+      this.db.getBook(bookId).then((book) => {
+        this.db.getAuthor(book.creatorIds[0]).then((author) => {
+          const authorId = author.id + '';
+          this.router.navigate(['/author', authorId]);
+        });
+      });
+    } else if (/^\/tts\/[0-9]+;type=[a-z]+$/.test(url)) {
+      const bookId = url.slice(url.lastIndexOf('/') + 1, url.lastIndexOf(';'));
+      this.router.navigate(['/book', bookId]);
     } else {
       this.navCtrl.back();
     }
