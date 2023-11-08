@@ -3,7 +3,9 @@
         <ion-row>
             <ion-title *ngIf="!ready2editing">author</ion-title>
             <ion-col *ngIf="ready2editing">
-                <ion-button (click)="deleteAuthor()">delete</ion-button>
+                <ion-button (click)="deleteAuthor()">
+                    <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                </ion-button>
             </ion-col>
             <div class="col text-right">
                 <ion-button *ngIf="authorChanged && ready2editing" (click)="onUpdateAuthor()">
@@ -219,4 +221,11 @@
             </div>
         </div>
     </form>
+
+    <div class="ad-bu-cont">
+        <ion-button *ngIf="!ready2editing" (click)="onAddBook()">
+            <ion-icon slot="icon-only" name="add-circle-sharp"></ion-icon>
+        </ion-button>
+    </div>
+
 </ion-content>

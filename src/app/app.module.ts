@@ -12,7 +12,6 @@ import { SQLite } from '@awesome-cordova-plugins/sqlite/ngx';
 import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
 import { StatusBar } from '@awesome-cordova-plugins/status-bar/ngx';
 import { WebView } from '@awesome-cordova-plugins/ionic-webview/ngx';
-import { FileChooser } from '@awesome-cordova-plugins/file-chooser/ngx';
 import { SplashScreen } from '@awesome-cordova-plugins/splash-screen/ngx';
 import { SQLitePorter } from '@awesome-cordova-plugins/sqlite-porter/ngx';
 import { BackgroundMode } from '@awesome-cordova-plugins/background-mode/ngx';
@@ -45,7 +44,6 @@ import { AppComponent } from 'src/app/app.component';
         DatabaseService,
         DirectoryService,
         EpubService,
-        FileChooser,
         FilePath,
         FileReaderService,
         HTTP,

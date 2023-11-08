@@ -9,7 +9,6 @@ import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { Encoding, Filesystem } from '@capacitor/filesystem';
 import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
-import { FileChooser } from '@awesome-cordova-plugins/file-chooser/ngx';
 
 import { Subscription } from 'rxjs';
 import { first } from 'rxjs/operators';
@@ -65,7 +64,6 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
     private db: DatabaseService,
     private dialog: MatDialog,
     private dir: DirectoryService,
-    private fileChooser: FileChooser,
     private filePath: FilePath,
     private fr: FileReaderService,
     private router: Router,
@@ -242,27 +240,6 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.books = await this.db.loadBooks(this.bookSearchBy as any);
       this._books = this.books.slice(0, 10);
     }
-  }
-
-  protected async chooseAFile() {
-    let nativePath: string;
-    try {
-      nativePath = await this.fileChooser.open();
-    } catch (e) {
-      console.error('fileChooser failed');
-      console.error(e);
-      throw e;
-    }
-    let path: string;
-    try {
-      path = await this.filePath.resolveNativePath(nativePath);
-    } catch (e) {
-      console.error('resolveNativePath failed');
-      console.error(e);
-      throw e;
-    }
-    console.log(nativePath);
-    console.log(path);
   }
 
   protected onGo2Last() {

@@ -1,13 +1,14 @@
 import { Component, ElementRef, EventEmitter, Input, Output, Renderer2, ViewChild } from '@angular/core';
-import { Capacitor } from '@capacitor/core';
+import { Filesystem } from '@capacitor/filesystem';
 import { IonicSlides } from '@ionic/angular';
+import { Capacitor } from '@capacitor/core';
 
 import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
-import { FileChooser } from '@awesome-cordova-plugins/file-chooser/ngx';
 
 import { register } from 'swiper/element/bundle';
-import { Filesystem } from '@capacitor/filesystem';
+
 import { DirectoryService } from 'src/app/services/directory.service';
+import { FilePicker } from '@capawesome/capacitor-file-picker';
 
 
 register();
@@ -30,7 +31,6 @@ export class PictureComponent {
 
   constructor(
     private renderer: Renderer2,
-    private fileChooser: FileChooser,
     private filePath: FilePath,
     private dir: DirectoryService,
   ) { }
@@ -60,25 +60,23 @@ export class PictureComponent {
     });
   }
 
-  protected fileChoose() {
-    this.fileChooser.open({ mime: 'image/*' } as any).then(uri => {
-      this.filePath.resolveNativePath(uri).then(async file => {
-        const extension = file.slice(file.lastIndexOf('.') + 1);
-        const name = file.slice(file.lastIndexOf('/') + 1, - extension.length - 1);
-        Filesystem.copy({
-          from: file,
-          to: await this.getUniqueFileName({ dir: this.dirPath, name, extension }),
-          toDirectory: this.dir.dir
-        }).then(a => {
-          console.log(a.uri)
-          this.images.push(decodeURI(a.uri.replace(/.*ebook-library/, '/ebook-library')).replace(/%2C /g, ', '));
-          console.log(this.images)
-          this.swiperRef.nativeElement.swiper.slideTo(this.images.length - 1);
-          this.imgIndex = this.images.length - 1;
-          console.log(this.imgIndex)
-          setTimeout(() => this.onResizeSwiper(), 100);
-        });
-      }).catch(err => console.log(err));
+  protected fileChoose(title: string) {
+    FilePicker.pickFiles({
+      types: ['image/*']
+    }).then(async resp => {
+      const name = resp.files[0].name;
+      const extension = name.slice(name.lastIndexOf('.') + 1);
+
+      Filesystem.copy({
+        from: await this.filePath.resolveNativePath(resp.files[0].path),
+        to: await this.getUniqueFileName({ dir: this.dirPath, name: title, extension }),
+        toDirectory: this.dir.dir
+      }).then(a => {
+        this.images.push(decodeURI(a.uri.replace(/.*ebook-library/, '/ebook-library')).replace(/%2C /g, ', '));
+        this.swiperRef.nativeElement.swiper.slideTo(this.images.length - 1);
+        this.imgIndex = this.images.length - 1;
+        setTimeout(() => this.onResizeSwiper(), 100);
+      });
     }).catch(e => alert('uri' + JSON.stringify(e)));
   }
 
@@ -89,7 +87,7 @@ export class PictureComponent {
           path: dt.dir + dt.name + '.' + dt.extension,
           directory: this.dir.dir
         });
-        return this.getUniqueFileName({ ...dt, name: dt.name + i });
+        return this.getUniqueFileName({ ...dt, name: dt.name + i, extension: dt.extension });
       } catch (e) {
         if (e.message !== 'File does not exist') throw e;
         return dt.dir + dt.name + '.' + dt.extension;
@@ -107,8 +105,8 @@ export class PictureComponent {
     return this.images[this.imgIndex];
   }
 
-  public addPicture() {
-    this.fileChoose();
+  public addPicture(title: string) {
+    this.fileChoose(title);
   }
 
 }

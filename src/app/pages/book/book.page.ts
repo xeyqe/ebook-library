@@ -336,16 +336,16 @@ export class BookComponent implements OnInit, OnDestroy {
       if (key !== 'progress') this.book[key] = this.bookForm.controls[key].value;
     });
 
-    if (this.book.img?.at(0) === '/' && this.listsOfValues?.img?.includes(this.book.img)) {
-      const path = this.getPath();
-      await Filesystem.copy({
-        directory: this.dir.dir,
-        toDirectory: this.dir.dir,
-        from: this.book.img,
-        to: path
-      });
-      this.book.img = path;
-    }
+    // if (this.book.img?.at(0) === '/' && this.listsOfValues?.img?.includes(this.book.img)) {
+    //   const path = this.getPath();
+    //   await Filesystem.copy({
+    //     directory: this.dir.dir,
+    //     toDirectory: this.dir.dir,
+    //     from: this.book.img,
+    //     to: path
+    //   });
+    //   this.book.img = path;
+    // }
     this.db.updateBook(this.book).then(() => {
       this.bookChanged = false;
       this.ready2editing = !this.ready2editing;
@@ -863,7 +863,7 @@ export class BookComponent implements OnInit, OnDestroy {
   }
 
   protected onAddPicture() {
-    this.pictureC.addPicture();
+    this.pictureC.addPicture(this.bookForm.controls.title.value);
   }
 
   ngOnDestroy() {

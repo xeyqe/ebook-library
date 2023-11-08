@@ -763,7 +763,7 @@ export class DatabaseService {
     }
   }
 
-  public async addBook(book: BOOK) {
+  public async addBook(book: BOOK): Promise<number> {
     ['added', 'lastRead', 'finished'].forEach(key => {
       if (book[key]) book[key] = this.dt2Str(book[key]);
     });
@@ -788,6 +788,7 @@ export class DatabaseService {
           }
         }
       }
+      return output.insertId;
     } catch (e) {
       console.error('cannot add a book');
       console.error(e);

@@ -10,6 +10,7 @@ ion-label {
     position: absolute;
     top: 0%;
     left: 0%;
+    z-index: 10;
 }
 
 .ng-invalid {
@@ -129,4 +130,10 @@ mat-form-field,
 
 .img {
     background-color: #413d3d;
+}
+
+.ad-bu-cont {
+    display: flex;
+    justify-content: center;
+    margin: 1rem;
 }

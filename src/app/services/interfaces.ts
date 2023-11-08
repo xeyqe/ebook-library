@@ -56,7 +56,7 @@ export interface BOOKSIMPLIFIED {
 export interface AUTHORSBOOKS {
   id: string,
   title: string,
-  creatorIds: string,
+  creatorIds: number[],
   progress: string,
   img: string,
   serie: string,

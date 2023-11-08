@@ -5,12 +5,15 @@ import { FormControl, FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { animate, AUTO_STYLE, state, style, transition, trigger } from '@angular/animations';
 
-import { Subscription } from 'rxjs';
-import { first } from 'rxjs/operators';
-
 import { MatDialog } from '@angular/material/dialog';
 
 import { Capacitor } from '@capacitor/core';
+import { Filesystem } from '@capacitor/filesystem';
+import { FilePicker } from '@capawesome/capacitor-file-picker';
+import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
+
+import { Subscription } from 'rxjs';
+import { first } from 'rxjs/operators';
 
 import { NonusedPicsService } from './nonused-pics.service';
 import { BusyService } from 'src/app/services/busy.service';
@@ -105,12 +108,13 @@ export class AuthorComponent implements OnInit, OnDestroy {
     private fs: FileReaderService,
     private http: HTTP,
     // private jsonServ: JsonDataParserService,
+    private filePath: FilePath,
     private picsServ: NonusedPicsService,
     private renderer: Renderer2,
     private route: ActivatedRoute,
     private router: Router,
     private webScraper: WebScraperService,
-    private workingServ: BusyService,
+    private workingServ: BusyService
   ) { }
 
   ngOnInit() {
@@ -739,7 +743,9 @@ export class AuthorComponent implements OnInit, OnDestroy {
   }
 
   protected onAddPicture() {
-    this.pictureC.addPicture();
+    const name = this.authorForm.controls.name.value || '';
+    const surname = this.authorForm.controls.surname.value || '';
+    this.pictureC.addPicture([name, surname].join(' '));
   }
 
   // onGetWidth(fcName: string, title: string) {
@@ -761,6 +767,60 @@ export class AuthorComponent implements OnInit, OnDestroy {
   protected onPicChanged(img: string) {
     this.authorChanged = true;
     this.authorForm.controls.img.setValue(img);
+  }
+
+  private async getUniqueFileName(dt: { dir: string, name: string, extension: string }): Promise<string> {
+    for (let i = 0; i < 100; i++) {
+      try {
+        await Filesystem.stat({
+          path: dt.dir + dt.name + '.' + dt.extension,
+          directory: this.directoryServ.dir
+        });
+        return this.getUniqueFileName({ ...dt, name: dt.name + i, extension: dt.extension });
+      } catch (e) {
+        if (e.message !== 'File does not exist') throw e;
+        return dt.dir + dt.name + '.' + dt.extension;
+      }
+    }
+  }
+
+  protected onAddBook() {
+    FilePicker.pickFiles({
+      types: ['application/epub+zip', 'text/plain', 'application/pdf']
+    }).then(async a => {
+      const name = a.files[0].name;
+      const extension = name.slice(name.lastIndexOf('.') + 1);
+
+      const path = await this.getUniqueFileName({ dir: this.author.path, name: name.slice(0, name.lastIndexOf('.')), extension });
+      const nm = path.slice(path.lastIndexOf('/') + 1, path.lastIndexOf('.'));
+
+      console.log(path)
+      console.log(nm)
+      Filesystem.copy({
+        from: await this.filePath.resolveNativePath(a.files[0].path),
+        to: path,
+        toDirectory: this.directoryServ.dir
+      }).then(() => {
+        this.db.addBook({
+          id: null, title: nm, creatorIds: [this.author.id], originalTitle: null, annotation: null,
+          publisher: null, published: null, genre: null, length: null, language: 'cs-CZ', translator: null,
+          ISBN: null, path, progress: null, rating: null, img: null, serie: null, serieOrder: null,
+          dtbkId: null, lgId: null, cbdbId: null, added: new Date(), lastRead: null, finished: null
+        }).then(bookId => {
+          this.books.push({
+            id: bookId + '',
+            title: nm,
+            creatorIds: [this.author.id],
+            progress: null,
+            img: null,
+            serie: null,
+            serieOrder: null,
+          });
+        });
+      }).catch(e => {
+        console.error(e)
+      })
+    });
   }
 
   ngOnDestroy() {

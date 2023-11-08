@@ -3,7 +3,9 @@
         <ion-row>
             <ion-title *ngIf="!ready2editing">book</ion-title>
             <ion-col *ngIf="ready2editing">
-                <ion-button (click)="deleteBook()">delete</ion-button>
+                <ion-button (click)="deleteBook()">
+                    <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                </ion-button>
             </ion-col>
             <div *ngIf="book" class="buttons">
                 <ion-button *ngIf="!ready2editing" (click)="onGo2('speech')">
