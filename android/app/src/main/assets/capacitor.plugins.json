@@ -36,6 +36,10 @@
 		"classpath": "com.xeyqe.plugins.example.AllFilesAccessPlugin"
 	},
 	{
+		"pkg": "capacitor-plugin-safe-area",
+		"classpath": "com.capacitor.safearea.SafeAreaPlugin"
+	},
+	{
 		"pkg": "capacitor-zip4j",
 		"classpath": "com.xeyqe.plugins.zipj4.Zip4JPlugin"
 	}

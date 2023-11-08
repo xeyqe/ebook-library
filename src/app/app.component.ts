@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, Renderer2, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { NavController, Platform, ToastController } from '@ionic/angular';
@@ -12,6 +12,7 @@ import { BusyService } from './services/busy.service';
 import { FileReaderService } from './services/file-reader.service';
 import { DatabaseService } from 'src/app/services/database.service';
 
+import { SafeArea } from 'capacitor-plugin-safe-area';
 import { AllFilesAccess } from 'capacitor-all-files-access-permission';
 
 
@@ -21,9 +22,10 @@ import { AllFilesAccess } from 'capacitor-all-files-access-permission';
   styleUrls: ['app.component.scss'],
 })
 export class AppComponent implements OnInit {
-  protected initialized: boolean;
+  @ViewChild('elRef', { static: true }) elRef: ElementRef;
   private lastTimeBackPress = 0;
   private subs: Subscription[] = [];
+  protected initialized: boolean;
 
   constructor(
     private backgroundMode: BackgroundMode,
@@ -32,6 +34,7 @@ export class AppComponent implements OnInit {
     private navCtrl: NavController,
     private platform: Platform,
     private router: Router,
+    private renderer: Renderer2,
     private statusBar: StatusBar,
     private toastCtrl: ToastController,
     protected workingServ: BusyService,
@@ -39,6 +42,7 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     this.platform.ready().then(async () => {
+      this.saveArea();
       await AllFilesAccess.access();
 
       this.fr.downloadDorian();
@@ -49,6 +53,31 @@ export class AppComponent implements OnInit {
       console.error('getting platform ready failed');
       console.error(e);
     })
+  }
+
+  private saveArea(): void {
+    SafeArea.setImmersiveNavigationBar();
+    SafeArea.getSafeAreaInsets().then((result) => {
+      this.setSaveAreaMargin(result.insets);
+    });
+    SafeArea.addListener('safeAreaChanged', (result) => {
+      this.setSaveAreaMargin(result.insets);
+    });
+  }
+
+  private setSaveAreaMargin(
+    saveArea: {
+      top: number;
+      right: number;
+      bottom: number;
+      left: number;
+    }
+  ): void {
+    this.renderer.setStyle(
+      this.elRef.nativeElement || this.elRef[`el`],
+      'margin',
+      `${saveArea.top}px ${saveArea.right}px ${saveArea.bottom}px ${saveArea.left}px`
+    );
   }
 
   private async initializeApp(): Promise<void> {
@@ -123,7 +152,7 @@ export class AppComponent implements OnInit {
 
   private hwBackButtonFunction(): void {
     const url = this.router.url;
-    
+
     if (url === '/authors') {
       if (this.lastTimeBackPress + 2000 > new Date().getTime()) {
         navigator['app'].exitApp();
