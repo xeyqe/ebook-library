@@ -102,19 +102,16 @@ export class FileReaderService {
             directory: this.dir.dir,
             path: 'ebook-library'
           });
-          console.log(foldersFiles)
         } catch (e) {
           console.error('Filesystem.readdir failed')
           console.error(e)
         }
         const folders: FileInfo[] = [];
         for (const item of foldersFiles.files) {
-          console.log(item)
           if (item.type === 'directory' && item.name !== 'epub')
             folders.push(item);
         }
         for (const authorFolder of folders) {
-          console.log(`/ebook-library/${authorFolder.name}`)
           if (!allAuthorsPaths.includes(`/ebook-library/${authorFolder.name}`) && !allAuthorsPaths.includes(`/ebook-library/${authorFolder.name}/`)) {
             const name = authorFolder.name.substring(authorFolder.name.lastIndexOf('/') + 1).split(',');
             const surname = name[0].trim();
@@ -127,15 +124,12 @@ export class FileReaderService {
             try {
               const author = this.createAuthor({ forename, surname, path: `/ebook-library/${authorFolder.name}` });
               authorId = await this.db.addAuthor(author);
-              console.log(`authorId: ${authorId}`);
             } catch (e) {
               console.error('authorId = await this.db.addAuthor failed')
               console.error(e)
             }
             try {
               this.db.authorsBooksPaths(authorId).then((paths) => {
-                console.log('paths')
-                console.log(paths)
                 try {
                   this._booksOfAuthor(`/ebook-library/${authorFolder.name}/`, authorId, paths);
                 } catch (e) {
