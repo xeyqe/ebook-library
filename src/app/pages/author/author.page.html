@@ -32,7 +32,7 @@
         <form [formGroup]="authorForm" *ngIf="author && authorForm">
             <div class="pic-container">
                 <div class="bu-change-pic" *ngIf="ready2editing">
-                    <ion-button *ngIf="!onIsImgLocal(authorForm.controls.img.value)" (click)="onDownloadPicture()">
+                    <ion-button *ngIf="onDownloadBuVisible(authorForm.controls.img.value)" (click)="onDownloadPicture()">
                         <ion-icon slot="icon-only" name="download-sharp"></ion-icon>
                     </ion-button>
                     <ion-button *ngIf="authorForm.controls.img.value?.at(0) === '/'" (click)="onRemovePic()">

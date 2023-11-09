@@ -755,8 +755,8 @@ export class AuthorComponent implements OnInit, OnDestroy {
   //   };
   // }
 
-  protected onIsImgLocal(path: string): boolean {
-    return path?.startsWith('/');
+  protected onDownloadBuVisible(path: string): boolean {
+    return path && !path.startsWith('/');
   }
 
   protected onGetImgSrc(img: string) {
