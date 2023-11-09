@@ -13,20 +13,12 @@ h2 {
     margin-bottom: 0px;
 }
 
-@mixin bb {
+.bb {
+    display: flex;
     position: fixed;
-    bottom: 5px;
-}
-
-.sp-bu { 
-    &__play {
-        right: 4px;
-        @include bb;
-    }
-    &__share {
-        left: 5px;
-        @include bb;
-    }
+    bottom: 0;
+    justify-content: space-between;
+    width: 100%;
 }
 
 ion-header {

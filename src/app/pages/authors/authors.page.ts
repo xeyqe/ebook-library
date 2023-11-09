@@ -19,6 +19,7 @@ import { DirectoryService } from 'src/app/services/directory.service';
 import { FileReaderService } from './../../services/file-reader.service';
 
 import { DialogComponent } from 'src/app/material/dialog/dialog.component';
+import { InputDialogComponent } from 'src/app/material/input-dialog/input-dialog.component';
 
 import { BOOKSIMPLIFIED, AUTHORSIMPLIFIED } from 'src/app/services/interfaces';
 
@@ -283,6 +284,35 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   protected onScrollEnd(event: Event) {
     this.scrollTop = event.target[`firstElementChild`].firstElementChild.getBoundingClientRect().y;
+  }
+
+  protected onAddAuthor() {
+    this.dialog.open(
+      InputDialogComponent,
+      {
+        data: {
+          header: 'Add new author',
+        }
+      }
+    ).afterClosed().subscribe(async response => {
+      if (!response) return;
+      // TODO
+      // Filesystem.stat({
+      //   directory: this.dir.dir,
+      //   path: `/ebook-library/${response.surname}, ${response.name}`,
+      // });
+      await Filesystem.mkdir({
+        directory: this.dir.dir,
+        path: `/ebook-library/${response.surname}, ${response.name}`,
+        recursive: true
+      });
+      this.db.addAuthor({
+        ...response,
+        path: `/ebook-library/${response.surname}, ${response.name}`
+      }).then(authorId => {
+        this.router.navigate(['/author', authorId]);
+      });
+    });
   }
 
   ngOnDestroy() {

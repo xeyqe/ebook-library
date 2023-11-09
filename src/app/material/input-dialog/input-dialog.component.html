@@ -1,0 +1,23 @@
+<div class="cont">
+  <h1 *ngIf="data.header" mat-dialog-title>{{ data.header }}</h1>
+  <ion-icon class="close-circle" name="close-circle" (click)="onClose()"></ion-icon>
+  <div>
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label class="red" position="floating">Name</mat-label>
+      <input type="text" matInput [formControl]="fg.controls.name">
+    </mat-form-field>
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label class="red" position="floating">Surname</mat-label>
+      <input type="text" matInput [formControl]="fg.controls.surname">
+      <mat-error>Set surname</mat-error>
+    </mat-form-field>
+  </div>
+  <div class="cont__bb">
+    <ion-button (click)="onClose()">
+      Cancel
+    </ion-button>
+    <ion-button (click)="onAddAuthor()">
+      Add
+    </ion-button>
+  </div>
+</div>

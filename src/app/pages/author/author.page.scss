@@ -137,3 +137,10 @@ mat-form-field,
     justify-content: center;
     margin: 1rem;
 }
+
+ion-content .spaced {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
