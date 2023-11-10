@@ -133,6 +133,13 @@ export class BookComponent implements OnInit, OnDestroy {
   protected imgIsLocal: boolean;
   private readonly imgSuffix = Math.floor(Math.random() * 1000000);
   protected dirPath: string;
+  protected focusedOn: string;
+  protected langsObj = {
+    'cs-CZ': 'Česky',
+    'en-US': 'English',
+    'de-DE': 'Deutsch',
+    'ru-RU': 'русский',
+  };
 
   @ViewChild(IonContent) content: IonContent;
   @ViewChild('target') target: ElementRef;
@@ -161,7 +168,7 @@ export class BookComponent implements OnInit, OnDestroy {
       this.initializeSubs();
       if (this.picsServ.pics?.length)
         this.listsOfValues.img = [...new Set([...this.listsOfValues.img, ...this.picsServ.pics])];
-  
+
       this.showAble = this.webScrapper.showAble;
     });
   }
@@ -202,24 +209,9 @@ export class BookComponent implements OnInit, OnDestroy {
     });
   }
 
-  private updateSize(key: string) {
-    if (['serie', 'title', 'originalTitle', 'genre'].includes(key)) return;
-    try {
-      const field = document.querySelector(`#${key}`);
-      if (!field) return;
-      const input = field.querySelector('input');
-      const label = field.querySelector('.mdc-floating-label');
-      input.size = this.bookForm.controls[key].value ? String(this.bookForm.controls[key].value).length + 1 : 1;
-      const width = Math.min(window.innerWidth, Math.max(label.getBoundingClientRect().width + 20, input.getBoundingClientRect().width));
-      this.renderer.setStyle(field, 'flex-basis', `${Math.floor(width)}px`);
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
   protected delayedUpdateSize(key: string) {
     setTimeout(() => {
-      this.updateSize(key);
+      this.onAreaResize(key);
     }, 200);
   }
 
@@ -268,11 +260,11 @@ export class BookComponent implements OnInit, OnDestroy {
     Object.entries(this.bookForm.controls).forEach(ent => {
       const key = ent[0];
       const fc = ent[1];
+      console.log(key, book[key])
       this.listsOfValues[key] = book[key] ? [book[key]] : [];
       let value = book[key];
       if (key === 'progress') {
         if (!book[key]) value = '0%';
-        else if (book[key] === 'finished') value = '100%';
         else if (book[key].includes('/')) {
           const ar = book[key].split('/');
           value = Math.floor(+ar[0] / +ar[1] * 100) + '%';
@@ -316,9 +308,9 @@ export class BookComponent implements OnInit, OnDestroy {
 
     setTimeout(() => {
       Object.keys(this.bookForm.controls).forEach(key => {
-        this.updateSize(key);
+        this.onAreaResize(key)
         this.subs.push(this.bookForm.controls[key].valueChanges.subscribe(() => {
-          this.updateSize(key);
+          this.onAreaResize(key)
         }));
       });
     }, 1000);
@@ -326,6 +318,7 @@ export class BookComponent implements OnInit, OnDestroy {
 
   protected onInput(fc: string, value: string) {
     this.bookForm.controls[fc].setValue(value);
+    setTimeout(() => this.onAreaResize(fc));
   }
 
   protected async updateBook() {
@@ -365,13 +358,10 @@ export class BookComponent implements OnInit, OnDestroy {
   }
 
   protected editable() {
-    Object.entries(this.bookForm.controls).forEach(ent => {
-      const key = ent[0];
-      ent[1].setValue(this.book[key] as never);
-    });
     this.ready2editing = !this.ready2editing;
     Object.entries(this.bookForm.controls).forEach(ent => {
       this.ready2editing ? ent[1].enable({ emitEvent: false }) : ent[1].disable({ emitEvent: false });
+      setTimeout(() => this.onAreaResize(ent[0]));
     });
     this.bookChanged = false;
   }
@@ -492,19 +482,19 @@ export class BookComponent implements OnInit, OnDestroy {
   //   }
   // }
 
-  protected fillData(jsonBook) {
-    Object.keys(jsonBook).forEach(key => {
-      const val = jsonBook[key];
-      const fc = this.bookForm.controls[key];
-      if (fc) {
-        fc.setValue(val || null);
-        if (val && !this.listsOfValues[key].includes(val)) {
-          this.listsOfValues[key].push(val);
-        }
-      }
-    });
-    this.bookChanged = true;
-  }
+  // protected fillData(jsonBook) {
+  //   Object.keys(jsonBook).forEach(key => {
+  //     const val = jsonBook[key];
+  //     const fc = this.bookForm.controls[key];
+  //     if (fc) {
+  //       fc.setValue(val || null);
+  //       if (val && !this.listsOfValues[key].includes(val)) {
+  //         this.listsOfValues[key].push(val);
+  //       }
+  //     }
+  //   });
+  //   this.bookChanged = true;
+  // }
 
   protected downloadPicture() {
     if (!navigator.onLine) {
@@ -864,6 +854,25 @@ export class BookComponent implements OnInit, OnDestroy {
 
   protected onAddPicture() {
     this.pictureC.addPicture(this.bookForm.controls.title.value);
+  }
+
+  protected onFocus(fcNm: string) {
+    setTimeout(() => this.focusedOn = fcNm, 1);
+  }
+
+  protected onBlur() {
+    setTimeout(() => this.focusedOn = null);
+  }
+
+  protected onAreaResize(fcN: string) {
+    const span = document.querySelector(`#${fcN} span.hidden`);
+    const label = document.querySelector(`#${fcN} mat-label`);
+    if (!span && !label) return;
+    const width = Math.floor(Math.max(span?.clientWidth || 0, label?.getBoundingClientRect()?.width || 0));
+    this.renderer.setStyle(document.querySelector(`#${fcN}`), 'flexBasis', `${width + 23}px`);
+    this.renderer.setStyle(document.querySelector(`#${fcN}`), 'width', `${width + 23}px`);
+    const el = document.querySelector(`#${fcN} textarea, #${fcN} input`);
+    if (el) this.renderer.setStyle(el, 'width', `${width + 23}px`);
   }
 
   ngOnDestroy() {

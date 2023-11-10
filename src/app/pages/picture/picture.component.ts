@@ -43,7 +43,6 @@ export class PictureComponent {
     if (!this.swiperRef?.nativeElement) await this.wait(200);
     if (!this.swiperRef?.nativeElement) return;
     this.imgIndex = this.swiperRef?.nativeElement.swiper.activeIndex;
-    console.log(this.imgIndex)
     const imgEl = this.swiperRef.nativeElement.querySelectorAll('img')[this.imgIndex];
     let height = imgEl.naturalHeight;
     const width = imgEl.naturalWidth;

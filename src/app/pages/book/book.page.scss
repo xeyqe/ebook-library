@@ -64,7 +64,10 @@ mat-option:hover {
     overflow: hidden;
 }
 
-mat-form-field,
+mat-form-field {
+    max-width: 95vw;
+}
+
 .marged {
     margin: .5rem;
     max-width: 95vw;
@@ -74,6 +77,8 @@ mat-form-field,
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
+    gap: .5rem;
+    margin: .5rem;
 
     &>* {
         flex-grow: 1;
@@ -107,7 +112,7 @@ mat-select {
     .ion-text-wrap {
         display: flex;
         flex-direction: column;
-        
+
         &>* {
             margin: 0;
         }
@@ -145,4 +150,40 @@ mat-select {
 .mdc-text-field__input {
     width: unset;
     max-width: calc(100vw - .5rem);
+}
+
+.overflowed {
+    height: 0;
+    overflow: visible;
+
+    mat-option {
+        z-index: 10;
+    }
+}
+
+.hidden {
+    display: block;
+    height: 0;
+    overflow: hidden;
+    width: fit-content;
+}
+
+.cont {
+    width: 100%;
+
+    mat-form-field {
+        width: 100%;
+
+        textarea, input {
+            max-width: 90vw;
+        }
+    }
+}
+
+.grayed {
+    color: var(--mdc-filled-text-field-disabled-input-text-color);
+}
+
+.autocomplete-option {
+    width: calc(100% + 2rem);
 }

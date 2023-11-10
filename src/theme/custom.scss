@@ -125,3 +125,12 @@ ion-textarea {
     --highlight-color: #ff3d3d;
 }
 
+.sc-ion-textarea-md {
+    max-height: calc(100% - 3rem) !important;
+    min-height: 1rem;
+}
+
+.mdc-floating-label {
+    text-overflow: unset !important;
+    overflow: visible !important;
+}
