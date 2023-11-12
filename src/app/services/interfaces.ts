@@ -51,6 +51,7 @@ export interface BOOKSIMPLIFIED {
   progress: string;
   rating: number;
   creatorIds: number[];
+  authors: string;
 }
 
 export interface AUTHORSBOOKS {

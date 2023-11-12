@@ -55,6 +55,7 @@
 
                 <ion-label>
                     <h2 class="ion-text-wrap">{{ book.title }}</h2>
+                    <p>{{ book.authors }}</p>
                     <ion-progress-bar *ngIf="book.progress" [value]="(book.progress | percent2:book.progress) / 100">
                     </ion-progress-bar>
                 </ion-label>

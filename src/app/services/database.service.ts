@@ -635,11 +635,36 @@ export class DatabaseService {
           progress: data.rows.item(i).progress,
           img: data.rows.item(i).img,
           rating: data.rows.item(i).rating,
-          creatorIds: data.rows.item(i).creatorIds
+          creatorIds: data.rows.item(i).creatorIds,
+          authors: null
         });
       }
     }
+    for (const book of books) {
+      this.getAutorsStr(book.creatorIds).then(str => book.authors = str);
+    }
     return books;
+  }
+
+  private async getAutorsStr(ids: number[]): Promise<string> {
+    if (!ids?.length) return;
+    let data;
+    try {
+      data = await this.database.executeSql(`SELECT name, surname, pseudonym FROM authors WHERE id IN (${ids.join(', ')})`);
+    } catch (e) {
+      if (e?.rows?.length) data = e;
+      else throw e;
+    }
+    const output = [];
+    for (let i = 0; i < data.rows.length; i++) {
+      const dt = {
+        name: data.rows.item(i).name,
+        surname: data.rows.item(i).surname,
+        pseudonym: data.rows.item(i).pseudonym,
+      };
+      output.push([dt.name, dt.surname].filter(it => it).join(' ') + (dt.pseudonym ? ` (${dt.pseudonym})` : ''));
+    }
+    return output.join(', ');
   }
 
   public async getBooksOfAuthor(ids: number[]): Promise<AUTHORSBOOKS[]> {
@@ -871,17 +896,6 @@ export class DatabaseService {
     );
   }
 
-  private getBookSimplified(book: BOOK): BOOKSIMPLIFIED {
-    return {
-      id: book.id,
-      title: book.title,
-      img: book.img,
-      progress: book.progress,
-      rating: book.rating,
-      creatorIds: book.creatorIds,
-    }
-  }
-
   public async allAuthorsPaths(): Promise<string[]> {
     const data = await this.database.executeSql('SELECT path FROM authors', []).catch(e => {
       console.error('allAuthorsPaths select failed.');
@@ -931,7 +945,7 @@ export class DatabaseService {
     title: string,
     progress: string,
     img: string,
-    creatorIds: number,
+    creatorIds: number[],
   }[]> {
     const data = await this.database.executeSql(
       'SELECT id, title, progress, img, creatorIds FROM books WHERE lastRead IS NOT NULL AND finished IS NULL ORDER BY lastRead DESC, title COLLATE NOCASE ASC',
@@ -942,6 +956,9 @@ export class DatabaseService {
     });
 
     const books = this.getReducedBooksFromSqlRows(data.rows);
+    for (const book of books) {
+      this.getAutorsStr(book.creatorIds).then(str => book.authors = str);
+    }
     return books;
   }
 
@@ -950,7 +967,8 @@ export class DatabaseService {
     title: string,
     progress: string,
     img: string,
-    creatorIds: number,
+    creatorIds: number[],
+    authors: string,
   }[]> {
     const data = await this.database.executeSql(
       `SELECT id, title, progress, img, creatorIds FROM books WHERE finished is NOT NULL ORDER BY finished DESC, title COLLATE NOCASE ASC`,
@@ -960,6 +978,9 @@ export class DatabaseService {
       throw e;
     });
     const books = this.getReducedBooksFromSqlRows(data.rows);
+    for (const book of books) {
+      this.getAutorsStr(book.creatorIds).then(str => book.authors = str);
+    }
     return books;
   }
 
@@ -968,7 +989,8 @@ export class DatabaseService {
     title: string,
     progress: string,
     img: string,
-    creatorIds: number,
+    creatorIds: number[],
+    authors: string,
   }[]> {
     const data = await this.database.executeSql(
       'SELECT id, title, progress, img, creatorIds FROM books WHERE rating > 2 ORDER BY title COLLATE NOCASE ASC',
@@ -978,6 +1000,9 @@ export class DatabaseService {
       throw e;
     });
     const books = this.getReducedBooksFromSqlRows(data.rows);
+    for (const book of books) {
+      this.getAutorsStr(book.creatorIds).then(str => book.authors = str);
+    }
     return books;
   }
 
@@ -986,7 +1011,8 @@ export class DatabaseService {
     title: string,
     progress: string,
     img: string,
-    creatorIds: number,
+    creatorIds: number[],
+    authors: string,
   }[] {
     const books = [];
     if (rows.length > 0) {
@@ -996,7 +1022,8 @@ export class DatabaseService {
           title: rows.item(i).title,
           progress: rows.item(i).progress,
           img: rows.item(i).img,
-          creatorIds: rows.item(i).creatorIds
+          creatorIds: rows.item(i).creatorIds?.split(',')?.map(it => +it),
+          authors: null,
         });
       }
     }

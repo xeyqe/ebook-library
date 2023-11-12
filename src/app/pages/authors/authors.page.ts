@@ -8,7 +8,6 @@ import { MatDialog } from '@angular/material/dialog';
 import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { Encoding, Filesystem } from '@capacitor/filesystem';
-import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
 
 import { Subscription } from 'rxjs';
 import { first } from 'rxjs/operators';
@@ -65,7 +64,6 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
     private db: DatabaseService,
     private dialog: MatDialog,
     private dir: DirectoryService,
-    private filePath: FilePath,
     private fr: FileReaderService,
     private router: Router,
     private workingServ: BusyService,
@@ -296,19 +294,15 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     ).afterClosed().subscribe(async response => {
       if (!response) return;
-      // TODO
-      // Filesystem.stat({
-      //   directory: this.dir.dir,
-      //   path: `/ebook-library/${response.surname}, ${response.name}`,
-      // });
+      const path = await this.fr.getUniquePath(`/ebook-library/${response.surname}, ${response.name}/`);
       await Filesystem.mkdir({
         directory: this.dir.dir,
-        path: `/ebook-library/${response.surname}, ${response.name}`,
+        path,
         recursive: true
       });
       this.db.addAuthor({
         ...response,
-        path: `/ebook-library/${response.surname}, ${response.name}`
+        path
       }).then(authorId => {
         this.router.navigate(['/author', authorId]);
       });
