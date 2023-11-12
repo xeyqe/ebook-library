@@ -1,11 +1,13 @@
-<swiper-container [modules]="swiperModules" (slidechange)="onResizeSwiper()" (init)="onResizeSwiper()" #swiperRef>
+<swiper-container [modules]="swiperModules" [observer]="true" (slidechange)="onResizeSwiper()" (init)="onResizeSwiper()"
+  #swiperRef>
   <ng-container *ngIf="images?.length">
     <swiper-slide *ngFor="let img of images">
       <img height="auto" width="auto" [src]="onGetImgSrc(img)" alt="img">
     </swiper-slide>
   </ng-container>
   <swiper-slide>
-    <img height="auto" width="auto" src="https://upload.wikimedia.org/wikipedia/commons/7/7c/User_font_awesome.svg" alt="img">
+    <img height="auto" width="auto" alt="img"
+      src="https://upload.wikimedia.org/wikipedia/commons/7/7c/User_font_awesome.svg">
   </swiper-slide>
 </swiper-container>
 <span *ngIf="images?.length">{{(imgIndex + 1) + '/' + (images.length + 1)}}</span>
