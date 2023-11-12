@@ -56,7 +56,7 @@
                 [src]="onGetImgSrc(bookForm.controls.img.value)" alt="img">
         </div>
 
-        <div class="flexed">
+        <div class="flexed" #contEl>
             <div id="serie" class="cont" *ngIf="bookForm.controls.serie.value || ready2editing">
                 <mat-form-field subscriptSizing="dynamic">
                     <mat-label class="red">Serie</mat-label>
@@ -232,7 +232,7 @@
                 <span class="hidden">{{bookForm.controls.translator.value}}</span>
             </div>
 
-            <div id="pages" class="cont" *ngIf="bookForm.controls.length.value || ready2editing">
+            <div id="length" class="cont" *ngIf="bookForm.controls.length.value || ready2editing">
                 <mat-form-field subscriptSizing="dynamic">
                     <mat-label class="red">Pages</mat-label>
                     <input type="number" formControlName="length" matInput [matAutocomplete]="autoPages"
@@ -283,11 +283,9 @@
                 <span class="hidden">{{bookForm.controls.finished.value | date:'dd.MM.yyyy, hh:mm:ss'}}</span>
             </div>
 
-            <mat-form-field subscriptSizing="dynamic" *ngIf="book.path">
+            <mat-form-field subscriptSizing="dynamic" *ngIf="book.path" [ngClass]="{'full-width': book.path}">
                 <mat-label class="red">Path</mat-label>
-                <!-- <textarea matInput class="gray" [value]="book.path" disabled></textarea> -->
-                <span class="grayed">{{book.path}}</span>
-                <input disabled type="text" matInput [value]="book.path" style="display: none;">
+                <textarea matInput cdkTextareaAutosize class="gray full-width" [value]="book.path" disabled></textarea>
             </mat-form-field>
 
             <div id="rating" class="cont" *ngIf="bookForm.controls.rating.value || ready2editing">

@@ -45,6 +45,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
   @ViewChild(IonContent) content: IonContent;
   @ViewChild('target1') target1: ElementRef;
   @ViewChild('target2') target2: ElementRef;
+  @ViewChild('contEl') contEl: ElementRef;
 
   protected author: AUTHOR = null;
   protected books: AUTHORSBOOKS[] = [];
@@ -228,7 +229,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
 
   private updateSize(key: string) {
     try {
-      const field = document.querySelector(`#${key}`);
+      const field = this.contEl.nativeElement.querySelector(`#${key}`);
       if (!field) return;
       const input = field.querySelector('input');
       const label = field.querySelector('.mdc-floating-label');
@@ -341,15 +342,24 @@ export class AuthorComponent implements OnInit, OnDestroy {
   }
 
   protected async onUpdateAuthor() {
-    const img = this.pictureC.getCurrentImg();
+    let img = this.pictureC.getCurrentImg();
+    if (img?.startsWith('/ebook-library/epub/')) {
+      const nm = [this.authorForm.controls.name.value || '', this.authorForm.controls.surname.value || ''].join('_');
+      const path = await this.fs.getUniquePath(this.author.path + nm + img.slice(img.lastIndexOf('.')));
+      await Filesystem.copy({
+        directory: this.directoryServ.dir,
+        toDirectory: this.directoryServ.dir,
+        from: img,
+        to: path
+      });
+      img = path;
+    }
     if (this.authorForm.controls.img.value !== img)
       this.authorForm.controls.img.setValue(img);
-    Object.entries(this.authorForm.controls).forEach(ent => {
-      const key = ent[0];
-      const val = ent[1].value;
-      this.author[key] = val;
+    Object.keys(this.authorForm.controls).forEach(key => {
+      this.author[key] = this.authorForm.controls[key].value;
       try {
-        ent[1].disable();
+        this.authorForm.controls[key].disable();
       } catch (e) {
         console.error(key);
         console.error(e);
@@ -748,13 +758,6 @@ export class AuthorComponent implements OnInit, OnDestroy {
     this.pictureC.addPicture([name, surname].join(' '));
   }
 
-  // onGetWidth(fcName: string, title: string) {
-  //   return {
-  //     'max-width': ((String(this.authorForm.get(fcName).value).length * 7) + 7) + 'px',
-  //     'min-width': ((title.length * 9.5) + 5) + 'px'
-  //   };
-  // }
-
   protected onDownloadBuVisible(path: string): boolean {
     return path && !path.startsWith('/');
   }
@@ -769,35 +772,18 @@ export class AuthorComponent implements OnInit, OnDestroy {
     this.authorForm.controls.img.setValue(img);
   }
 
-  private async getUniqueFileName(dt: { dir: string, name: string, extension: string }): Promise<string> {
-    for (let i = 0; i < 100; i++) {
-      try {
-        await Filesystem.stat({
-          path: dt.dir + dt.name + '.' + dt.extension,
-          directory: this.directoryServ.dir
-        });
-        return this.getUniqueFileName({ ...dt, name: dt.name + i, extension: dt.extension });
-      } catch (e) {
-        if (e.message !== 'File does not exist') throw e;
-        return dt.dir + dt.name + '.' + dt.extension;
-      }
-    }
-  }
-
   protected onAddBook() {
     FilePicker.pickFiles({
       types: ['application/epub+zip', 'text/plain', 'application/pdf']
     }).then(async a => {
       const name = a.files[0].name;
-      const extension = name.slice(name.lastIndexOf('.') + 1);
 
-      const path = await this.getUniqueFileName({ dir: this.author.path, name: name.slice(0, name.lastIndexOf('.')), extension });
+      const path = await this.fs.getUniquePath(this.author.path + name);
       const nm = path.slice(path.lastIndexOf('/') + 1, path.lastIndexOf('.'));
+      const from = await this.filePath.resolveNativePath(a.files[0].path);
 
-      console.log(path)
-      console.log(nm)
       Filesystem.copy({
-        from: await this.filePath.resolveNativePath(a.files[0].path),
+        from,
         to: path,
         toDirectory: this.directoryServ.dir
       }).then(() => {

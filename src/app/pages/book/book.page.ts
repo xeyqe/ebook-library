@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef, OnDestroy, Renderer2 } from '@angular/core';
+import { Component, ViewChild, ElementRef, OnDestroy, Renderer2 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormControl, FormGroup } from '@angular/forms';
 
@@ -34,13 +34,13 @@ import { DialogComponent } from 'src/app/material/dialog/dialog.component';
   templateUrl: './book.page.html',
   styleUrls: ['./book.page.scss'],
 })
-export class BookComponent implements OnInit, OnDestroy {
+export class BookComponent implements OnDestroy {
   @ViewChild('pictureC') pictureC: PictureComponent | undefined;
+  @ViewChild('contEl') contEl: ElementRef | undefined;
 
   protected book: BOOK = null;
 
   protected bookChanged = false;
-  // protected fileName: string;
   protected ready2editing = false;
   protected jsonBooks: INDEXOFBOOK[];
   protected showAble = false;
@@ -160,7 +160,7 @@ export class BookComponent implements OnInit, OnDestroy {
     protected dir: DirectoryService,
   ) { }
 
-  ngOnInit() {
+  ionViewDidEnter() {
     this.initialize().then(() => {
       this.fillOnlineData(this.book.creatorIds[0]);
       this.updateOldImgs(this.book.img);
@@ -207,12 +207,6 @@ export class BookComponent implements OnInit, OnDestroy {
         }
       }));
     });
-  }
-
-  protected delayedUpdateSize(key: string) {
-    setTimeout(() => {
-      this.onAreaResize(key);
-    }, 200);
   }
 
   private fillOnlineData(creatorIds: number): void {
@@ -318,27 +312,27 @@ export class BookComponent implements OnInit, OnDestroy {
 
   protected onInput(fc: string, value: string) {
     this.bookForm.controls[fc].setValue(value);
-    setTimeout(() => this.onAreaResize(fc));
+    this.onAreaResize(fc);
   }
 
   protected async updateBook() {
-    const img = this.pictureC.getCurrentImg();
+    let img = this.pictureC.getCurrentImg();
+    if (img?.startsWith('/ebook-library/epub/')) {
+      const path = await this.fs.getUniquePath(this.book.path.slice(0, this.book.path.lastIndexOf('.')) + img.slice(img.lastIndexOf('.')));
+      await Filesystem.copy({
+        directory: this.dir.dir,
+        toDirectory: this.dir.dir,
+        from: img,
+        to: path
+      });
+      img = path;
+    }
     if (this.bookForm.controls.img.value !== img)
       this.bookForm.controls.img.setValue(img);
     Object.keys(this.bookForm.controls).forEach(key => {
       if (key !== 'progress') this.book[key] = this.bookForm.controls[key].value;
     });
 
-    // if (this.book.img?.at(0) === '/' && this.listsOfValues?.img?.includes(this.book.img)) {
-    //   const path = this.getPath();
-    //   await Filesystem.copy({
-    //     directory: this.dir.dir,
-    //     toDirectory: this.dir.dir,
-    //     from: this.book.img,
-    //     to: path
-    //   });
-    //   this.book.img = path;
-    // }
     this.db.updateBook(this.book).then(() => {
       this.bookChanged = false;
       this.ready2editing = !this.ready2editing;
@@ -351,17 +345,11 @@ export class BookComponent implements OnInit, OnDestroy {
     });
   }
 
-  private getPath(): string {
-    const path = this.book.path.substring(0, this.book.path.lastIndexOf('/'));
-    const suffix = this.book.img.substring(this.book.img.lastIndexOf('.') + 1);
-    return `${path}/${this.book.title.replace(/[,:\s/]/g, '_')}.${suffix}`;
-  }
-
   protected editable() {
     this.ready2editing = !this.ready2editing;
     Object.entries(this.bookForm.controls).forEach(ent => {
       this.ready2editing ? ent[1].enable({ emitEvent: false }) : ent[1].disable({ emitEvent: false });
-      setTimeout(() => this.onAreaResize(ent[0]));
+      this.onAreaResize(ent[0]);
     });
     this.bookChanged = false;
   }
@@ -865,14 +853,17 @@ export class BookComponent implements OnInit, OnDestroy {
   }
 
   protected onAreaResize(fcN: string) {
-    const span = document.querySelector(`#${fcN} span.hidden`);
-    const label = document.querySelector(`#${fcN} mat-label`);
-    if (!span && !label) return;
-    const width = Math.floor(Math.max(span?.clientWidth || 0, label?.getBoundingClientRect()?.width || 0));
-    this.renderer.setStyle(document.querySelector(`#${fcN}`), 'flexBasis', `${width + 23}px`);
-    this.renderer.setStyle(document.querySelector(`#${fcN}`), 'width', `${width + 23}px`);
-    const el = document.querySelector(`#${fcN} textarea, #${fcN} input`);
-    if (el) this.renderer.setStyle(el, 'width', `${width + 23}px`);
+    setTimeout(() => {
+      const span = this.contEl.nativeElement.querySelector(`#${fcN} .hidden`);
+      const label = this.contEl.nativeElement.querySelector(`#${fcN} mat-label`);
+      if (!span && !label) return;
+      const width = Math.floor(Math.max(span?.clientWidth || 0, label?.getBoundingClientRect()?.width || 0));
+      console.log(fcN, width)
+      this.renderer.setStyle(this.contEl.nativeElement.querySelector(`#${fcN}`), 'flexBasis', `${width + 23}px`);
+      this.renderer.setStyle(this.contEl.nativeElement.querySelector(`#${fcN}`), 'width', `${width + 23}px`);
+      const el = this.contEl.nativeElement.querySelector(`#${fcN} textarea, #${fcN} input`);
+      if (el) this.renderer.setStyle(el, 'width', `${width + 23}px`);
+    });
   }
 
   ngOnDestroy() {

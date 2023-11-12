@@ -336,4 +336,21 @@ export class FileReaderService {
     });
   }
 
+  public async getUniquePath(filePath: string, index?: number): Promise<string> {
+    const suffix = index ? index : '';
+    const path = filePath.substring(0, filePath.lastIndexOf('/'));
+    const fileName = filePath.substring(filePath.lastIndexOf('/') + 1, filePath.lastIndexOf('.')) + suffix;
+    const isFile = filePath.substring(filePath.lastIndexOf('/') + 1).includes('.');
+    const extension = isFile ? filePath.substring(filePath.lastIndexOf('.') + 1) : '';
+    try {
+      await Filesystem.stat({
+        path: `${path}/${fileName}.${extension}`,
+        directory: this.dir.dir
+      });
+      return await this.getUniquePath(filePath, suffix ? suffix + 1 : 1);
+    } catch (e) {
+      return `${path}/${fileName}.${extension}`;
+    }
+  }
+
 }

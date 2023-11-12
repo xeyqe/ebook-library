@@ -48,7 +48,7 @@
                     [src]="onGetImgSrc(authorForm.controls.img.value)" alt="img">
             </div>
     
-            <div class="flexed">
+            <div class="flexed" #contEl>
                 <mat-form-field subscriptSizing="dynamic" *ngIf="authorForm.controls.name.value || ready2editing" id="name">
                     <mat-label class="red" position="floating">Name</mat-label>
                     <input type="text" matInput [matAutocomplete]="autoName" formControlName="name"
