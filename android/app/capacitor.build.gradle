@@ -20,6 +20,7 @@ dependencies {
     implementation project(':capacitor-all-files-access-permission')
     implementation project(':capacitor-plugin-safe-area')
     implementation project(':capacitor-zip4j')
+    implementation "commons-io:commons-io:2.4"
     implementation "androidx.core:core:1.0.0"
     implementation "androidx.webkit:webkit:1.4.0"
 }
