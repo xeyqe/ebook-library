@@ -739,8 +739,14 @@ export class BookComponent implements OnDestroy {
           e.data.genre = e.data.genre.split(',');
         }
         if (e.data.serieOrder) {
-          e.data.serieOrder = +e.data.serieOrder;
+          e.data.serieOrder = +e.data.serieOrder.replace(/^(\d*).*/, "$1");
         }
+        if (!e.data.serie && e.data.edition) {
+          e.data.serie = e.data.edition;
+          e.data.serieOrder = +e.data.editionOrder.replace(/[^\d]/g, '');
+        }
+        delete e.data.edition;
+        delete e.data.editionOrder;
 
         resolve(e.data as any);
         browser.close();
@@ -774,8 +780,10 @@ export class BookComponent implements OnDestroy {
               title:a(document.querySelector('[itemprop=name]'),'innerText'),\
               translator:a(document.querySelector('[itemprop=translator]'),'innerText'),\
               ISBN:a(document.querySelector('[itemprop=isbn]'),'innerText'),\
-              serie:a(document.querySelector('.detail_description h3 a'),'textContent'),\
-              serieOrder:a(document.querySelector('.detail_description h3 em'),'textContent')\
+              serie:a(document.querySelector('a.odright_pet'),'textContent'),\
+              serieOrder:a(document.querySelector('span.odright_pet'),'textContent'),\
+              edition:a(document.querySelector('[itemprop=bookEdition]'), 'textContent'),\
+              editionOrder:a(document.querySelector('em.info.st_normal'),'textContent')\
             };\
             webkit.messageHandlers.cordova_iab.postMessage(JSON.stringify(o)\
           )},1000)"
