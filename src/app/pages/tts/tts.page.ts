@@ -1,11 +1,12 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { Capacitor } from '@capacitor/core';
-import { ActivatedRoute } from '@angular/router';
+import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 import { FormControl, FormGroup } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 
 import { Platform } from '@ionic/angular';
 import { TTS } from '@xeyqe/capacitor-tts';
 import { Storage } from '@ionic/storage-angular';
+import { AudioFocus } from 'capacitor-audio-focus';
 
 import { Subscription } from 'rxjs';
 
@@ -73,6 +74,7 @@ export class TtsComponent implements OnInit, OnDestroy {
   private lastReadSet: boolean;
   private progressObj: { [progress: number]: number, toAdd: number };
   private spProgress: number;
+  private audioFocusPluginListener: PluginListenerHandle;
 
 
   constructor(
@@ -387,6 +389,8 @@ export class TtsComponent implements OnInit, OnDestroy {
       } else {
         this.working.isSpeaking = false;
         this.speechObj.isSpeaking = false;
+        this.audioFocusPluginListener.remove();
+        AudioFocus.abandonFocus();
       }
     }).catch((reason) => {
       this.working.isSpeaking = false;
@@ -403,7 +407,7 @@ export class TtsComponent implements OnInit, OnDestroy {
     this.db.saveValue('this.speechObj.isSpeaking', this.speechObj.isSpeaking);
   }
 
-  protected onOff() {
+  protected async onOff() {
     if (!this.lastReadSet && !this.speechObj.isSpeaking) {
       this.lastReadSet = true;
       this.db.updateBookLastRead(this.id, new Date());
@@ -414,9 +418,16 @@ export class TtsComponent implements OnInit, OnDestroy {
       this.spritz();
     } else {
       if (this.speechObj.isSpeaking) {
+        AudioFocus.abandonFocus();
+        this.audioFocusPluginListener.remove();
         this.stopSpeaking();
       } else {
-        this.speak();
+        this.audioFocusPluginListener = await AudioFocus.addListener('audioFocusChangeEvent', (resp) => {
+          if (resp.type === 'AUDIOFOCUS_LOSS') this.stopSpeaking();
+        });
+        AudioFocus.requestFocus().then(() => {
+          this.speak();
+        });
       }
     }
   }
@@ -513,11 +524,15 @@ export class TtsComponent implements OnInit, OnDestroy {
     }
   }
 
-  private stopSpeaking(): Promise<any> {
+  private async stopSpeaking(): Promise<any> {
     this.speechObj.isSpeaking = false;
     this.working.isSpeaking = false;
     this.saveAuthorTitle();
-    return TTS.stop();
+    try {
+      await TTS.stop();
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   private redIndexFinder(length: number): number[] {

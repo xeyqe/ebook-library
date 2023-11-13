@@ -29,6 +29,9 @@ project(':xeyqe-capacitor-tts').projectDir = new File('../node_modules/@xeyqe/ca
 include ':capacitor-all-files-access-permission'
 project(':capacitor-all-files-access-permission').projectDir = new File('../node_modules/capacitor-all-files-access-permission/android')
 
+include ':capacitor-audio-focus'
+project(':capacitor-audio-focus').projectDir = new File('../node_modules/capacitor-audio-focus/android')
+
 include ':capacitor-plugin-safe-area'
 project(':capacitor-plugin-safe-area').projectDir = new File('../node_modules/capacitor-plugin-safe-area/android')
 

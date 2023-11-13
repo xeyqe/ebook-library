@@ -51,6 +51,7 @@
     "@ng-stack/contenteditable": "^2.0.1",
     "@xeyqe/capacitor-tts": "^0.0.1",
     "capacitor-all-files-access-permission": "^0.0.2",
+    "capacitor-audio-focus": "^0.0.1",
     "capacitor-plugin-safe-area": "^2.0.5",
     "capacitor-zip4j": "^0.0.1",
     "community-cordova-plugin-filepath": "^1.7.1",

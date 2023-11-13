@@ -36,6 +36,10 @@
 		"classpath": "com.xeyqe.plugins.example.AllFilesAccessPlugin"
 	},
 	{
+		"pkg": "capacitor-audio-focus",
+		"classpath": "com.xeyqe.plugins.audiofocus.AudioFocusPlugin"
+	},
+	{
 		"pkg": "capacitor-plugin-safe-area",
 		"classpath": "com.capacitor.safearea.SafeAreaPlugin"
 	},
