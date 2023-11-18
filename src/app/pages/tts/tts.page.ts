@@ -75,7 +75,7 @@ export class TtsComponent implements OnInit, OnDestroy {
   private progressObj: { [progress: number]: number, toAdd: number };
   private spProgress: number;
   private audioFocusPluginListener: PluginListenerHandle;
-
+  private ttsPluginListener: PluginListenerHandle;
 
   constructor(
     private db: DatabaseService,
@@ -241,14 +241,6 @@ export class TtsComponent implements OnInit, OnDestroy {
 
     if (loadedValue && loadedValue.engine !== engine)
       await TTS.switchEngine({ engineName: loadedValue.engine });
-
-    console.log('before progressEvent')
-    TTS.addListener('progressEvent', (a) => {
-      if ((this.progressObj.toAdd + a.end) > this.progressObj[this.progress + 1]) {
-        this.progress++;
-        this.ref.detectChanges();
-      }
-    });
 
     this.subs.push(this.myForm.valueChanges.subscribe(() => {
       this.db.saveValue('tts', JSON.stringify(this.myForm.value));
@@ -420,13 +412,21 @@ export class TtsComponent implements OnInit, OnDestroy {
       if (this.speechObj.isSpeaking) {
         AudioFocus.abandonFocus();
         this.audioFocusPluginListener.remove();
+        this.ttsPluginListener.remove();
         this.stopSpeaking();
+        this.spProgress = this.progress;
       } else {
         this.audioFocusPluginListener = await AudioFocus.addListener('audioFocusChangeEvent', (resp) => {
           if (resp.type === 'AUDIOFOCUS_LOSS') this.stopSpeaking();
         });
         AudioFocus.requestFocus().then(() => {
           this.speak();
+        });
+        this.ttsPluginListener = TTS.addListener('progressEvent', (a) => {
+          if ((this.progressObj.toAdd + a.end) > this.progressObj[this.progress + 1]) {
+            this.progress++;
+            this.ref.detectChanges();
+          }
         });
       }
     }
