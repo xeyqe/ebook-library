@@ -646,6 +646,32 @@ export class DatabaseService {
     return books;
   }
 
+  public async isPictureUsedElsewhere(img: string, bookId?: number, authorId?: number): Promise<boolean> {
+    let used = false;
+    try {
+      const dt = await this.database.executeSql(
+        bookId ? `SELECT id FROM books WHERE img = ? AND id != ?` : `SELECT id FROM books WHERE img = ?`,
+        bookId ? [img, bookId] : [img]
+      );
+      used = !!dt.rows.length;
+    } catch (e) {
+      if (e?.rows?.length) used = !!e.rows.length;
+      else throw e;
+    }
+    if (used) return true;
+    try {
+      const dt = await this.database.executeSql(
+        authorId ? `SELECT id FROM authors WHERE img = ? AND id != ?` : `SELECT id FROM authors WHERE img = ?`,
+        authorId ? [img, authorId] : [img]
+      );
+      used = !!dt.rows.length;
+    } catch (e) {
+      if (e?.rows?.length) used = !!e.rows.length;
+      else throw e;
+    }
+    return used;
+  }
+
   private async getAutorsStr(ids: number[]): Promise<string> {
     if (!ids?.length) return;
     let data;
@@ -718,15 +744,15 @@ export class DatabaseService {
   }
 
   public async isBookFileUsedInDifferentBook(path: string, id: number): Promise<boolean> {
-    let outputId: boolean;
+    let used = false;
     try {
-      outputId = !!await this.database.executeSql('SELECT id FROM books WHERE path = ? AND id != ?', [path, id]);
+      const dt = await this.database.executeSql('SELECT id FROM books WHERE path = ? AND id != ?', [path, id]);
+      used = !!dt.rows.length;
     } catch (e) {
-      console.error('isBookFileUsedInDifferentBook failed');
-      console.error(e);
-      throw e;
+      if (e?.rows?.length) used = !!e.rows.length;
+      else throw e;
     }
-    return outputId;
+    return used;
   }
 
   public async getBook(id: number): Promise<BOOK> {
@@ -760,16 +786,21 @@ export class DatabaseService {
       await this.updateAuthor({ ...author, booksIds: author.booksIds.filter(it => it !== bookId) });
     }
     if (book.img && book.img.startsWith('/')) {
-      const other = await this.database.executeSql(`SELECT id FROM books WHERE img = ${book.img}`);
-      if (!other.rows.length) {
-        await Filesystem.deleteFile({
-          directory: this.dir.dir,
-          path: book.img
-        });
+      const used = await this.isPictureUsedElsewhere(book.img, bookId);
+      if (!used) {
+        Filesystem.stat({
+            directory: this.dir.dir,
+            path: book.img
+        }).then(() => {
+          Filesystem.deleteFile({
+            directory: this.dir.dir,
+            path: book.img
+          });
+        })
       }
 
     }
-    await this.database.executeSql('DELETE FROM books WHERE id = ?', [bookId]);
+    return this.database.executeSql('DELETE FROM books WHERE id = ?', [bookId]);
   }
 
   public async updateAuthor(author: AUTHOR) {

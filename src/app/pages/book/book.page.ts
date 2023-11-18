@@ -366,16 +366,13 @@ export class BookComponent implements OnDestroy {
     );
     dialogRef.afterClosed().pipe(first()).subscribe(async (selected) => {
       if (selected === 0) {
-        const bookId = this.book.id;
-        const authorId = this.book.creatorIds;
         try {
-          await this.onRemovePic();
           await this.removeBookFile();
         } catch (e) {
-          // nothing
+          console.error(e);
         }
-        this.db.deleteBook(bookId).then(() => {
-          this.router.navigate(['/author', authorId]);
+        this.db.deleteBook(this.book.id).then(() => {
+          this.router.navigate(['/author', this.book.creatorIds[0]]);
         });
       }
     });
@@ -384,53 +381,54 @@ export class BookComponent implements OnDestroy {
 
   protected async onRemovePic() {
     const img = this.pictureC.getCurrentImg();
-    if (img?.startsWith('/')) {
-      await this.fs.removeFile(img).finally(() => {
-        this.bookForm.controls.img.setValue(null);
-        this.pictureC.deleteCurrentImg();
-        this.bookChanged = true;
-      }).catch(e => {
-        console.error(e);
-        this.dialog.open(
-          DialogComponent,
-          {
-            data: {
-              header: 'Warning',
-              message: 'Deleting of pic file failed!',
-              selects: ['Ok']
-            }
-          }
-        );
-      });
-    } else {
+    if (!img?.startsWith('/')) {
       this.bookForm.controls.img.setValue(null);
       this.bookChanged = true;
+      return;
     }
+    const used = await this.db.isPictureUsedElsewhere(img, this.book.id);
+    if (used) return;
+    await this.fs.removeFile(img).finally(() => {
+      this.bookForm.controls.img.setValue(null);
+      this.pictureC.deleteCurrentImg();
+      this.bookChanged = true;
+    }).catch(e => {
+      console.error(e);
+      this.dialog.open(
+        DialogComponent,
+        {
+          data: {
+            header: 'Warning',
+            message: 'Deleting of pic file failed!',
+            selects: ['Ok']
+          }
+        }
+      );
+    });
   }
 
   private async removeBookFile() {
-    const path2File = this.book.path.replace(/.*ebook-library/, '/ebook-library/');
-    let deletable: boolean;
+    const path2File = this.book.path.replace(/.*ebook-library/, '/ebook-library');
+    let used: boolean;
     try {
-      deletable = !await this.db.isBookFileUsedInDifferentBook(path2File, this.book.id);
+      used = await this.db.isBookFileUsedInDifferentBook(path2File, this.book.id);
     } catch (e) {
       console.error(e);
     }
-    if (deletable) {
-      try {
-        await this.fs.removeFile(path2File)
-      } catch (e) {
-        this.dialog.open(
-          DialogComponent,
-          {
-            data: {
-              header: 'Warning',
-              message: 'Deleting of book file failed!',
-              selects: ['Ok']
-            }
+    if (used) return;
+    try {
+      await this.fs.removeFile(path2File)
+    } catch (e) {
+      this.dialog.open(
+        DialogComponent,
+        {
+          data: {
+            header: 'Warning',
+            message: 'Deleting of book file failed!',
+            selects: ['Ok']
           }
-        );
-      }
+        }
+      );
     }
   }
 
