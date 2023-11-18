@@ -4,7 +4,7 @@
             <ion-col size="10">
                 <ion-searchbar show-cancel-button="focus" [debounce]="1000" (ionInput)="onSearch($event)"
                     (ionFocus)="hideCharacters = true" (ionBlur)="hideCharacters = false"
-                    (ionClear)="onSearchClear()"></ion-searchbar>
+                    (ionClear)="onSearchClear()" #seachBarEl></ion-searchbar>
             </ion-col>
             <ion-col size="1">
                 <ion-button (click)="where2SearchFn()">

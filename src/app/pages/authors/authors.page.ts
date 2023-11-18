@@ -1,6 +1,6 @@
-import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild } from '@angular/core';
 import { animate, state, style, transition, trigger } from '@angular/animations';
-import { InfiniteScrollCustomEvent } from '@ionic/angular';
+import { InfiniteScrollCustomEvent, IonSearchbar } from '@ionic/angular';
 import { Router } from '@angular/router';
 
 import { MatDialog } from '@angular/material/dialog';
@@ -39,6 +39,7 @@ import { BOOKSIMPLIFIED, AUTHORSIMPLIFIED } from 'src/app/services/interfaces';
   ]
 })
 export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('seachBarEl') seachBarEl: IonSearchbar;
   private subs: Subscription[] = [];
   private authors: AUTHORSIMPLIFIED[] = [];
   protected _authors: AUTHORSIMPLIFIED[] = [];
@@ -114,6 +115,17 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.selectedCharacter = await this.db.getValue('character');
     this.bookSearchBy = await this.db.getValue('bookSearchBy') as any;
 
+    const searchVal = this.seachBarEl.value;
+    if (searchVal) this.search(searchVal);
+    else this.load();
+
+    setTimeout(() => {
+      const el = document.querySelector('ion-list')?.firstElementChild;
+      this.scrollTop = el?.getBoundingClientRect()?.y || 0;
+    });
+  }
+
+  private async load() {
     if (this.where2Search === 'A') {
       this.authors = await this.db.loadAuthors(this.selectedCharacter || 'W');
       this._authors = this.authors.slice(0, 10);
@@ -121,10 +133,6 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.books = await this.db.loadBooks((this.bookSearchBy as any) || 'started');
       this._books = this.books.slice(0, 10);
     }
-    setTimeout(() => {
-      const el = document.querySelector('ion-list')?.firstElementChild;
-      this.scrollTop = el?.getBoundingClientRect()?.y || 0;
-    });
   }
 
   protected async changeSelectedChar(value: string, whichOne: 'authors' | 'books') {
@@ -252,6 +260,10 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
     if (val.length < 3) return;
+    this.search(val);
+  }
+
+  private async search(val: string) {
     if (this.where2Search === 'A') {
       this.authors = await this.db.findAuthors(val);
       this._authors = this.authors.slice(0, 10);
