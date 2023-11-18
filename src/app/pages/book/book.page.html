@@ -37,15 +37,17 @@
 <ion-content>
     <form [formGroup]="bookForm" *ngIf="book && bookForm">
         <div *ngIf="ready2editing || bookForm.controls.img.value" class="pic-container">
-            <div class="bu-change-pic" *ngIf="bookForm.controls.img.value && ready2editing">
-                <ion-button *ngIf="bookForm.controls.img.value && !bookForm.controls.img.value.startsWith('/')"
-                    (click)="downloadPicture()">
-                    <ion-icon slot="icon-only" name="download-sharp"></ion-icon>
-                </ion-button>
-                <ion-button (click)="onRemovePic()">
-                    <ion-icon slot="icon-only" name="remove"></ion-icon>
-                </ion-button>
-                <ion-button (click)="onAddPicture()">
+            <div class="bu-change-pic">
+                <ng-container *ngIf="bookForm.controls.img.value && ready2editing">
+                    <ion-button *ngIf="!bookForm.controls.img.value.startsWith('/')"
+                        (click)="downloadPicture()">
+                        <ion-icon slot="icon-only" name="download-sharp"></ion-icon>
+                    </ion-button>
+                    <ion-button (click)="onRemovePic()">
+                        <ion-icon slot="icon-only" name="remove"></ion-icon>
+                    </ion-button>
+                </ng-container>
+                <ion-button *ngIf="ready2editing" (click)="onAddPicture()">
                     <ion-icon slot="icon-only" name="add-circle-sharp"></ion-icon>
                 </ion-button>
             </div>
