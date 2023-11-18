@@ -41,14 +41,14 @@ export class AppComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    this.platform.ready().then(async () => {
+    this.platform.ready().then(() => {
       this.saveArea();
-      await AllFilesAccess.access();
-
-      this.fr.downloadDorian();
-      this.initializeApp();
-      this.setSubs();
-      this.statusBar.hide();
+      AllFilesAccess.access().then(() => {
+        this.fr.downloadDorian();
+        this.initializeApp();
+        this.setSubs();
+        this.statusBar.hide();
+      })
     }).catch(e => {
       console.error('getting platform ready failed');
       console.error(e);
