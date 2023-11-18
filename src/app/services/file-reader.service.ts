@@ -81,74 +81,63 @@ export class FileReaderService {
   }
 
   public async listOfAuthors() {
-    console.log('listOfAuthors')
+    if (!this.ready2addAuthors) return;
+    this.ready2addAuthors = false;
+    let allAuthorsPaths: string[];
     try {
-      if (this.ready2addAuthors) {
-        this.ready2addAuthors = false;
-        let allAuthorsPaths: string[];
-        try {
-          allAuthorsPaths = await this.db.allAuthorsPaths();
-          console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
-          console.log('allAuthorsPath')
-          console.log(allAuthorsPaths)
-        } catch (e) {
-          console.error('this.db.allAuthorsPaths failed')
-          console.error(e)
-        }
-
-        let foldersFiles: ReaddirResult;
-        try {
-          foldersFiles = await Filesystem.readdir({
-            directory: this.dir.dir,
-            path: 'ebook-library'
-          });
-        } catch (e) {
-          console.error('Filesystem.readdir failed')
-          console.error(e)
-        }
-        const folders: FileInfo[] = [];
-        for (const item of foldersFiles.files) {
-          if (item.type === 'directory' && item.name !== 'epub')
-            folders.push(item);
-        }
-        for (const authorFolder of folders) {
-          if (!allAuthorsPaths.includes(`/ebook-library/${authorFolder.name}`) && !allAuthorsPaths.includes(`/ebook-library/${authorFolder.name}/`)) {
-            const name = authorFolder.name.substring(authorFolder.name.lastIndexOf('/') + 1).split(',');
-            const surname = name[0].trim();
-            let forename = '';
-            if (name[1]) {
-              forename = name[1].trim();
-            }
-            let authorId: number;
-
-            try {
-              const author = this.createAuthor({ forename, surname, path: `/ebook-library/${authorFolder.name}` });
-              authorId = await this.db.addAuthor(author);
-            } catch (e) {
-              console.error('authorId = await this.db.addAuthor failed')
-              console.error(e)
-            }
-            try {
-              this.db.authorsBooksPaths(authorId).then((paths) => {
-                try {
-                  this._booksOfAuthor(`/ebook-library/${authorFolder.name}/`, authorId, paths);
-                } catch (e) {
-                  console.error(`_booksOfAuthor`)
-                  console.error(e)
-                }
-              });
-            } catch (e) {
-              console.error(e)
-            }
-          }
-        }
-
-        this.ready2addAuthors = true;
-      }
+      allAuthorsPaths = await this.db.allAuthorsPaths();
     } catch (e) {
-      console.error('listOfAuthors failed!');
-      throw e;
+      console.error('this.db.allAuthorsPaths failed')
+      console.error(e)
     }
+
+    let foldersFiles: ReaddirResult;
+    try {
+      foldersFiles = await Filesystem.readdir({
+        directory: this.dir.dir,
+        path: 'ebook-library'
+      });
+    } catch (e) {
+      console.error('Filesystem.readdir failed')
+      console.error(e)
+    }
+    const folders: FileInfo[] = [];
+    for (const item of foldersFiles.files) {
+      if (item.type === 'directory' && item.name !== 'epub') folders.push(item);
+    }
+    for (const authorFolder of folders) {
+      this.addAuthor(allAuthorsPaths, authorFolder);
+    }
+    this.ready2addAuthors = true;
+  }
+
+  private async addAuthor(allAuthorsPaths: string[], authorFolder: FileInfo) {
+    const folder = `/ebook-library/${authorFolder.name}`;
+    if (allAuthorsPaths.includes(folder) || allAuthorsPaths.includes(`${folder}/`)) return;
+    const name = authorFolder.name.substring(authorFolder.name.lastIndexOf('/') + 1).split(',');
+    const surname = name[0].trim();
+    let forename = '';
+    if (name[1]) forename = name[1].trim();
+    let authorId: number;
+
+    try {
+      const author = this.createAuthor({ forename, surname, path: folder });
+      authorId = await this.db.addAuthor(author);
+    } catch (e) {
+      console.error('authorId = await this.db.addAuthor failed')
+      console.error(e)
+    }
+
+    this.db.authorsBooksPaths(authorId).then((paths) => {
+      try {
+        this._booksOfAuthor(`/ebook-library/${authorFolder.name}/`, authorId, paths);
+      } catch (e) {
+        console.error(`_booksOfAuthor`)
+        console.error(e)
+      }
+    }).catch(e => {
+      console.error(e)
+    })
   }
 
   private createAuthor(dt: { forename: string, surname: string, path: string }): AUTHOR {
