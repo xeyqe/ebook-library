@@ -57,9 +57,9 @@ export class EpubService {
       path: ''
     });
 
-    return Zip4J.unzip({
-      source: directoryUri.uri + relativePath2EpubFile,
-      destination: directoryUri.uri + '/ebook-library/epub'
+    return Zip4J.extractAll({
+      zipFilePath: directoryUri.uri + relativePath2EpubFile,
+      destDirectory: directoryUri.uri + '/ebook-library/epub'
     }).then(() => {
       console.log('finished')
     }).catch(e => {
