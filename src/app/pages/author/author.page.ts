@@ -774,38 +774,37 @@ export class AuthorComponent implements OnInit, OnDestroy {
 
   protected onAddBook() {
     FilePicker.pickFiles({
-      types: ['application/epub+zip', 'text/plain', 'application/pdf']
+      types: ['application/epub+zip', 'text/plain', 'application/pdf'],
+      multiple: true
     }).then(async a => {
-      const name = a.files[0].name;
+      for (const file of a.files) {
+        const name = file.name;
+        const path = await this.fs.getUniquePath(this.author.path + name);
+        const nm = path.slice(path.lastIndexOf('/') + 1, path.lastIndexOf('.'));
+        const from = await this.filePath.resolveNativePath(file.path);
 
-      const path = await this.fs.getUniquePath(this.author.path + name);
-      const nm = path.slice(path.lastIndexOf('/') + 1, path.lastIndexOf('.'));
-      const from = await this.filePath.resolveNativePath(a.files[0].path);
-
-      Filesystem.copy({
-        from,
-        to: path,
-        toDirectory: this.directoryServ.dir
-      }).then(() => {
-        this.db.addBook({
+        await Filesystem.copy({
+          from,
+          to: path,
+          toDirectory: this.directoryServ.dir
+        });
+        const bookId = await this.db.addBook({
           id: null, title: nm, creatorIds: [this.author.id], originalTitle: null, annotation: null,
           publisher: null, published: null, genre: null, length: null, language: 'cs-CZ', translator: null,
           ISBN: null, path, progress: null, rating: null, img: null, serie: null, serieOrder: null,
           dtbkId: null, lgId: null, cbdbId: null, added: new Date(), lastRead: null, finished: null
-        }).then(bookId => {
-          this.books.push({
-            id: bookId + '',
-            title: nm,
-            creatorIds: [this.author.id],
-            progress: null,
-            img: null,
-            serie: null,
-            serieOrder: null,
-          });
         });
-      }).catch(e => {
-        console.error(e)
-      })
+        this.books.push({
+          id: bookId + '',
+          title: nm,
+          creatorIds: [this.author.id],
+          progress: null,
+          img: null,
+          serie: null,
+          serieOrder: null,
+        });
+      }
+
     });
   }
 
