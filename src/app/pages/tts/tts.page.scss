@@ -1,12 +1,22 @@
-ion-range {
-    --bar-height: 30px;
-    --height: 80px;
-    --bar-border-radius: 80px;
-    --knob-size: 0px;
+.progress {
+    ion-range {
+        --bar-height: 30px;
+        --height: 80px;
+        --bar-border-radius: 80px;
+        --knob-size: 0px;
+    }
+    
+    ion-range-knob {
+        display: none;
+    }
 }
 
-ion-range-knob {
-    display: none;
+ion-range {
+    padding-top: 0;
+}
+
+.ranges {
+    margin-right: 1rem;
 }
 
 .col {

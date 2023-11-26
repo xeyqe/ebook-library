@@ -76,6 +76,18 @@ export class TtsComponent implements OnInit, OnDestroy {
   private spProgress: number;
   private audioFocusPluginListener: PluginListenerHandle;
   private ttsPluginListener: PluginListenerHandle;
+  protected speakParams: {
+    rate: number;
+    pitch: number;
+    volume: number;
+    pan: number;
+  } = {
+    rate: 3,
+    pitch: 1,
+    volume: 1,
+    pan: 0
+  };
+  protected audioFocus = true;
 
   constructor(
     private db: DatabaseService,
@@ -157,7 +169,7 @@ export class TtsComponent implements OnInit, OnDestroy {
           this.spritzObj.contHeight = (+val.replace('px', '') * 3 + 10) + 'px';
         }
       } else {
-        this.htmlData.speed = await this.strg.get('speed') || 30;
+        this.speakParams.rate = await this.strg.get('speed')/10 || 3;
       }
 
       if (!lastListened || JSON.parse(lastListened).id !== this.id) {
@@ -369,7 +381,8 @@ export class TtsComponent implements OnInit, OnDestroy {
     );
     const params = {
       text: text2Speak,
-      rate: this.htmlData.speed / 10,
+      // rate: this.htmlData.speed / 10,
+      ...this.speakParams
     };
     if (this.speechObj.voice) params[`voiceURI`] = this.speechObj.voice;
     this.spProgress = this.progress + add2Progress - 1;
@@ -381,8 +394,8 @@ export class TtsComponent implements OnInit, OnDestroy {
       } else {
         this.working.isSpeaking = false;
         this.speechObj.isSpeaking = false;
-        this.audioFocusPluginListener.remove();
-        AudioFocus.abandonFocus();
+        this.removeAudioFocus();
+        this.ttsPluginListener.remove();
       }
     }).catch((reason) => {
       this.working.isSpeaking = false;
@@ -410,18 +423,12 @@ export class TtsComponent implements OnInit, OnDestroy {
       this.spritz();
     } else {
       if (this.speechObj.isSpeaking) {
-        AudioFocus.abandonFocus();
-        this.audioFocusPluginListener.remove();
+        this.removeAudioFocus();
         this.ttsPluginListener.remove();
         this.stopSpeaking();
         this.spProgress = this.progress;
       } else {
-        this.audioFocusPluginListener = await AudioFocus.addListener('audioFocusChangeEvent', (resp) => {
-          if (resp.type === 'AUDIOFOCUS_LOSS') this.stopSpeaking();
-        });
-        AudioFocus.requestFocus().then(() => {
-          this.speak();
-        });
+        this.setAudioFocus().then(() => this.speak());
         this.ttsPluginListener = TTS.addListener('progressEvent', (a) => {
           if ((this.progressObj.toAdd + a.end) > this.progressObj[this.progress + 1]) {
             this.progress++;
@@ -430,6 +437,26 @@ export class TtsComponent implements OnInit, OnDestroy {
         });
       }
     }
+  }
+
+  private async setAudioFocus(): Promise<void> {
+    if (!this.audioFocus) return;
+    this.audioFocusPluginListener = await AudioFocus.addListener('audioFocusChangeEvent', (resp) => {
+      if (resp.type === 'AUDIOFOCUS_LOSS') this.stopSpeaking();
+    });
+    await AudioFocus.requestFocus();
+  }
+
+  private removeAudioFocus(): void {
+    if (!this.audioFocus) return;
+    AudioFocus.abandonFocus();
+    this.audioFocusPluginListener.remove();
+  }
+
+  protected onChangeAudioFocus() {
+    this.audioFocus = !this.audioFocus;
+    if (this.audioFocus) this.setAudioFocus()
+    else this.removeAudioFocus();
   }
 
   private async wait(milliseconds: number): Promise<void> {
@@ -530,6 +557,7 @@ export class TtsComponent implements OnInit, OnDestroy {
     this.saveAuthorTitle();
     try {
       await TTS.stop();
+      this.spProgress = this.progress;
     } catch (e) {
       console.error(e);
     }
@@ -574,7 +602,7 @@ export class TtsComponent implements OnInit, OnDestroy {
 
           if (!/[.,?!]/.test(wordTrimmed)) continue;
           this.printWord(' ', 1, '');
-          await this.wait(Math.floor(timeout/2));
+          await this.wait(Math.floor(timeout / 2));
         }
         if (!this.speechObj.isSpeaking) break;
       }
@@ -648,7 +676,33 @@ export class TtsComponent implements OnInit, OnDestroy {
   //   return this.epubService.getTextsFromEpub(chapter.src);
   // }
 
+  protected pinFormatter(value: number) {
+    return value;
+  }
+
+  protected onRateChange(value: number): void {
+    this.speakParams.rate = value;
+    if (this.speechObj.isSpeaking) this.stopSpeaking();
+  }
+
+  protected onPitchChange(value: number): void {
+    this.speakParams.pitch = value;
+    if (this.speechObj.isSpeaking) this.stopSpeaking();
+  }
+
+  protected onVolumeChange(value: number): void {
+    this.speakParams.volume = value;
+    if (this.speechObj.isSpeaking) this.stopSpeaking();
+  }
+
+  protected onPanChange(value: number): void {
+    this.speakParams.pan = value;
+    if (this.speechObj.isSpeaking) this.stopSpeaking();
+  }
+
+
   ngOnDestroy() {
+    this.strg.set('speed', this.speakParams.rate);
     this.working.done();
     this.subs?.forEach(sub => sub?.unsubscribe());
     this.setProgress2DB();

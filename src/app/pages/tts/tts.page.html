@@ -6,7 +6,7 @@
                     <span>{{ htmlData.authorName }}</span>
                     <span>{{ htmlData.title }}</span>
                 </div>
-                <div class="header__speed">
+                <div class="header__speed" *ngIf="spritzObj.isSpritz">
                     <ion-button (click)="changeSpeed('-')">
                         <ion-icon slot="icon-only" name="remove"></ion-icon>
                     </ion-button>
@@ -54,6 +54,22 @@
     </ion-content>
 
     <form [formGroup]="myForm" *ngIf="myForm && !spritzObj.isSpritz">
+        <div class="ranges">
+            <ion-checkbox (ionChange)="onChangeAudioFocus()" [checked]="audioFocus">Audio focus</ion-checkbox>
+            <ion-range labelPlacement="start" label="Rate" [pin]="true" min="0.5" max="4" step="0.1" color="primary"
+                [pinFormatter]="pinFormatter" [value]="{ lower: speakParams.rate, upper: speakParams.rate }"
+                (ionChange)="onRateChange($any($event).detail.value)"></ion-range>
+            <!-- <ion-range labelPlacement="start" label="Pitch" [pin]="true" min="0" max="1" step="0.1" color="primary"
+                [pinFormatter]="pinFormatter" [value]="{ lower: speakParams.pitch, upper: speakParams.pitch }"
+                (ionChange)="onPitchChange($any($event).detail.value)"></ion-range> -->
+            <ion-range labelPlacement="start" label="Volume" [pin]="true" min="0" max="1" step="0.1" color="primary"
+                [pinFormatter]="pinFormatter" [value]="{ lower: speakParams.volume, upper: speakParams.volume }"
+                (ionChange)="onVolumeChange($any($event).detail.value)"></ion-range>
+            <!-- <ion-range labelPlacement="start" label="Pan" [pin]="true" min="-1" max="1" step="0.1" color="primary"
+                [pinFormatter]="pinFormatter" [value]="{ lower: speakParams.pan, upper: speakParams.pan }"
+                (ionChange)="onPanChange($any($event).detail.value)"></ion-range> -->
+        </div>
+
         <mat-form-field *ngIf="speechObj.engines">
             <mat-label class="red">Engine</mat-label>
             <mat-select interface="popover" formControlName="engine">
@@ -82,7 +98,6 @@
         </mat-form-field>
     </form>
 
-    <!-- <ion-footer> -->
     <ion-row class="ion-align-items-center ion-justify-content-center">
         <ion-label class="white" *ngIf="progress">
             {{ progress | number: '1.0-0' }}
@@ -111,7 +126,7 @@
         </ion-label>
     </ion-row>
 
-    <ion-item>
+    <ion-item class="progress">
         <ion-range *ngIf="texts?.length" [value]="progress" min="0" [max]="texts.length" step="1" color="primary"
             style="height: 0px;" (ionChange)="changeProgress($any($event).detail.value)"
             (touchend)="stopStartSpeaking()">
