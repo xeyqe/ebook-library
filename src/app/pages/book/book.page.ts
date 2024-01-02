@@ -734,7 +734,7 @@ export class BookComponent implements OnDestroy {
           e.data.length = +e.data.length;
         }
         if (e.data.genre) {
-          e.data.genre = e.data.genre.split(',');
+          e.data.genre = e.data.genre.replace(/ , /g, ', ');
         }
         if (e.data.serieOrder) {
           e.data.serieOrder = +e.data.serieOrder.replace(/^(\d*).*/, "$1");

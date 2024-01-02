@@ -411,7 +411,7 @@ export class WebScraperService {
     }
 
     const array = Array.from(data.querySelectorAll('#search_result_box_books .search_graphic td'));
-    const main = array.map(td => {
+    const main = array.map(() => {
       const aa = data.querySelectorAll('.search_graphic_content a');
       const link = (aa[0] as HTMLLinkElement)?.href || '';
       const img = data.querySelector('#author_photo img')?.getAttribute('src');
