@@ -26,6 +26,11 @@ import { AppRoutingModule } from 'src/app/app-routing.module';
 
 import { AppComponent } from 'src/app/app.component';
 
+import { registerLocaleData } from '@angular/common';
+
+import localeCs from '@angular/common/locales/cs';
+registerLocaleData(localeCs);
+
 
 @NgModule({
     declarations: [AppComponent],
