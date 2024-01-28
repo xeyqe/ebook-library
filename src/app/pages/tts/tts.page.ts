@@ -17,7 +17,7 @@ import { DirectoryService } from 'src/app/services/directory.service';
 import { FileReaderService } from 'src/app/services/file-reader.service';
 
 import * as PDFJS from 'pdfjs-dist';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry'
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
 
 
 @Component({
@@ -79,11 +79,11 @@ export class TtsComponent implements OnInit, OnDestroy {
     volume: number;
     pan: number;
   } = {
-    rate: 3,
-    pitch: 1,
-    volume: 1,
-    pan: 0
-  };
+      rate: 3,
+      pitch: 1,
+      volume: 1,
+      pan: 0
+    };
   protected audioFocus = true;
   private last: number;
 
@@ -205,9 +205,9 @@ export class TtsComponent implements OnInit, OnDestroy {
     this.progress = +progressArray[0];
 
     this.texts = await this.getTexts();
-    if (this.progress && +progressArray[1] !== this.texts.length) {
+    if (this.progress && +progressArray[1] !== this.texts.length - 1) {
       const percents = this.progress / +progressArray[1];
-      this.progress = Math.floor(this.texts.length * percents);
+      this.progress = Math.floor(this.texts.length - 1 * percents);
     }
     this.setProgress2DB();
     this.working.done();
@@ -347,7 +347,9 @@ export class TtsComponent implements OnInit, OnDestroy {
   }
 
   protected speak(index: number) {
-    if (!this.texts?.[index]) return;
+    console.log(index)
+    if (!this.texts?.[index])
+      return;
     if (!this.working.isSpeaking) this.working.isSpeaking = true;
     this.speechObj.isSpeaking = true;
     this.saveAuthorTitle();
@@ -357,7 +359,7 @@ export class TtsComponent implements OnInit, OnDestroy {
     };
     if (this.speechObj.voice) params[`voiceURI`] = this.speechObj.voice;
     TTS.speak(params).then(() => {
-      if (this.progress < this.texts.length) {
+      if (this.last + 1 < this.texts.length) {
         this.progress++;
         this.setProgress2DB();
         this.last++;
@@ -397,8 +399,12 @@ export class TtsComponent implements OnInit, OnDestroy {
       } else {
         this.setAudioFocus().then(() => {
           this.speak(this.progress);
-          this.speak(this.progress +1);
-          this.last = this.progress + 1;
+          if (this.progress < this.texts.length - 1) {
+            this.speak(this.progress + 1);
+            this.last = this.progress + 1;
+          } else {
+            this.last = this.progress;
+          }
         });
       }
     }
@@ -413,7 +419,7 @@ export class TtsComponent implements OnInit, OnDestroy {
   }
 
   private removeAudioFocus(): void {
-    if (!this.audioFocus) return;
+    if (!this.audioFocus || !this.audioFocusPluginListener) return;
     AudioFocus.abandonFocus();
     this.audioFocusPluginListener.remove();
   }
@@ -440,7 +446,7 @@ export class TtsComponent implements OnInit, OnDestroy {
     this.interval = setTimeout(async () => {
       this.interval = null;
 
-      while (this.progress > 0 && this.progress < this.texts.length) {
+      while (this.progress > 0 && this.progress < this.texts.length - 1) {
         if (this.stopRewind) {
           this.stopRewind = false;
           this.isRewinding = false;
@@ -460,7 +466,7 @@ export class TtsComponent implements OnInit, OnDestroy {
         clearInterval(this.interval);
         this.stopRewind = true;
         if (n) {
-          this.progress = (this.progress + 1 > this.texts.length) ? this.texts.length : this.progress + 1;
+          this.progress = (this.progress + 1 > this.texts.length - 1) ? this.texts.length - 1 : this.progress + 1;
         } else {
           this.progress = this.progress - 1 < 0 ? 0 : this.progress - 1;
         }
@@ -477,8 +483,8 @@ export class TtsComponent implements OnInit, OnDestroy {
     } else {
       if (this.texts) {
         if (progress >= 0) {
-          if (progress > this.texts.length) {
-            progress = this.texts.length;
+          if (progress > this.texts.length - 1) {
+            progress = this.texts.length - 1;
           }
           this.progress = progress;
           this.setProgress2DB();
@@ -489,10 +495,10 @@ export class TtsComponent implements OnInit, OnDestroy {
 
   private setProgress2DB() {
     if (!this.texts?.length) return;
-    const progress2DB = (this.progress || 0) + '/' + this.texts.length;
+    const progress2DB = (this.progress || 0) + '/' + (this.texts.length - 1);
 
     this.db.updateBookProgress(this.id, progress2DB).then(() => {
-      if (this.progress === this.texts.length)
+      if (this.progress === this.texts.length - 1)
         this.db.updateBookFinished(this.id, new Date());
     });
   }
@@ -547,7 +553,7 @@ export class TtsComponent implements OnInit, OnDestroy {
   }
 
   private async spritz() {
-    for (let i = this.progress; i < this.texts.length; i++) {
+    for (let i = this.progress; i < this.texts.length - 1; i++) {
       if (!this.texts[i]) continue;
       const words = this.texts[i].split(/[\s]+/);
       this.spritzObj.sentense = this.texts[i];
