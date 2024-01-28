@@ -649,6 +649,9 @@ export class BookComponent implements OnDestroy {
               this.bookForm.controls[key].setValue(data[key]);
               if (!this.listsOfValues[key].includes(data[key]))
                 this.listsOfValues[key].push(data[key]);
+              setTimeout(() => {
+                this.onAreaResize(key);
+              }, 1000);
             }
           });
           this.bookChanged = true;
