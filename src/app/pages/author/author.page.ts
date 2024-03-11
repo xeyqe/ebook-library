@@ -57,7 +57,6 @@ export class AuthorComponent implements OnInit, OnDestroy {
   protected wikiOutputBoolean = false;
   protected listOfPictures: string[];
   protected authorId: number;
-  // protected jsonOfAuthorsIndex;
   protected fullHeight = false;
   protected onlineAuthorsList: ONLINEAUTHORLINK[];
   protected onlineAuthorsListLegie: ONLINEAUTHORLINK[];
@@ -69,8 +68,8 @@ export class AuthorComponent implements OnInit, OnDestroy {
     cbdbId: string;
   }[];
   protected showAble = false;
+  protected focusedOn: string;
 
-  // protected filteredOptions: Observable<any[]>;
   protected authorForm: FormGroup<{
     img: FormControl<string>,
     name: FormControl<string>,
@@ -130,6 +129,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
       this.updateOldBooksImgs(books);
       this.takeCareOfSeries(books);
       this.loadUnusedPics([...books.map(bk => bk.img), this.author.img]);
+      this.setMinWidths();
     });
   }
 
@@ -142,12 +142,6 @@ export class AuthorComponent implements OnInit, OnDestroy {
     this.updateOldImgs(this.author.img);
     this.initializeForm(this.author);
     this.fs.addBooksOfAuthor(this.author.id, this.author.path);
-
-    setTimeout(() => {
-      Object.keys(this.authorForm.controls).forEach(key => {
-        this.updateSize(key);
-      });
-    }, 1000);
   }
 
   private getAuthorId(): Promise<number> {
@@ -211,10 +205,6 @@ export class AuthorComponent implements OnInit, OnDestroy {
       const fc = ent[1];
       fc.setValue((author[key] || null) as never);
       this.listsOfValues[key] = author[key] ? [author[key]] : [];
-
-      this.subs.push(this.authorForm.controls[key].valueChanges.subscribe(() => {
-        this.updateSize(key);
-      }));
     });
 
     // this.filteredOptions = this.authorForm.controls.surname.valueChanges.pipe(
@@ -225,26 +215,6 @@ export class AuthorComponent implements OnInit, OnDestroy {
     this.subs.push(this.authorForm.valueChanges.subscribe(() => {
       this.authorChanged = true;
     }));
-  }
-
-  private updateSize(key: string) {
-    try {
-      const field = this.contEl.nativeElement.querySelector(`#${key}`);
-      if (!field) return;
-      const input = field.querySelector('input');
-      const label = field.querySelector('.mdc-floating-label');
-      input.size = this.authorForm.controls[key].value ? String(this.authorForm.controls[key].value).length + 1 : 1;
-      const width = Math.min(window.innerWidth, Math.max(label.getBoundingClientRect().width + 20, input.getBoundingClientRect().width));
-      this.renderer.setStyle(field, 'flex-basis', `${Math.floor(width)}px`);
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  protected delayedUpdateSize(key: string) {
-    setTimeout(() => {
-      this.updateSize(key);
-    }, 200);
   }
 
   private takeCareOfSeries(books: AUTHORSBOOKS[]) {
@@ -291,6 +261,17 @@ export class AuthorComponent implements OnInit, OnDestroy {
     const images = new Set([...this.listsOfValues.img, ...unUsed])
     this.listsOfValues.img = [...images];
     this.picsServ.pics = unUsed.length ? unUsed : null;
+  }
+
+  private setMinWidths() {
+    setTimeout(() => {
+      const ar = Array.from(document.querySelectorAll('mat-form-field'));
+      ar.forEach(el => {
+        const width = el?.querySelector('mat-label')?.getBoundingClientRect()?.width;
+        if (!width) return;
+        this.renderer.setStyle(el, 'minWidth', Math.ceil(width + 16) + 'px');
+      });
+    });
   }
 
   // protected async onGetPosts(index: string) {
@@ -394,6 +375,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
     });
     this.authorChanged = false;
     this.fromWiki = null;
+    this.setMinWidths();
   }
 
   protected getFromWikipedia() {
@@ -806,6 +788,18 @@ export class AuthorComponent implements OnInit, OnDestroy {
       }
 
     });
+  }
+
+  protected onFocus(fcNm: string) {
+    setTimeout(() => this.focusedOn = fcNm, 1);
+  }
+
+  protected onBlur() {
+    setTimeout(() => this.focusedOn = null);
+  }
+
+  protected onInput(fc: string, value: string | number) {
+    this.authorForm.controls[fc].setValue(value);
   }
 
   ngOnDestroy() {

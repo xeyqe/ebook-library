@@ -16,6 +16,7 @@ import { AuthorPageRoutingModule } from 'src/app/pages/author/author-routing.mod
 import { ApplicationPipesModuleModule } from 'src/app/application-pipes-module/application-pipes-module.module';
 
 import { AuthorComponent } from 'src/app/pages/author/author.page';
+import { ContenteditableComponent } from 'src/app/components/contenteditable/contenteditable.component';
 
 
 @NgModule({
@@ -23,6 +24,7 @@ import { AuthorComponent } from 'src/app/pages/author/author.page';
     ApplicationPipesModuleModule,
     AuthorPageRoutingModule,
     CommonModule,
+    ContenteditableComponent,
     DialogModule,
     FormsModule,
     IonicModule,
