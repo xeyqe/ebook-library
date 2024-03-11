@@ -20,6 +20,7 @@ import { ApplicationPipesModuleModule } from 'src/app/application-pipes-module/a
 import { NgsContenteditableModule } from '@ng-stack/contenteditable';
 
 import { BookComponent } from './book.page';
+import { ContenteditableComponent } from 'src/app/components/contenteditable/contenteditable.component';
 
 
 @NgModule({
@@ -27,6 +28,7 @@ import { BookComponent } from './book.page';
     ApplicationPipesModuleModule,
     BookPageRoutingModule,
     CommonModule,
+    ContenteditableComponent,
     DialogModule,
     FormsModule,
     IonicModule,

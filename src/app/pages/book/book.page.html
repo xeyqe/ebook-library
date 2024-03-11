@@ -59,57 +59,90 @@
         </div>
 
         <div class="flexed" #contEl>
-            <div id="serie" class="cont" *ngIf="bookForm.controls.serie.value || ready2editing">
-                <mat-form-field subscriptSizing="dynamic">
-                    <mat-label class="red">Serie</mat-label>
-                    <textarea cdkTextareaAutosize (focus)="onFocus('serie')" (blur)="onBlur()" formControlName="serie"
-                        matInput [ngClass]="ready2editing ? 'white' : 'gray'">
-                    </textarea>
-                </mat-form-field>
-                <div class="overflowed" *ngIf="ready2editing && focusedOn === 'serie'">
-                    <ng-container *ngFor="let serie of listsOfValues.serie">
-                        <mat-option class="autocomplete-option" *ngIf="bookForm.controls.serie.value !== serie" [value]="serie"
-                            (onSelectionChange)="onInput('serie', serie)">
-                            {{ serie }}
-                        </mat-option>
-                    </ng-container>
+            @if (bookForm.controls.serie.value || ready2editing) {
+                <div class="clm">
+                    <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
+                        <mat-label class="red">Serie</mat-label>
+                        <app-contenteditable
+                            #appContenteditable
+                            [formControl]="bookForm.controls.serie"
+                            [ngClass]="ready2editing ? 'white' : 'gray'"
+                            (_onFocus)="onFocus('serie')"
+                            (_onBlur)="onBlur()">
+                        </app-contenteditable>
+                    </mat-form-field>
+                    @if (ready2editing && focusedOn === 'serie' && listsOfValues.serie?.length) {
+                        <div class="overflowed">
+                            @for (serie of listsOfValues.serie; track $index) {
+                                @if (bookForm.controls.serie.value !== serie) {
+                                    <mat-option class="autocomplete-option" [value]="serie"
+                                        (onSelectionChange)="onInput('serie', serie)">
+                                        {{ serie }}
+                                    </mat-option>
+                                }
+                            }
+                        </div>
+                    }
                 </div>
-                <span class="hidden">{{bookForm.controls.serie.value}}</span>
-            </div>
+            }
 
-            <div id="serieOrder" class="cont" *ngIf="bookForm.controls.serieOrder.value || ready2editing">
-                <mat-form-field subscriptSizing="dynamic">
-                    <mat-label class="red">Serie order</mat-label>
-                    <input type="text" formControlName="serieOrder" matInput [matAutocomplete]="autoSerieOrder"
-                        [ngClass]="ready2editing ? 'white' : 'gray'">
-                    <mat-autocomplete #autoSerieOrder="matAutocomplete" [panelWidth]="'auto'">
-                        <ng-container *ngFor="let serieOrder of listsOfValues.serieOrder">
-                            <mat-option class="autocomplete-option" *ngIf="bookForm.controls.serieOrder.value !== serieOrder" [value]="serieOrder">
-                                {{ serieOrder }}
-                            </mat-option>
-                        </ng-container>
-                    </mat-autocomplete>
-                </mat-form-field>
-                <span class="hidden">{{bookForm.controls.serieOrder.value}}</span>
-            </div>
-
-            <div id="title" class="cont" *ngIf="bookForm.controls.title.value || ready2editing">
-                <mat-form-field subscriptSizing="dynamic">
-                    <mat-label class="red">Title</mat-label>
-                    <textarea cdkTextareaAutosize (focus)="onFocus('title')" (blur)="onBlur()" formControlName="title"
-                        matInput [ngClass]="ready2editing ? 'white' : 'gray'">
-                    </textarea>
-                </mat-form-field>
-                <div class="overflowed" *ngIf="ready2editing && focusedOn === 'title'">
-                    <ng-container *ngFor="let title of listsOfValues.title">
-                        <mat-option class="autocomplete-option" *ngIf="bookForm.controls.title.value !== title" [value]="title"
-                            (onSelectionChange)="onInput('title', title)">
-                            {{ title }}
-                        </mat-option>
-                    </ng-container>
+            @if (bookForm.controls.serieOrder.value || ready2editing) {
+                <div class="clm">
+                    <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
+                        <mat-label class="red">Serie order</mat-label>
+                        <app-contenteditable
+                            #appContenteditable
+                            [formControl]="bookForm.controls.serieOrder"
+                            [ngClass]="ready2editing ? 'white' : 'gray'"
+                            (_onFocus)="onFocus('serieOrder')"
+                            (_onBlur)="onBlur()">
+                        </app-contenteditable>
+                    </mat-form-field>
+                    @if (ready2editing && focusedOn === 'serieOrder' && listsOfValues?.length) {
+                        <div class="overflowed">
+                            @for (serieOrder of listsOfValues.serieOrder; track $index) {
+                                @if (bookForm.controls.serieOrder.value !== serieOrder) {
+                                    <mat-option
+                                        class="autocomplete-option"
+                                        [value]="serieOrder"
+                                        (onSelectionChange)="onInput('serieOrder', serieOrder)">
+                                        {{ serieOrder }}
+                                    </mat-option>
+                                }
+                            }
+                        </div>
+                    }
                 </div>
-                <span class="hidden">{{bookForm.controls.title.value}}</span>
-            </div>
+            }
+
+            @if (bookForm.controls.title.value || ready2editing) {
+                <div class="clm">
+                    <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
+                        <mat-label class="red">Title</mat-label>
+                        <app-contenteditable
+                            #appContenteditable
+                            [formControl]="bookForm.controls.title"
+                            [ngClass]="ready2editing ? 'white' : 'gray'"
+                            (_onFocus)="onFocus('title')"
+                            (_onBlur)="onBlur()">
+                        </app-contenteditable>
+                    </mat-form-field>
+                    @if (ready2editing && focusedOn === 'title' && listsOfValues.title?.length) {
+                        <div class="overflowed">
+                            @for (title of listsOfValues.title; track $index) {
+                                @if (bookForm.controls.title.value !== title) {
+                                    <mat-option
+                                        class="autocomplete-option"
+                                        [value]="title"
+                                        (onSelectionChange)="onInput('title', title)">
+                                        {{ title }}
+                                    </mat-option>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+            }
 
             <!-- <mat-form-field subscriptSizing="dynamic" *ngIf="jsonBooks && ready2editing">
                 <mat-label class="red">Choose an option</mat-label>
@@ -120,190 +153,279 @@
                 </mat-select>
             </mat-form-field> -->
 
-            <div id="originalTitle" class="cont" *ngIf="bookForm.controls.originalTitle.value || ready2editing">
-                <mat-form-field subscriptSizing="dynamic">
-                    <mat-label class="red">Original title</mat-label>
-                    <textarea cdkTextareaAutosize (focus)="onFocus('originalTitle')" (blur)="onBlur()"
-                        formControlName="originalTitle" matInput [ngClass]="ready2editing ? 'white' : 'gray'">
-                    </textarea>
-                </mat-form-field>
-                <div class="overflowed" *ngIf="ready2editing && focusedOn === 'originalTitle'">
-                    <ng-container *ngFor="let originalTitle of listsOfValues.originalTitle">
-                        <mat-option class="autocomplete-option" *ngIf="bookForm.controls.originalTitle.value !== originalTitle && ready2editing"
-                            [value]="originalTitle" (onSelectionChange)="onInput('originalTitle', originalTitle)">
-                            {{ originalTitle }}
-                        </mat-option>
-                    </ng-container>
+            @if (bookForm.controls.originalTitle.value || ready2editing) {
+                <div class="clm">
+                    <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
+                        <mat-label class="red">Original title</mat-label>
+                        <app-contenteditable
+                            #appContenteditable
+                            [formControl]="bookForm.controls.originalTitle"
+                            [ngClass]="ready2editing ? 'white' : 'gray'"
+                            (_onFocus)="onFocus('originalTitle')"
+                            (_onBlur)="onBlur()">
+                        </app-contenteditable>
+                    </mat-form-field>
+                    @if (ready2editing && focusedOn === 'originalTitle' && listsOfValues.originalTitle) {
+                        <div class="overflowed">
+                            @for (originalTitle of listsOfValues.originalTitle; track $index) {
+                                @if (bookForm.controls.originalTitle.value !== originalTitle) {
+                                    <mat-option
+                                        class="autocomplete-option"
+                                        [value]="originalTitle"
+                                        (onSelectionChange)="onInput('originalTitle', originalTitle)">
+                                        {{ originalTitle }}
+                                    </mat-option>
+                                }
+                            }
+                        </div>
+                    }
                 </div>
-                <span class="hidden">{{bookForm.controls.originalTitle.value}}</span>
-            </div>
+            }
 
-            <div id="genre" class="cont" *ngIf="bookForm.controls.genre.value || ready2editing">
-                <mat-form-field subscriptSizing="dynamic">
-                    <mat-label class="red">Genre</mat-label>
-                    <textarea cdkTextareaAutosize (focus)="onFocus('genre')" (blur)="onBlur()" formControlName="genre"
-                        matInput [ngClass]="ready2editing ? 'white' : 'gray'">
-                    </textarea>
-                </mat-form-field>
-                <div class="overflowed" *ngIf="ready2editing && focusedOn === 'genre'">
-                    <ng-container *ngFor="let genre of listsOfValues.genre">
-                        <mat-option class="autocomplete-option" *ngIf="bookForm.controls.genre.value !== genre" [value]="genre"
-                            (onSelectionChange)="onInput('genre', genre)">
-                            {{ genre }}
-                        </mat-option>
-                    </ng-container>
+            @if (bookForm.controls.genre.value || ready2editing) {
+                <div class="clm">
+                    <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
+                        <mat-label class="red">Genre</mat-label>
+                        <app-contenteditable
+                            #appContenteditable
+                            [formControl]="bookForm.controls.genre"
+                            [ngClass]="ready2editing ? 'white' : 'gray'"
+                            (_onFocus)="onFocus('genre')"
+                            (_onBlur)="onBlur()">
+                        </app-contenteditable>
+                    </mat-form-field>
+                    @if (ready2editing && focusedOn === 'genre' && listsOfValues.genre?.length) {
+                        <div class="overflowed">
+                            @for (genre of listsOfValues.genre; track $index) {
+                                @if (bookForm.controls.genre.value !== genre) {
+                                    <mat-option
+                                        class="autocomplete-option"
+                                        [value]="genre"
+                                        (onSelectionChange)="onInput('genre', genre)">
+                                        {{ genre }}
+                                    </mat-option>
+                                }
+                            }
+                        </div>
+                    }
                 </div>
-                <span class="hidden">{{bookForm.controls.genre.value}}</span>
-            </div>
+            }
 
-            <div id="ISBN" class="cont" *ngIf="bookForm.controls.ISBN.value || ready2editing">
-                <mat-form-field subscriptSizing="dynamic">
-                    <mat-label class="red">ISBN</mat-label>
-                    <input type="text" formControlName="ISBN" matInput [matAutocomplete]="autoISBN"
-                        [ngClass]="ready2editing ? 'white' : 'gray'">
-                    <mat-autocomplete #autoISBN="matAutocomplete" [panelWidth]="'auto'">
-                        <ng-container *ngFor="let ISBN of listsOfValues.ISBN">
-                            <mat-option *ngIf="bookForm.controls.ISBN.value !== ISBN" [value]="ISBN">
-                                {{ ISBN }}
-                            </mat-option>
-                        </ng-container>
-                    </mat-autocomplete>
+            @if (bookForm.controls.ISBN.value || ready2editing) {
+                <div class="clm">
+                    <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
+                        <mat-label class="red">ISBN</mat-label>
+                        <app-contenteditable
+                            #appContenteditable
+                            [formControl]="bookForm.controls.ISBN"
+                            [ngClass]="ready2editing ? 'white' : 'gray'"
+                            (_onFocus)="onFocus('ISBN')"
+                            (_onBlur)="onBlur()">
+                        </app-contenteditable>
+                    </mat-form-field>
+                    @if (ready2editing && focusedOn === 'ISBN' && listsOfValues.ISBN?.length) {
+                        <div class="overflowed">
+                            @for (ISBN of listsOfValues.ISBN; track $index) {
+                                @if (bookForm.controls.ISBN.value !== ISBN) {
+                                    <mat-option
+                                        class="autocomplete-option"
+                                        [value]="ISBN"
+                                        (onSelectionChange)="onInput('ISBN', ISBN)">
+                                        {{ ISBN }}
+                                    </mat-option>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (bookForm.controls.publisher.value || ready2editing) {
+                <div class="clm">
+                    <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
+                        <mat-label class="red">Publisher</mat-label>
+                        <app-contenteditable
+                            #appContenteditable
+                            [formControl]="bookForm.controls.publisher"
+                            [ngClass]="ready2editing ? 'white' : 'gray'"
+                            (_onFocus)="onFocus('publisher')"
+                            (_onBlur)="onBlur()">
+                        </app-contenteditable>
+                    </mat-form-field>
+                    @if (ready2editing && focusedOn === 'publisher' && listsOfValues?.length) {
+                        <div class="overflowed">
+                            @for (publisher of listsOfValues.publisher; track $index) {
+                                @if (bookForm.controls.publisher.value !== publisher) {
+                                    <mat-option
+                                        class="autocomplete-option"
+                                        [value]="publisher"
+                                        (onSelectionChange)="onInput('publisher', publisher)">
+                                        {{ publisher }}
+                                    </mat-option>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (bookForm.controls.published.value || ready2editing) {
+                <div class="clm">
+                    <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
+                        <mat-label class="red">Published</mat-label>
+                        <app-contenteditable
+                            #appContenteditable
+                            [formControl]="bookForm.controls.published"
+                            [ngClass]="ready2editing ? 'white' : 'gray'"
+                            (_onFocus)="onFocus('published')"
+                            (_onBlur)="onBlur()">
+                        </app-contenteditable>
+                    </mat-form-field>
+                    @if (ready2editing && focusedOn === 'published' && listsOfValues?.length) {
+                        <div class="overflowed">
+                            @for (published of listsOfValues.published; track $index) {
+                                @if (bookForm.controls.published.value !== published) {
+                                    <mat-option
+                                        class="autocomplete-option"
+                                        [value]="published"
+                                        (onSelectionChange)="onInput('published', published)">
+                                        {{ published }}
+                                    </mat-option>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (bookForm.controls.language.value || ready2editing) {
+                    <mat-form-field subscriptSizing="dynamic">
+                        <mat-label class="red">Language</mat-label>
+                        <mat-select interface="popover" formControlName="language"
+                            [ngClass]="ready2editing ? 'white' : 'gray'">
+                            <mat-option value="cs-CZ">Česky</mat-option>
+                            <mat-option value="en-US">English</mat-option>
+                            <mat-option value="de-DE">Deutsch</mat-option>
+                            <mat-option value="ru-RU">русский</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+            }
+
+            @if (bookForm.controls.translator.value || ready2editing) {
+                <div class="clm">
+                    <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
+                        <mat-label class="red">Tranlator</mat-label>
+                        <app-contenteditable
+                            #appContenteditable
+                            [formControl]="bookForm.controls.translator"
+                            [ngClass]="ready2editing ? 'white' : 'gray'"
+                            (_onFocus)="onFocus('translator')"
+                            (_onBlur)="onBlur()">
+                        </app-contenteditable>
+                    </mat-form-field>
+                    @if (ready2editing && focusedOn === 'translator' && listsOfValues?.length) {
+                        <div class="overflowed">
+                            @for (translator of listsOfValues.translator; track $index) {
+                                @if (bookForm.controls.translator.value !== translator) {
+                                    <mat-option
+                                        class="autocomplete-option"
+                                        [value]="translator"
+                                        (onSelectionChange)="onInput('translator', translator)">
+                                        {{ translator }}
+                                    </mat-option>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (bookForm.controls.length.value || ready2editing) {
+                <div class="clm">
+                    <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
+                        <mat-label class="red">Pages</mat-label>
+                        <app-contenteditable
+                            #appContenteditable
+                            [formControl]="bookForm.controls.length"
+                            [ngClass]="ready2editing ? 'white' : 'gray'"
+                            (_onFocus)="onFocus('length')"
+                            (_onBlur)="onBlur()">
+                        </app-contenteditable>
+                    </mat-form-field>
+                    @if (ready2editing && focusedOn === 'length' && listsOfValues.length?.length) {
+                        <div class="overflowed">
+                            @for (length of listsOfValues.length; track $index) {
+                                @if (bookForm.controls.length.value !== length) {
+                                    <mat-option
+                                        class="autocomplete-option"
+                                        [value]="length"
+                                        (onSelectionChange)="onInput('length', length)">
+                                        {{ length }}
+                                    </mat-option>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (bookForm.controls.progress.value) {
+                    <mat-form-field subscriptSizing="dynamic">
+                        <mat-label class="red">Progress</mat-label>
+                        <app-contenteditable class="gray" [formControl]="bookForm.controls.progress">
+                        </app-contenteditable>
+                    </mat-form-field>
+            }
+
+            @if (bookForm.controls.added.value) {
+                    <mat-form-field subscriptSizing="dynamic">
+                        <mat-label class="red">Added</mat-label>
+                        <app-contenteditable disabled class="gray"
+                            [value]="bookForm.controls.added.value | date:'dd.MM.yyyy, hh:mm:ss'">
+                        </app-contenteditable>
+                    </mat-form-field>
+            }
+
+            @if (bookForm.controls.lastRead.value) {
+                    <mat-form-field subscriptSizing="dynamic">
+                        <mat-label class="red">Last Read</mat-label>
+                        <app-contenteditable disabled class="gray"
+                            [value]="bookForm.controls.lastRead.value | date:'dd.MM.yyyy, hh:mm:ss'">
+                        </app-contenteditable>
+                    </mat-form-field>
+            }
+
+            @if (bookForm.controls.finished.value) {
+                    <mat-form-field subscriptSizing="dynamic">
+                        <mat-label class="red">Finished</mat-label>
+                        <app-contenteditable disabled class="gray"
+                            [value]="bookForm.controls.finished.value | date:'dd.MM.yyyy, hh:mm:ss'">
+                        </app-contenteditable>
+                    </mat-form-field>
+            }
+
+            @if (book.path) {
+                <mat-form-field subscriptSizing="dynamic" [ngClass]="{'full-width': book.path}">
+                    <mat-label class="red">Path</mat-label>
+                    <app-contenteditable disabled class="gray"
+                        [value]="book.path">
+                    </app-contenteditable>
                 </mat-form-field>
-                <span class="hidden">{{bookForm.controls.ISBN.value}}</span>
-            </div>
+            }
 
-            <div id="publisher" class="cont" *ngIf="bookForm.controls.publisher.value || ready2editing">
-                <mat-form-field subscriptSizing="dynamic">
-                    <mat-label class="red">Publisher</mat-label>
-                    <input type="text" formControlName="publisher" matInput [matAutocomplete]="autoPublisher"
-                        [ngClass]="ready2editing ? 'white' : 'gray'">
-                    <mat-autocomplete #autoPublisher="matAutocomplete" [panelWidth]="'auto'">
-                        <ng-container *ngFor="let publisher of listsOfValues.publisher">
-                            <mat-option *ngIf="bookForm.controls.publisher.value !== publisher" [value]="publisher">
-                                {{ publisher }}
-                            </mat-option>
-                        </ng-container>
-                    </mat-autocomplete>
-                </mat-form-field>
-                <span class="hidden">{{bookForm.controls.publisher.value}}</span>
-            </div>
-
-            <div id="published" class="cont" *ngIf="bookForm.controls.published.value || ready2editing">
-                <mat-form-field subscriptSizing="dynamic">
-                    <mat-label class="red">Published</mat-label>
-                    <input type="number" formControlName="published" matInput [matAutocomplete]="autoPublished"
-                        [ngClass]="ready2editing ? 'white' : 'gray'">
-                    <mat-autocomplete #autoPublished="matAutocomplete" [panelWidth]="'auto'">
-                        <ng-container *ngFor="let published of listsOfValues.published">
-                            <mat-option *ngIf="bookForm.controls.published.value !== +published" [value]="+published">
-                                {{ published }}
-                            </mat-option>
-                        </ng-container>
-                    </mat-autocomplete>
-                </mat-form-field>
-                <span class="hidden">{{bookForm.controls.published.value}}</span>
-            </div>
-
-            <div id="language" class="cont" *ngIf="bookForm.controls.language.value || ready2editing">
-                <mat-form-field subscriptSizing="dynamic">
-                    <mat-label class="red">Language</mat-label>
-                    <mat-select interface="popover" formControlName="language"
-                        [ngClass]="ready2editing ? 'white' : 'gray'">
-                        <mat-option value="cs-CZ">Česky</mat-option>
-                        <mat-option value="en-US">English</mat-option>
-                        <mat-option value="de-DE">Deutsch</mat-option>
-                        <mat-option value="ru-RU">русский</mat-option>
-                    </mat-select>
-                </mat-form-field>
-                <span class="hidden">{{langsObj[bookForm.controls.language.value]}}</span>
-            </div>
-
-            <div id="translator" class="cont" *ngIf="bookForm.controls.translator.value || ready2editing">
-                <mat-form-field subscriptSizing="dynamic">
-                    <mat-label class="red">Tranlator</mat-label>
-                    <input type="text" formControlName="translator" matInput [matAutocomplete]="autoTranslator"
-                        [ngClass]="ready2editing ? 'white' : 'gray'">
-                    <mat-autocomplete #autoTranslator="matAutocomplete" [panelWidth]="'auto'">
-                        <ng-container *ngFor="let translator of listsOfValues.translator">
-                            <mat-option *ngIf="bookForm.controls.translator.value !== translator" [value]="translator">
-                                {{ translator }}
-                            </mat-option>
-                        </ng-container>
-                    </mat-autocomplete>
-                </mat-form-field>
-                <span class="hidden">{{bookForm.controls.translator.value}}</span>
-            </div>
-
-            <div id="length" class="cont" *ngIf="bookForm.controls.length.value || ready2editing">
-                <mat-form-field subscriptSizing="dynamic">
-                    <mat-label class="red">Pages</mat-label>
-                    <input type="number" formControlName="length" matInput [matAutocomplete]="autoPages"
-                        [ngClass]="ready2editing ? 'white' : 'gray'">
-                    <mat-autocomplete #autoPages="matAutocomplete" [panelWidth]="'auto'">
-                        <ng-container *ngFor="let pages of listsOfValues.length">
-                            <mat-option *ngIf="bookForm.controls.length.value !== pages" [value]="pages">
-                                {{ pages }}
-                            </mat-option>
-                        </ng-container>
-                    </mat-autocomplete>
-                </mat-form-field>
-                <span class="hidden">{{bookForm.controls.length.value}}</span>
-            </div>
-
-            <div id="progress" class="cont" *ngIf="bookForm.controls.progress.value || ready2editing">
-                <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.controls.progress.value || ready2editing">
-                    <mat-label class="red">Progress</mat-label>
-                    <input class="gray" disabled [value]="bookForm.controls.progress.value" matInput>
-                </mat-form-field>
-                <span class="hidden">{{bookForm.controls.progress.value}}</span>
-            </div>
-
-            <div id="added" class="cont" *ngIf="bookForm.controls.added.value || ready2editing">
-                <mat-form-field subscriptSizing="dynamic" *ngIf="bookForm.controls.added.value">
-                    <mat-label class="red">Added</mat-label>
-                    <input class="gray" disabled type="text" matInput
-                        [value]="bookForm.controls.added.value | date:'dd.MM.yyyy, hh:mm:ss'">
-                </mat-form-field>
-                <span class="hidden">{{bookForm.controls.added.value | date:'dd.MM.yyyy, hh:mm:ss'}}</span>
-            </div>
-
-            <div id="lastRead" class="cont" *ngIf="bookForm.controls.lastRead.value">
-                <mat-form-field subscriptSizing="dynamic">
-                    <mat-label class="red">Last Read</mat-label>
-                    <input class="gray" disabled type="text" matInput
-                        [value]="bookForm.controls.lastRead.value | date:'dd.MM.yyyy, hh:mm:ss'">
-                </mat-form-field>
-                <span class="hidden">{{bookForm.controls.lastRead.value | date:'dd.MM.yyyy, hh:mm:ss'}}</span>
-            </div>
-
-            <div id="finished" class="cont" *ngIf="bookForm.controls.finished.value">
-                <mat-form-field subscriptSizing="dynamic">
-                    <mat-label class="red">Finished</mat-label>
-                    <input class="gray" disabled type="text" matInput
-                        [value]="bookForm.controls.finished.value | date:'dd.MM.yyyy, hh:mm:ss'">
-                </mat-form-field>
-                <span class="hidden">{{bookForm.controls.finished.value | date:'dd.MM.yyyy, hh:mm:ss'}}</span>
-            </div>
-
-            <mat-form-field subscriptSizing="dynamic" *ngIf="book.path" [ngClass]="{'full-width': book.path}">
-                <mat-label class="red">Path</mat-label>
-                <textarea matInput cdkTextareaAutosize class="gray full-width" [value]="book.path" disabled></textarea>
-            </mat-form-field>
-
-            <div id="rating" class="cont" *ngIf="bookForm.controls.rating.value || ready2editing">
-                <mat-form-field subscriptSizing="dynamic">
-                    <mat-label class="red">Rating</mat-label>
-                    <mat-select interface="popover" formControlName="rating" [ngClass]="ready2editing ? 'white' : 'gray'">
-                        <mat-option [value]="0">0</mat-option>
-                        <mat-option [value]="1">1</mat-option>
-                        <mat-option [value]="2">2</mat-option>
-                        <mat-option [value]="3">3</mat-option>
-                        <mat-option [value]="4">4</mat-option>
-                        <mat-option [value]="5">5</mat-option>
-                    </mat-select>
-                </mat-form-field>
-                <span class="hidden">Rating</span>
-            </div>
+            @if (bookForm.controls.rating.value || ready2editing) {
+                    <mat-form-field subscriptSizing="dynamic">
+                        <mat-label class="red">Rating</mat-label>
+                        <mat-select interface="popover" formControlName="rating" [ngClass]="ready2editing ? 'white' : 'gray'">
+                            <mat-option [value]="0">0</mat-option>
+                            <mat-option [value]="1">1</mat-option>
+                            <mat-option [value]="2">2</mat-option>
+                            <mat-option [value]="3">3</mat-option>
+                            <mat-option [value]="4">4</mat-option>
+                            <mat-option [value]="5">5</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+            }
 
         </div>
 

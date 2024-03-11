@@ -170,6 +170,8 @@ export class BookComponent implements OnDestroy {
         this.listsOfValues.img = [...new Set([...this.listsOfValues.img, ...this.picsServ.pics])];
 
       this.showAble = this.webScrapper.showAble;
+
+      this.setMinWidths();
     });
   }
 
@@ -299,20 +301,22 @@ export class BookComponent implements OnDestroy {
         if (val !== newVal) this.bookForm.controls[key].setValue(newVal, { emitEvent: false });
       }));
     });
+  }
 
+  private setMinWidths() {
     setTimeout(() => {
-      Object.keys(this.bookForm.controls).forEach(key => {
-        this.onAreaResize(key)
-        this.subs.push(this.bookForm.controls[key].valueChanges.subscribe(() => {
-          this.onAreaResize(key)
-        }));
+      const ar = Array.from(document.querySelectorAll('mat-form-field'));
+      ar.forEach(el => {
+        const width = el?.querySelector('mat-label')?.getBoundingClientRect()?.width;
+        console.log(el?.querySelector('mat-label')?.textContent);
+        if (!width) return;
+        this.renderer.setStyle(el, 'minWidth', Math.ceil(width + 16) + 'px');
       });
-    }, 1000);
+    });
   }
 
   protected onInput(fc: string, value: string) {
     this.bookForm.controls[fc].setValue(value);
-    this.onAreaResize(fc);
   }
 
   protected async updateBook() {
@@ -349,9 +353,10 @@ export class BookComponent implements OnDestroy {
     this.ready2editing = !this.ready2editing;
     Object.entries(this.bookForm.controls).forEach(ent => {
       this.ready2editing ? ent[1].enable({ emitEvent: false }) : ent[1].disable({ emitEvent: false });
-      this.onAreaResize(ent[0]);
+      // this.onAreaResize(ent[0]);
     });
     this.bookChanged = false;
+    this.setMinWidths();
   }
 
   protected async deleteBook() {
@@ -649,9 +654,6 @@ export class BookComponent implements OnDestroy {
               this.bookForm.controls[key].setValue(data[key]);
               if (!this.listsOfValues[key].includes(data[key]))
                 this.listsOfValues[key].push(data[key]);
-              setTimeout(() => {
-                this.onAreaResize(key);
-              }, 1000);
             }
           });
           this.bookChanged = true;
@@ -742,9 +744,8 @@ export class BookComponent implements OnDestroy {
         if (e.data.serieOrder) {
           e.data.serieOrder = +e.data.serieOrder.replace(/^(\d*).*/, "$1");
         }
-        if (!e.data.serie && e.data.edition) {
-          e.data.serie = e.data.edition;
-          e.data.serieOrder = +e.data.editionOrder.replace(/[^\d]/g, '');
+        if (e.data.originalTitle) {
+          e.data.originalTitle = e.data.originalTitle.replace(' ,', ',');
         }
         delete e.data.edition;
         delete e.data.editionOrder;
@@ -861,20 +862,6 @@ export class BookComponent implements OnDestroy {
     setTimeout(() => this.focusedOn = null);
   }
 
-  protected onAreaResize(fcN: string) {
-    setTimeout(() => {
-      const span = this.contEl.nativeElement.querySelector(`#${fcN} .hidden`);
-      const label = this.contEl.nativeElement.querySelector(`#${fcN} mat-label`);
-      if (!span && !label) return;
-      const width = Math.floor(Math.max(span?.clientWidth || 0, label?.getBoundingClientRect()?.width || 0));
-      console.log(fcN, width)
-      this.renderer.setStyle(this.contEl.nativeElement.querySelector(`#${fcN}`), 'flexBasis', `${width + 23}px`);
-      this.renderer.setStyle(this.contEl.nativeElement.querySelector(`#${fcN}`), 'width', `${width + 23}px`);
-      const el = this.contEl.nativeElement.querySelector(`#${fcN} textarea, #${fcN} input`);
-      if (el) this.renderer.setStyle(el, 'width', `${width + 23}px`);
-    });
-  }
-
   ngOnDestroy() {
     this.bookServ.onlineData = null;
     if (this.onlineAllBooksList || this.onlineBookListLegie || this.onlineShortStoriesListLegie) {
@@ -888,5 +875,4 @@ export class BookComponent implements OnDestroy {
     this.subs?.forEach(sub => sub?.unsubscribe());
     this.workingServ.done();
   }
-
 }
