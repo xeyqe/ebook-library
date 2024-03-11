@@ -349,7 +349,7 @@ export class TtsComponent implements OnInit, OnDestroy {
   protected speak(index: number) {
     console.log(index)
     if (!this.texts?.[index])
-      return;
+      throw new Error('leak');
     if (!this.working.isSpeaking) this.working.isSpeaking = true;
     this.speechObj.isSpeaking = true;
     this.saveAuthorTitle();
@@ -359,12 +359,12 @@ export class TtsComponent implements OnInit, OnDestroy {
     };
     if (this.speechObj.voice) params[`voiceURI`] = this.speechObj.voice;
     TTS.speak(params).then(() => {
+      this.progress++;
       if (this.last + 1 < this.texts.length) {
-        this.progress++;
         this.setProgress2DB();
         this.last++;
         this.speak(this.last);
-      } else {
+      } else if (this.progress === this.texts.length - 1) {
         this.working.isSpeaking = false;
         this.speechObj.isSpeaking = false;
         this.removeAudioFocus();
@@ -400,8 +400,8 @@ export class TtsComponent implements OnInit, OnDestroy {
         this.setAudioFocus().then(() => {
           this.speak(this.progress);
           if (this.progress < this.texts.length - 1) {
-            this.speak(this.progress + 1);
             this.last = this.progress + 1;
+            this.speak(this.progress + 1);
           } else {
             this.last = this.progress;
           }
