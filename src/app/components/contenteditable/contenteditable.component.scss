@@ -1,0 +1,31 @@
+.cont {
+    display: flex;
+    flex-direction: column;
+
+    .tools {
+        display: flex;
+        justify-content: flex-end;
+
+        button:hover {
+            cursor: pointer;
+        }
+    }
+
+    label {
+        // display: flex;
+        height: fit-content;
+        white-space: pre-wrap;
+        width: fit-content;
+        outline: none;
+        max-width: 100%;
+    }
+}
+
+span {
+    opacity: 0;
+    transition: opacity 200ms;
+}
+
+:host.floating span {
+    opacity: 1;
+}

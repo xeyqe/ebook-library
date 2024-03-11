@@ -1,0 +1,34 @@
+<div class="cont">
+    <!-- @if (!_disabled) {
+        <div class="tools">
+            @for (tool of tools; track $index) {
+                @if (tool.id === "foreColor") {
+                    <button
+                        #colorEl
+                        mat-raided-button
+                        (click)="onTool(tool.id, $event)"
+                        [colorPicker]="color"
+                        (colorPickerChange)="setColor($event)">
+                        <mat-icon>{{ tool.icon }}</mat-icon>
+                    </button>
+                } @else {
+                    <button mat-raided-button (click)="onTool(tool.id, $event)">
+                        <mat-icon>{{ tool.icon }}</mat-icon>
+                    </button>
+                }
+            }
+        </div>
+    } -->
+    
+    <label
+        role="group"
+        (focusin)="onFocusIn($event)"
+        (focusout)="onFocusOut($event)"
+        [attr.contenteditable]="!_disabled"
+        #contenteditableEl
+        for=""
+        (blur)="onBlur()"
+        (keyup)="change()"
+        tabindex="0">
+    </label>
+</div>
