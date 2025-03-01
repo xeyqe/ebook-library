@@ -22,7 +22,6 @@ dependencies {
     implementation project(':capacitor-plugin-safe-area')
     implementation project(':capacitor-zip4j')
     implementation "commons-io:commons-io:2.4"
-    implementation "androidx.core:core:1.0.0"
     implementation "androidx.webkit:webkit:1.4.0"
 }
 apply from: "../../node_modules/cordova-androidx-build/src/android/cordova-androidx-build.gradle"
