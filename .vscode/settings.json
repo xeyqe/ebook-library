@@ -1,4 +1,5 @@
 {
     "editor.inlineSuggest.showToolbar": "onHover",
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "recommendations": ["angular.ng-template"]
 }

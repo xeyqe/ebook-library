@@ -24,6 +24,10 @@
 		"classpath": "com.capacitorjs.plugins.statusbar.StatusBarPlugin"
 	},
 	{
+		"pkg": "@capawesome-team/capacitor-android-foreground-service",
+		"classpath": "io.capawesome.capacitorjs.plugins.foregroundservice.ForegroundServicePlugin"
+	},
+	{
 		"pkg": "@capawesome/capacitor-file-picker",
 		"classpath": "io.capawesome.capacitorjs.plugins.filepicker.FilePickerPlugin"
 	},
@@ -42,6 +46,10 @@
 	{
 		"pkg": "capacitor-plugin-safe-area",
 		"classpath": "com.capacitor.safearea.SafeAreaPlugin"
+	},
+	{
+		"pkg": "capacitor-wakelock",
+		"classpath": "com.xeyqe.plugins.wakelock.WakeLockPlugin"
 	},
 	{
 		"pkg": "capacitor-zip4j",

@@ -20,20 +20,26 @@ project(':capacitor-splash-screen').projectDir = new File('../node_modules/@capa
 include ':capacitor-status-bar'
 project(':capacitor-status-bar').projectDir = new File('../node_modules/@capacitor/status-bar/android')
 
+include ':capawesome-team-capacitor-android-foreground-service'
+project(':capawesome-team-capacitor-android-foreground-service').projectDir = new File('../node_modules/@capawesome-team/capacitor-android-foreground-service/android')
+
 include ':capawesome-capacitor-file-picker'
 project(':capawesome-capacitor-file-picker').projectDir = new File('../node_modules/@capawesome/capacitor-file-picker/android')
 
 include ':xeyqe-capacitor-tts'
-project(':xeyqe-capacitor-tts').projectDir = new File('../node_modules/@xeyqe/capacitor-tts/android')
+project(':xeyqe-capacitor-tts').projectDir = new File('../../capacitor/capacitor-tts/android')
 
 include ':capacitor-all-files-access-permission'
-project(':capacitor-all-files-access-permission').projectDir = new File('../node_modules/capacitor-all-files-access-permission/android')
+project(':capacitor-all-files-access-permission').projectDir = new File('../../capacitor/capacitor-all-files-access-permission/android')
 
 include ':capacitor-audio-focus'
 project(':capacitor-audio-focus').projectDir = new File('../node_modules/capacitor-audio-focus/android')
 
 include ':capacitor-plugin-safe-area'
 project(':capacitor-plugin-safe-area').projectDir = new File('../node_modules/capacitor-plugin-safe-area/android')
+
+include ':capacitor-wakelock'
+project(':capacitor-wakelock').projectDir = new File('../../capacitor/capacitor-wakelock/android')
 
 include ':capacitor-zip4j'
 project(':capacitor-zip4j').projectDir = new File('../node_modules/capacitor-zip4j/android')

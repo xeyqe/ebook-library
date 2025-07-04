@@ -2,5 +2,6 @@
 	"bracketSameLine": true,
 	"singleAttributePerLine": false,
 	"printWidth": 120,
-	"tabWidth": 4
+	"tabWidth": 4,
+	"parser": "angular"
 }
