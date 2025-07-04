@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, HostListener, signal } from '@angular/core';
 import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -16,20 +16,29 @@ import { DatabaseService } from 'src/app/services/database.service';
 import { DirectoryService } from 'src/app/services/directory.service';
 import { FileReaderService } from 'src/app/services/file-reader.service';
 
-import * as PDFJS from 'pdfjs-dist';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
+
+import { getDocument } from "pdfjs-dist/build/pdf.mjs";
+import { ForegroundService, Importance } from '@capawesome-team/capacitor-android-foreground-service';
+
 
 
 @Component({
   selector: 'app-tts',
   templateUrl: './tts.page.html',
   styleUrls: ['./tts.page.scss'],
+  standalone: false,
 })
 export class TtsComponent implements OnInit, OnDestroy {
+  @HostListener('window:orientationchange')
+  onOrientationChange() {
+    this.isPortrait = window.screen.orientation.type.startsWith('portrait');
+    console.log(this.isPortrait)
+  }
+  protected isPortrait: boolean;
   protected id: number;
   private path: string;
   protected texts: string[];
-  protected progress: number;
+  protected progress = signal(0);
 
   protected htmlData: {
     inBg: boolean,
@@ -108,6 +117,7 @@ export class TtsComponent implements OnInit, OnDestroy {
   }
 
   private initialize() {
+    this.isPortrait = window.screen.orientation.type.startsWith('portrait');
     this.spritzObj = {} as any;
     this.spritzObj.fontSize = '20px';
     this.spritzObj.contHeight = '70px';
@@ -202,18 +212,18 @@ export class TtsComponent implements OnInit, OnDestroy {
     this.htmlData.title = book.title;
 
     const progressArray = book.progress?.split('/') || ['0', '0'];
-    this.progress = +progressArray[0];
+    this.progress.set(+progressArray[0]);
 
     this.texts = await this.getTexts();
-    if (this.progress && +progressArray[1] !== this.texts.length - 1) {
-      const percents = this.progress / +progressArray[1];
-      this.progress = Math.floor(this.texts.length - 1 * percents);
+    if (this.progress() && +progressArray[1] !== this.texts.length - 1) {
+      const percents = this.progress() / +progressArray[1];
+      this.progress.set(Math.floor(this.texts.length - 1 * percents));
     }
     this.setProgress2DB();
     this.working.done();
 
     const author = await this.db.getAuthor(book.creatorIds[0]);
-    this.htmlData.authorName = (author.name || '') + ' ' + (author.surname || '');
+    this.htmlData.authorName = [author.name, author.surname].filter(it => !!it).join(' ') || author.pseudonym;
     this.initialized = true;
   }
 
@@ -310,9 +320,12 @@ export class TtsComponent implements OnInit, OnDestroy {
   private getTextsFromString(): Promise<string[]> {
     return this.fs.readTextFile(this.path).then((str) => {
       const output = [];
-      str.split(/(?=[.!?][“"\n\s])|(?<=[.!?][“"\n\s])/).forEach((it, i) => {
-        if (i % 2 === 0) output.push(it);
-        else output[output.length - 1] += it;
+      str.split(/(?=[.!?][“"\n\s])|(?<=[.!?][“"\n\s])/).forEach(it => {
+        if (output[output.length - 1] && it.length < 5) {
+          output[output.length - 1] += it;
+        } else {
+          output.push(it);
+        }
       });
 
       return output;
@@ -327,9 +340,9 @@ export class TtsComponent implements OnInit, OnDestroy {
   }
 
   private async getTextsFromPdf(): Promise<string[]> {
-    PDFJS.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+    // PDFJS.GlobalWorkerOptions.workerSrc = pdfjsWorker;
     const path = Capacitor.convertFileSrc(this.directoryServ.imgPreLink + this.path);
-    const pdf = await PDFJS.getDocument(path).promise;
+    const pdf = await getDocument(path).promise;
 
     console.log((await pdf.getMetadata()));
     const output = [];
@@ -338,9 +351,12 @@ export class TtsComponent implements OnInit, OnDestroy {
       const textContent = await page.getTextContent();
       const textItems = textContent.items;
       const str = textItems.map(item => item[`str`]).join('\n');
-      str.split(/(?=[.!?][“"\n\s])|(?<=[.!?][“"\n\s])/).forEach((it, i) => {
-        if (i % 2 === 0) output.push(it);
-        else output[output.length - 1] += it;
+      str.split(/(?=[.!?][“"\n\s])|(?<=[.!?][“"\n\s])/).forEach(it => {
+        if (output[output.length - 1] && it.length < 5) {
+          output[output.length - 1] += it;
+        } else {
+          output.push(it);
+        }
       });
     }
     return output;
@@ -352,19 +368,18 @@ export class TtsComponent implements OnInit, OnDestroy {
       throw new Error('leak');
     if (!this.working.isSpeaking) this.working.isSpeaking = true;
     this.speechObj.isSpeaking = true;
-    this.saveAuthorTitle();
     const params = {
       text: this.texts[index],
       ...this.speakParams
     };
     if (this.speechObj.voice) params[`voiceURI`] = this.speechObj.voice;
     TTS.speak(params).then(() => {
-      this.progress++;
+      this.progress.update(old => old++);
       if (this.last + 1 < this.texts.length) {
         this.setProgress2DB();
         this.last++;
         this.speak(this.last);
-      } else if (this.progress === this.texts.length - 1) {
+      } else if (this.progress() === this.texts.length - 1) {
         this.working.isSpeaking = false;
         this.speechObj.isSpeaking = false;
         this.removeAudioFocus();
@@ -390,25 +405,74 @@ export class TtsComponent implements OnInit, OnDestroy {
     }
     if (this.spritzObj.isSpritz) {
       this.speechObj.isSpeaking = !this.speechObj.isSpeaking;
-      this.saveAuthorTitle();
       this.spritz();
     } else {
       if (this.speechObj.isSpeaking) {
+        this.stopForegroundService();
         this.removeAudioFocus();
         this.stopSpeaking();
       } else {
+        this.startForegroundService();
         this.setAudioFocus().then(() => {
-          this.speak(this.progress);
-          if (this.progress < this.texts.length - 1) {
-            this.last = this.progress + 1;
-            this.speak(this.progress + 1);
-          } else {
-            this.last = this.progress;
-          }
+          this.saveAuthorTitle();
+          const params = {
+            texts: this.texts,
+            progress: this.progress(),
+            ...this.speakParams
+          };
+          console.log(params)
+          if (!this.working.isSpeaking) this.working.isSpeaking = true;
+          this.speechObj.isSpeaking = true;
+          TTS.read(params);
+          TTS.addListener("progressArrayEvent", (resp) => {
+            console.log(resp)
+            this.progress.set(resp.progress);
+          });
+          // this.speak(this.progress());
+          // if (this.progress() < this.texts.length - 1) {
+          //   this.last = this.progress() + 1;
+          //   this.speak(this.progress() + 1);
+          // } else {
+          //   this.last = this.progress();
+          // }
         });
       }
     }
   }
+
+  private startForegroundService = async () => {
+    await this.createNotificationChannel();
+    await ForegroundService.startForegroundService({
+      id: 1,
+      title: this.htmlData.authorName,
+      body: this.htmlData.title,
+      smallIcon: 'ic_launcher',
+      serviceType: 2 as any,
+      // serviceType: 1073741824 as any,
+      silent: true,
+      notificationChannelId: 'default',
+    });
+  };
+
+  private stopForegroundService = async () => {
+    await this.deleteNotificationChannel();
+    await ForegroundService.stopForegroundService();
+  };
+
+  private createNotificationChannel = async () => {
+    await ForegroundService.createNotificationChannel({
+      id: 'default',
+      name: 'Default',
+      description: 'Default channel',
+      importance: Importance.Default,
+    });
+  };
+
+  private deleteNotificationChannel = async () => {
+    await ForegroundService.deleteNotificationChannel({
+      id: 'default',
+    });
+  };
 
   private async setAudioFocus(): Promise<void> {
     if (!this.audioFocus) return;
@@ -446,14 +510,14 @@ export class TtsComponent implements OnInit, OnDestroy {
     this.interval = setTimeout(async () => {
       this.interval = null;
 
-      while (this.progress > 0 && this.progress < this.texts.length - 1) {
+      while (this.progress() > 0 && this.progress() < this.texts.length - 1) {
         if (this.stopRewind) {
           this.stopRewind = false;
           this.isRewinding = false;
           break;
         }
         await this.wait(1);
-        this.progress = n ? this.progress + 1 : this.progress - 1;
+        this.progress.set(n ? this.progress() + 1 : this.progress() - 1);
       }
 
       this.isRewinding = false;
@@ -466,9 +530,9 @@ export class TtsComponent implements OnInit, OnDestroy {
         clearInterval(this.interval);
         this.stopRewind = true;
         if (n) {
-          this.progress = (this.progress + 1 > this.texts.length - 1) ? this.texts.length - 1 : this.progress + 1;
+          this.progress.set((this.progress() + 1 > this.texts.length - 1) ? this.texts.length - 1 : this.progress() + 1);
         } else {
-          this.progress = this.progress - 1 < 0 ? 0 : this.progress - 1;
+          this.progress.set(this.progress() - 1 < 0 ? 0 : this.progress() - 1);
         }
         this.stopStartSpeaking();
       } else {
@@ -479,14 +543,14 @@ export class TtsComponent implements OnInit, OnDestroy {
 
   protected changeProgress(progress: number) {
     if (this.spritzObj.isSpritz) {
-      this.progress = progress;
+      this.progress.set(progress);
     } else {
       if (this.texts) {
         if (progress >= 0) {
           if (progress > this.texts.length - 1) {
             progress = this.texts.length - 1;
           }
-          this.progress = progress;
+          this.progress.set(progress);
           this.setProgress2DB();
         }
       }
@@ -495,10 +559,10 @@ export class TtsComponent implements OnInit, OnDestroy {
 
   private setProgress2DB() {
     if (!this.texts?.length) return;
-    const progress2DB = (this.progress || 0) + '/' + (this.texts.length - 1);
+    const progress2DB = (this.progress() || 0) + '/' + (this.texts.length - 1);
 
     this.db.updateBookProgress(this.id, progress2DB).then(() => {
-      if (this.progress === this.texts.length - 1)
+      if (this.progress() === this.texts.length - 1)
         this.db.updateBookFinished(this.id, new Date());
     });
   }
@@ -512,9 +576,8 @@ export class TtsComponent implements OnInit, OnDestroy {
     } else {
       if (this.speechObj.isSpeaking) {
         this.speechObj.isSpeaking = false;
-        this.saveAuthorTitle();
       }
-      this.spritzObj.sentense = this.texts[this.progress];
+      this.spritzObj.sentense = this.texts[this.progress()];
       this.spritz();
     }
   }
@@ -522,7 +585,6 @@ export class TtsComponent implements OnInit, OnDestroy {
   private async stopSpeaking(): Promise<any> {
     this.speechObj.isSpeaking = false;
     this.working.isSpeaking = false;
-    this.saveAuthorTitle();
     try {
       await TTS.stop();
     } catch (e) {
@@ -553,7 +615,7 @@ export class TtsComponent implements OnInit, OnDestroy {
   }
 
   private async spritz() {
-    for (let i = this.progress; i < this.texts.length - 1; i++) {
+    for (let i = this.progress(); i < this.texts.length - 1; i++) {
       if (!this.texts[i]) continue;
       const words = this.texts[i].split(/[\s]+/);
       this.spritzObj.sentense = this.texts[i];
@@ -573,7 +635,7 @@ export class TtsComponent implements OnInit, OnDestroy {
         }
         if (!this.speechObj.isSpeaking) break;
       }
-      if (this.speechObj.isSpeaking) this.progress++;
+      if (this.speechObj.isSpeaking) this.progress.update(old => old++);
       else break;
     }
   }

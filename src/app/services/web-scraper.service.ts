@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HTTP } from '@awesome-cordova-plugins/http/ngx';
 import { ONLINEAUTHORLEGIE } from './interfaces';
+import { CapacitorHttp } from '@capacitor/core';
 
 
 @Injectable({
@@ -9,13 +9,9 @@ import { ONLINEAUTHORLEGIE } from './interfaces';
 export class WebScraperService {
   showAble = true;
 
-  constructor(
-    private http: HTTP,
-  ) { }
-
   private async _getHtml(site: string) {
     const parser = new DOMParser();
-    const data = await this.http.get(site, null, null);
+    const data = await CapacitorHttp.get({ url: site});
     return parser.parseFromString(data.data, 'text/html');
   }
 
@@ -136,7 +132,7 @@ export class WebScraperService {
     dtbkId: string,
   }[] {
     const parsedList = [];
-    const list = doc.querySelectorAll('#left_less .new2');
+    const list = doc.querySelectorAll('.midlRowHeight.oddown');
     list.forEach(item => {
       const link = item.querySelector('a')?.href;
       parsedList.push({
@@ -187,7 +183,7 @@ export class WebScraperService {
       const link = (item.firstElementChild as HTMLLinkElement).href;
       const dtbkId = link.substring(link.lastIndexOf('/') + 1);
       parsedList.push({
-        name: (item.firstElementChild as HTMLElement).innerText,
+        name: (item.firstElementChild as HTMLElement).innerText.trim(),
         link,
         year: item.children[2].innerHTML,
         img: imgLink.substring(5, imgLink.length - 2),

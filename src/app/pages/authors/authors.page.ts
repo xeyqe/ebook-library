@@ -36,7 +36,8 @@ import { BOOKSIMPLIFIED, AUTHORSIMPLIFIED } from 'src/app/services/interfaces';
       transition('animated => default', animate('200ms ease-out')),
       transition('default => animated', animate('200ms ease-in'))
     ])
-  ]
+  ],
+  standalone: false,
 })
 export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('seachBarEl') seachBarEl: IonSearchbar;
@@ -96,6 +97,7 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     SplashScreen.hide();
+    this.ionViewWillEnter();
   }
 
   protected async ionViewWillEnter() {

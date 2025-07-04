@@ -1,7 +1,7 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
 @Pipe({
-  name: 'percent2',
+    name: 'percent2'
 })
 export class PercentPipe implements PipeTransform {
   transform(value: any, progress: string): number {

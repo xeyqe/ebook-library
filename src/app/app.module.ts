@@ -7,14 +7,9 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { IonicStorageModule } from '@ionic/storage-angular';
 import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
 
-import { HTTP } from '@awesome-cordova-plugins/http/ngx';
 import { SQLite } from '@awesome-cordova-plugins/sqlite/ngx';
-import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
-import { StatusBar } from '@awesome-cordova-plugins/status-bar/ngx';
 import { WebView } from '@awesome-cordova-plugins/ionic-webview/ngx';
-import { SplashScreen } from '@awesome-cordova-plugins/splash-screen/ngx';
 import { SQLitePorter } from '@awesome-cordova-plugins/sqlite-porter/ngx';
-import { BackgroundMode } from '@awesome-cordova-plugins/background-mode/ngx';
 
 import { EpubService } from './services/epub.service';
 import { DatabaseService } from './services/database.service';
@@ -38,24 +33,19 @@ registerLocaleData(localeCs);
         BrowserModule,
         IonicModule.forRoot(),
         AppRoutingModule,
-        HttpClientModule,
         BrowserAnimationsModule,
         IonicStorageModule.forRoot(),
         HammerModule,
+        HttpClientModule,
     ],
     providers: [
         { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
-        BackgroundMode,
         DatabaseService,
         DirectoryService,
         EpubService,
-        FilePath,
         FileReaderService,
-        HTTP,
-        SplashScreen,
         SQLite,
         SQLitePorter,
-        StatusBar,
         WebScraperService,
         WebView,
     ],

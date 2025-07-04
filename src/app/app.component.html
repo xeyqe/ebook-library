@@ -1,7 +1,9 @@
 <ion-app #elRef>
-    <ion-router-outlet *ngIf="initialized"></ion-router-outlet>
+    @if (initialized) {
+        <ion-router-outlet></ion-router-outlet>
+    }
 </ion-app>
-<ng-container *ngIf="workingServ.working">
+@if (workingServ.working) {
     <div class="cont"></div>
     <ion-spinner name="bubbles"></ion-spinner>
-</ng-container>
+}

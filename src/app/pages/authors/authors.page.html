@@ -2,79 +2,102 @@
     <ion-toolbar>
         <ion-row>
             <ion-col size="10">
-                <ion-searchbar show-cancel-button="focus" [debounce]="1000" (ionInput)="onSearch($event)"
-                    (ionFocus)="hideCharacters = true" (ionBlur)="hideCharacters = false"
-                    (ionClear)="onSearchClear()" #seachBarEl></ion-searchbar>
+                <ion-searchbar
+                    show-cancel-button="focus"
+                    [debounce]="1000"
+                    (ionInput)="onSearch($event)"
+                    (ionFocus)="hideCharacters = true"
+                    (ionBlur)="hideCharacters = false"
+                    (ionClear)="onSearchClear()"
+                    #seachBarEl></ion-searchbar>
             </ion-col>
             <ion-col size="1">
-                <ion-button (click)="where2SearchFn()">
-                    {{ where2Search }}
-                </ion-button>
+                <ion-button (click)="where2SearchFn()"> {{ where2Search }} </ion-button>
             </ion-col>
         </ion-row>
     </ion-toolbar>
-    <ion-segment scrollable *ngIf="!hideCharacters && where2Search === 'A'" [value]="selectedCharacter">
-        <ion-segment-button *ngFor="let character of alphabet" [value]="character"
-            (click)="changeSelectedChar(character, 'authors')">
-            <ion-label>{{ character }}</ion-label>
-        </ion-segment-button>
-    </ion-segment>
-    <ion-segment scrollable *ngIf="!hideCharacters && where2Search === 'B'" [value]="bookSearchBy">
-        <ion-segment-button *ngFor="let character of ['liked','started','finished']" [value]="character"
-            (click)="changeSelectedChar(character, 'books')">
-            <ion-label>{{ character }}</ion-label>
-        </ion-segment-button>
-    </ion-segment>
+    @if (!hideCharacters) {
+        @if (where2Search === "A") {
+            <ion-segment scrollable [value]="selectedCharacter">
+                @for (character of alphabet; track $index) {
+                    <ion-segment-button [value]="character" (click)="changeSelectedChar(character, 'authors')">
+                        <ion-label>{{ character }}</ion-label>
+                    </ion-segment-button>
+                }
+            </ion-segment>
+        } @else if (where2Search === "B") {
+            <ion-segment scrollable [value]="bookSearchBy">
+                @for (character of ["liked", "started", "finished"]; track $index) {
+                    <ion-segment-button [value]="character" (click)="changeSelectedChar(character, 'books')">
+                        <ion-label>{{ character }}</ion-label>
+                    </ion-segment-button>
+                }
+            </ion-segment>
+        }
+    }
 </ion-header>
 
 <ion-content [scrollEvents]="true" (ionScrollStart)="onScrollStart($event)" (ionScrollEnd)="onScrollEnd($event)">
-
     <ion-list class="ion-padding">
-        <ng-container *ngIf="where2Search === 'A'">
-            <ion-item *ngFor="let author of _authors" [routerLink]="['/author', author.id]">
-                <ion-avatar>
-                    <img [src]="onGetImgSrc(author.img)" alt="img" />
-                </ion-avatar>
+        @if (where2Search === "A") {
+            @for (author of _authors; track author) {
+                <ion-item [routerLink]="['/author', author.id]">
+                    <ion-avatar>
+                        <img [src]="onGetImgSrc(author.img)" alt="img" />
+                    </ion-avatar>
 
-                <ion-label>
-                    <h2>{{ author.surname }}</h2>
-                    <p>{{ author.name }}</p>
-                    <ion-progress-bar *ngIf="author.progress" [value]="author.progress">
-                    </ion-progress-bar>
-                </ion-label>
-            </ion-item>
+                    <ion-label>
+                        @if (author.surname || author.name) {
+                            <h2>{{ author.surname || "" }}</h2>
+                            <p>{{ author.name || "" }}</p>
+                        } @else {
+                            <h2>{{ author.pseudonym }}</h2>
+                        }
+                        @if (author.progress) {
+                            <ion-progress-bar [value]="author.progress"> </ion-progress-bar>
+                        }
+                    </ion-label>
+                </ion-item>
+            }
             <ion-infinite-scroll (ionInfinite)="onAuthorsIonInfinite($any($event))">
                 <ion-infinite-scroll-content></ion-infinite-scroll-content>
             </ion-infinite-scroll>
-        </ng-container>
-        <ng-container *ngIf="where2Search === 'B'">
-            <ion-item *ngFor="let book of _books" [routerLink]="['/book', book.id]">
-                <ion-avatar>
-                    <img [src]="onGetImgSrc(book.img)" alt="img" />
-                </ion-avatar>
+        } @else if (where2Search === "B") {
+            @for (book of _books; track book) {
+                <ion-item [routerLink]="['/book', book.id]">
+                    <ion-avatar>
+                        <img [src]="onGetImgSrc(book.img)" alt="img" />
+                    </ion-avatar>
 
-                <ion-label>
-                    <h2 class="ion-text-wrap">{{ book.title }}</h2>
-                    <p>{{ book.authors }}</p>
-                    <ion-progress-bar *ngIf="book.progress" [value]="(book.progress | percent2:book.progress) / 100">
-                    </ion-progress-bar>
-                </ion-label>
-            </ion-item>
+                    <ion-label>
+                        <h2 class="ion-text-wrap">{{ book.title }}</h2>
+                        <p>{{ book.authors }}</p>
+                        @if (book.progress) {
+                            <ion-progress-bar [value]="(book.progress | percent2: book.progress) / 100">
+                            </ion-progress-bar>
+                        }
+                    </ion-label>
+                </ion-item>
+            }
             <ion-infinite-scroll (ionInfinite)="onBooksIonInfinite($any($event))">
                 <ion-infinite-scroll-content></ion-infinite-scroll-content>
             </ion-infinite-scroll>
-        </ng-container>
+        }
     </ion-list>
 
     <div class="bb">
-        <ion-button *ngIf="lastListened" (click)="onShowDialog()">
-            <ion-icon slot="icon-only" name="share"></ion-icon>
-        </ion-button>
+        @if (lastListened) {
+            <ion-button (click)="onShowDialog()">
+                <ion-icon slot="icon-only" name="share"></ion-icon>
+            </ion-button>
+        }
         <ion-button (click)="onAddAuthor()">
             <ion-icon slot="icon-only" name="add-circle-sharp"></ion-icon>
         </ion-button>
-        <ion-button *ngIf="lastListened" (click)="onGo2Last()">
-            <ion-icon slot="icon-only" name="play-sharp"></ion-icon>
-        </ion-button>
+        @if (lastListened) {
+            <ion-button (click)="onGo2Last()">
+                <ion-icon slot="icon-only" name="play-sharp"></ion-icon>
+            </ion-button>
+        }
     </div>
 </ion-content>

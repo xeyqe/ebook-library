@@ -91,9 +91,17 @@ mat-option {
 
 .online-item {
     display: flex;
+    margin: .5rem;
+    column-gap: 1rem;
 
-    ion-avatar {
-        margin-right: .5rem;
+    .ion-text-wrap {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+
+        &>* {
+            margin: 0;
+        }
     }
 }
 
@@ -130,8 +138,16 @@ mat-option {
 
 .book-cont {
     display: flex;
-    margin-bottom: .5rem;
+    margin: .5rem;
+    column-gap: .5rem;
+    align-items: center;
+
+    &>div {
+        width: 100%;
+    }
 }
+
+
 
 .reduced-width {
     flex-basis: 53px;

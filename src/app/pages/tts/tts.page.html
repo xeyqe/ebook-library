@@ -1,135 +1,194 @@
-<ng-container *ngIf="!htmlData.inBg">
-    <ion-header>
-        <ion-toolbar>
-            <div class="header">
-                <div class="header__name">
-                    <span>{{ htmlData.authorName }}</span>
-                    <span>{{ htmlData.title }}</span>
+@if (!htmlData.inBg) {
+    <div class="cont">
+        <ion-header>
+            <ion-toolbar>
+                <div class="header">
+                    <div class="header__name">
+                        <span>{{ htmlData.authorName }}</span>
+                        <span>{{ htmlData.title }}</span>
+                    </div>
+                    @if (spritzObj.isSpritz) {
+                        <div class="header__speed">
+                            <ion-button (click)="changeSpeed('-')">
+                                <ion-icon slot="icon-only" name="remove"></ion-icon>
+                            </ion-button>
+                            <span> {{ spritzObj.isSpritz ? htmlData.speed : htmlData.speed / 10 }} </span>
+                            <ion-button (click)="changeSpeed('+')">
+                                <ion-icon slot="icon-only" name="add"></ion-icon>
+                            </ion-button>
+                        </div>
+                    }
                 </div>
-                <div class="header__speed" *ngIf="spritzObj.isSpritz">
-                    <ion-button (click)="changeSpeed('-')">
-                        <ion-icon slot="icon-only" name="remove"></ion-icon>
-                    </ion-button>
-                    <span> {{ spritzObj.isSpritz ? htmlData.speed : htmlData.speed / 10 }} </span>
-                    <ion-button (click)="changeSpeed('+')">
-                        <ion-icon slot="icon-only" name="add"></ion-icon>
-                    </ion-button>
+            </ion-toolbar>
+        </ion-header>
+
+        @if (spritzObj.isSpritz) {
+            <ion-content (pinchout)="increaseFontSize()" (pinchin)="decreaseFontSize()">
+                <div
+                    class="spritz-cont"
+                    [style.fontSize]="spritzObj.fontSize"
+                    [style.lineHeight]="spritzObj.fontSize"
+                    [style.height]="spritzObj.contHeight">
+                    <ion-row>
+                        <ion-col size="2"></ion-col>
+                        <ion-col size="10">
+                            <ion-label class="red" style="float: left">|</ion-label>
+                        </ion-col>
+                    </ion-row>
+
+                    <ion-row [style.height]="spritzObj.fontSize">
+                        <ion-col class="col" size="2">
+                            <ion-label class="right">{{ spritzObj.preText }}</ion-label>
+                        </ion-col>
+
+                        <ion-col class="col flexed" size="10">
+                            <ion-label class="red">{{ spritzObj.redText }}</ion-label>
+                            <ion-label class="overflowed">{{ spritzObj.postText }}</ion-label>
+                        </ion-col>
+                    </ion-row>
+
+                    <ion-row>
+                        <ion-col size="2"></ion-col>
+                        <ion-col size="10">
+                            <ion-label class="red" style="float: left">|</ion-label>
+                        </ion-col>
+                    </ion-row>
                 </div>
+
+                <div class="mrgt" [style.fontSize]="spritzObj.fontSize" [style.lineHeight]="spritzObj.fontSize">
+                    {{ spritzObj.sentense }}
+                </div>
+                <!-- <ion-textarea readonly="true" class="mrgt" [style.fontSize]="spritzObj.fontSize"
+                    [style.lineHeight]="spritzObj.fontSize">
+                    {{ spritzObj.sentense }}
+                </ion-textarea> -->
+            </ion-content>
+        }
+        <div>
+            @if (myForm && !spritzObj.isSpritz) {
+                <form [formGroup]="myForm">
+                    <div class="flexed {{ isPortrait ? 'vert' : 'horiz' }}">
+                        <div class="ranges">
+                            <ion-checkbox (ionChange)="onChangeAudioFocus()" [checked]="audioFocus">
+                                Audio focus
+                            </ion-checkbox>
+                            <ion-range
+                                labelPlacement="start"
+                                label="Rate"
+                                [pin]="true"
+                                min="0.5"
+                                max="4"
+                                step="0.1"
+                                color="primary"
+                                [pinFormatter]="pinFormatter"
+                                [value]="{ lower: speakParams.rate, upper: speakParams.rate }"
+                                (ionChange)="onRateChange($any($event).detail.value)"></ion-range>
+                            <!-- <ion-range labelPlacement="start" label="Pitch" [pin]="true" min="0" max="1" step="0.1" color="primary"
+                                [pinFormatter]="pinFormatter" [value]="{ lower: speakParams.pitch, upper: speakParams.pitch }"
+                                (ionChange)="onPitchChange($any($event).detail.value)"></ion-range> -->
+                            <ion-range
+                                labelPlacement="start"
+                                label="Volume"
+                                [pin]="true"
+                                min="0"
+                                max="1"
+                                step="0.1"
+                                color="primary"
+                                [pinFormatter]="pinFormatter"
+                                [value]="{ lower: speakParams.volume, upper: speakParams.volume }"
+                                (ionChange)="onVolumeChange($any($event).detail.value)"></ion-range>
+                            <!-- <ion-range labelPlacement="start" label="Pan" [pin]="true" min="-1" max="1" step="0.1" color="primary"
+                                [pinFormatter]="pinFormatter" [value]="{ lower: speakParams.pan, upper: speakParams.pan }"
+                                (ionChange)="onPanChange($any($event).detail.value)"></ion-range> -->
+                        </div>
+
+                        <div class="fields">
+                            @if (speechObj.engines) {
+                                <mat-form-field>
+                                    <mat-label class="red">Engine</mat-label>
+                                    <mat-select interface="popover" formControlName="engine">
+                                        @for (engine of speechObj?.engines; track $index) {
+                                            <mat-option [value]="engine.name">
+                                                {{ engine.label }}
+                                            </mat-option>
+                                        }
+                                    </mat-select>
+                                </mat-form-field>
+                            }
+
+                            @if (speechObj.language) {
+                                <mat-form-field>
+                                    <mat-label class="red">Language</mat-label>
+                                    <mat-select interface="popover" formControlName="language">
+                                        @for (language of speechObj?.languages; track $index) {
+                                            <mat-option [value]="language">
+                                                {{ language }}
+                                            </mat-option>
+                                        }
+                                    </mat-select>
+                                </mat-form-field>
+                            }
+
+                            @if (
+                                speechObj.voices && speechObj.language && speechObj.voices[speechObj.language]?.length
+                            ) {
+                                <mat-form-field>
+                                    <mat-label class="red">Voice</mat-label>
+                                    <mat-select interface="popover" formControlName="voice">
+                                        @for (voice of speechObj.voices[speechObj.language]; track $index) {
+                                            <mat-option [value]="voice.voiceURI">
+                                                {{ voice.voiceURI }}
+                                            </mat-option>
+                                        }
+                                    </mat-select>
+                                </mat-form-field>
+                            }
+                        </div>
+                    </div>
+                </form>
+            }
+
+            <div class="flexed {{ isPortrait ? 'vert' : 'horiz' }}">
+                <ion-row class="ion-align-items-center ion-justify-content-center">
+                    <ion-label class="white">{{ progress() || 0 | number: "1.0-0" : "cs" }}</ion-label>
+
+                    <ion-item>
+                        <ion-button (pointerdown)="onStartRewinding(0)" (pointerup)="onStopRewinding(0)">
+                            <ion-icon slot="icon-only" name="play-back-sharp"></ion-icon>
+                        </ion-button>
+
+                        <ion-button [disabled]="!initialized" (click)="onOff()">
+                            <ion-icon
+                                slot="icon-only"
+                                [name]="speechObj.isSpeaking ? 'pause-sharp' : 'play-sharp'">
+                            </ion-icon>
+                        </ion-button>
+
+                        <ion-button (pointerdown)="onStartRewinding(1)" (pointerup)="onStopRewinding(1)">
+                            <ion-icon slot="icon-only" name="play-forward-sharp"></ion-icon>
+                        </ion-button>
+                    </ion-item>
+
+                    @if (texts?.length) {
+                        <ion-label class="white"> {{ texts.length - 1 | number: "1.0-0" : "cs" }} </ion-label>
+                    }
+                </ion-row>
+
+                @if (texts?.length) {
+                    <ion-item class="progress">
+                        <ion-range
+                            [value]="progress()"
+                            min="0"
+                            [max]="texts.length"
+                            step="1"
+                            color="primary"
+                            style="height: 0px"
+                            (ionChange)="changeProgress($any($event).detail.value)"
+                            (touchend)="stopStartSpeaking()">
+                        </ion-range>
+                    </ion-item>
+                }
             </div>
-        </ion-toolbar>
-    </ion-header>
-
-    <ion-content (pinchout)="increaseFontSize()" (pinchin)="decreaseFontSize()">
-        <div *ngIf="spritzObj.isSpritz" class="spritz-cont" [style.fontSize]="spritzObj.fontSize"
-            [style.lineHeight]="spritzObj.fontSize" [style.height]="spritzObj.contHeight">
-            <ion-row>
-                <ion-col size="2"></ion-col>
-                <ion-col size="10">
-                    <ion-label class="red" style="float: left;">|</ion-label>
-                </ion-col>
-            </ion-row>
-
-            <ion-row [style.height]="spritzObj.fontSize">
-                <ion-col class="col" size="2">
-                    <ion-label class="right">{{ spritzObj.preText }}</ion-label>
-                </ion-col>
-
-                <ion-col class="col flexed" size="10">
-                    <ion-label class="red">{{ spritzObj.redText }}</ion-label>
-                    <ion-label class="overflowed">{{ spritzObj.postText }}</ion-label>
-                </ion-col>
-            </ion-row>
-
-            <ion-row>
-                <ion-col size="2"></ion-col>
-                <ion-col size="10">
-                    <ion-label class="red" style="float: left;">|</ion-label>
-                </ion-col>
-            </ion-row>
         </div>
-        <ion-textarea readonly="true" class="mrgt" [style.fontSize]="spritzObj.fontSize"
-            [style.lineHeight]="spritzObj.fontSize">
-            {{ spritzObj.sentense }}
-        </ion-textarea>
-    </ion-content>
-
-    <form [formGroup]="myForm" *ngIf="myForm && !spritzObj.isSpritz">
-        <div class="ranges">
-            <ion-checkbox (ionChange)="onChangeAudioFocus()" [checked]="audioFocus">Audio focus</ion-checkbox>
-            <ion-range labelPlacement="start" label="Rate" [pin]="true" min="0.5" max="4" step="0.1" color="primary"
-                [pinFormatter]="pinFormatter" [value]="{ lower: speakParams.rate, upper: speakParams.rate }"
-                (ionChange)="onRateChange($any($event).detail.value)"></ion-range>
-            <!-- <ion-range labelPlacement="start" label="Pitch" [pin]="true" min="0" max="1" step="0.1" color="primary"
-                [pinFormatter]="pinFormatter" [value]="{ lower: speakParams.pitch, upper: speakParams.pitch }"
-                (ionChange)="onPitchChange($any($event).detail.value)"></ion-range> -->
-            <ion-range labelPlacement="start" label="Volume" [pin]="true" min="0" max="1" step="0.1" color="primary"
-                [pinFormatter]="pinFormatter" [value]="{ lower: speakParams.volume, upper: speakParams.volume }"
-                (ionChange)="onVolumeChange($any($event).detail.value)"></ion-range>
-            <!-- <ion-range labelPlacement="start" label="Pan" [pin]="true" min="-1" max="1" step="0.1" color="primary"
-                [pinFormatter]="pinFormatter" [value]="{ lower: speakParams.pan, upper: speakParams.pan }"
-                (ionChange)="onPanChange($any($event).detail.value)"></ion-range> -->
-        </div>
-
-        <mat-form-field *ngIf="speechObj.engines">
-            <mat-label class="red">Engine</mat-label>
-            <mat-select interface="popover" formControlName="engine">
-                <mat-option *ngFor="let engine of speechObj?.engines" [value]="engine.name">
-                    {{ engine.label }}
-                </mat-option>
-            </mat-select>
-        </mat-form-field>
-
-        <mat-form-field *ngIf="speechObj.language">
-            <mat-label class="red">Language</mat-label>
-            <mat-select interface="popover" formControlName="language">
-                <mat-option *ngFor="let language of speechObj?.languages" [value]="language">
-                    {{ language }}
-                </mat-option>
-            </mat-select>
-        </mat-form-field>
-
-        <mat-form-field *ngIf="speechObj.voices && speechObj.language && speechObj.voices[speechObj.language]?.length">
-            <mat-label class="red">Voice</mat-label>
-            <mat-select interface="popover" formControlName="voice">
-                <mat-option *ngFor="let voice of speechObj.voices[speechObj.language]" [value]="voice.voiceURI">
-                    {{ voice.voiceURI }}
-                </mat-option>
-            </mat-select>
-        </mat-form-field>
-    </form>
-
-    <ion-row class="ion-align-items-center ion-justify-content-center">
-        <ion-label class="white" *ngIf="progress">
-            {{ progress | number: '1.0-0':'cs' }}
-        </ion-label>
-        <ion-label class="white" *ngIf="!progress">
-            0
-        </ion-label>
-
-        <ion-item>
-            <ion-button (pointerdown)="onStartRewinding(0)" (pointerup)="onStopRewinding(0)">
-                <ion-icon slot="icon-only" name="play-back-sharp"></ion-icon>
-            </ion-button>
-
-            <ion-button [disabled]="!initialized" (click)="onOff()">
-                <ion-icon slot="icon-only" name="play-sharp" *ngIf="!speechObj.isSpeaking"></ion-icon>
-                <ion-icon slot="icon-only" name="pause-sharp" *ngIf="speechObj.isSpeaking"></ion-icon>
-            </ion-button>
-
-            <ion-button (pointerdown)="onStartRewinding(1)" (pointerup)="onStopRewinding(1)">
-                <ion-icon slot="icon-only" name="play-forward-sharp"></ion-icon>
-            </ion-button>
-        </ion-item>
-
-        <ion-label class="white" *ngIf="texts?.length">
-            {{ texts.length - 1 | number: '1.0-0':'cs' }}
-        </ion-label>
-    </ion-row>
-
-    <ion-item class="progress">
-        <ion-range *ngIf="texts?.length" [value]="progress" min="0" [max]="texts.length" step="1" color="primary"
-            style="height: 0px;" (ionChange)="changeProgress($any($event).detail.value)"
-            (touchend)="stopStartSpeaking()">
-        </ion-range>
-    </ion-item>
-</ng-container>
+    </div>
+}

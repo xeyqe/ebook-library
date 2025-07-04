@@ -1,25 +1,24 @@
-import { Component, ElementRef, OnInit, Renderer2, ViewChild } from '@angular/core';
+import { Component, ElementRef, inject, OnInit, Renderer2, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { NavController, Platform, ToastController } from '@ionic/angular';
 
 import { Subscription } from 'rxjs';
 
-import { StatusBar } from '@awesome-cordova-plugins/status-bar/ngx';
-import { BackgroundMode } from '@awesome-cordova-plugins/background-mode/ngx';
-
 import { BusyService } from './services/busy.service';
 import { FileReaderService } from './services/file-reader.service';
 import { DatabaseService } from 'src/app/services/database.service';
 
+import { StatusBar } from '@capacitor/status-bar';
 import { SafeArea } from 'capacitor-plugin-safe-area';
 import { AllFilesAccess } from 'capacitor-all-files-access-permission';
-
+import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
 
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],
+  standalone: false,
 })
 export class AppComponent implements OnInit {
   @ViewChild('elRef', { static: true }) elRef: ElementRef;
@@ -27,27 +26,33 @@ export class AppComponent implements OnInit {
   private subs: Subscription[] = [];
   protected initialized: boolean;
 
-  constructor(
-    private backgroundMode: BackgroundMode,
-    private db: DatabaseService,
-    private fr: FileReaderService,
-    private navCtrl: NavController,
-    private platform: Platform,
-    private router: Router,
-    private renderer: Renderer2,
-    private statusBar: StatusBar,
-    private toastCtrl: ToastController,
-    protected workingServ: BusyService,
-  ) { }
+  private db = inject(DatabaseService);
+  private fr = inject(FileReaderService);
+  private navCtrl = inject(NavController);
+  private platform = inject(Platform);
+  private router = inject(Router);
+  private renderer = inject(Renderer2);
+  private toastCtrl = inject(ToastController);
+  protected workingServ = inject(BusyService);
 
   ngOnInit(): void {
     this.platform.ready().then(() => {
+      ForegroundService.requestPermissions().then(a => {
+        console.log(a);
+      }).catch(e => {
+        console.error(e);
+      });
+
+      ForegroundService.checkPermissions().then(a => {
+        console.log(a);
+      }).catch(e => {
+        console.error(e);
+      });
       this.saveArea();
       AllFilesAccess.access().then(() => {
-        this.fr.downloadDorian();
         this.initializeApp();
         this.setSubs();
-        this.statusBar.hide();
+        StatusBar.hide();
       })
     }).catch(e => {
       console.error('getting platform ready failed');
@@ -96,6 +101,12 @@ export class AppComponent implements OnInit {
       console.error(e)
     }
     try {
+      await this.fr.downloadDorian();
+    } catch (e) {
+      console.error(e);
+    }
+
+    try {
       await this.fr.listOfAuthors();
       this.initialized = true;
       console.log('this.fr.listOfAuthors() finished')
@@ -103,16 +114,6 @@ export class AppComponent implements OnInit {
       console.error('this.fr.listOfAuthors() failed');
       console.error(e);
     }
-
-    this.backgroundMode.setDefaults({
-      title: 'author',
-      text: 'book',
-      icon: 'ic_launcher',
-      color: 'F14F4D',
-      resume: true,
-      hidden: false,
-      bigText: true
-    });
   }
 
   private setSubs() {
@@ -122,30 +123,6 @@ export class AppComponent implements OnInit {
     this.subs.push(this.platform.resume.subscribe(() => {
       if (this.workingServ.isSpeaking) {
         this.workingServ.inBg = true;
-        this.backgroundMode.disable();
-      }
-    }));
-    this.subs.push(this.platform.pause.subscribe(() => {
-      if (this.workingServ.isSpeaking) {
-        this.workingServ.inBg = false;
-        // this.backgroundMode.disableBatteryOptimizations();
-        this.backgroundMode.disableWebViewOptimizations();
-        this.backgroundMode.enable();
-
-        Promise.all([
-          this.db.getValue('author'),
-          this.db.getValue('title'),
-        ]).then(dt => {
-          this.backgroundMode.setDefaults({
-            title: dt[0],
-            text: dt[1],
-            icon: 'ic_launcher',
-            color: 'F14F4D',
-            resume: true,
-            hidden: false,
-            bigText: true
-          });
-        });
       }
     }));
   }

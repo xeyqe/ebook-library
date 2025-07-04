@@ -168,9 +168,12 @@ export class EpubService {
 
       const output = [];
       xml.querySelector('body').innerHTML.replace(/<\/p>/g, ' ').replace(/<[^>]*>/g, '').replace(/\n/g, ' ').replace(/\s{2,}/g, ' ')
-        .split(/(?=[.!?][“"\n\s])|(?<=[.!?][“"\n\s])/).forEach((it, i) => {
-          if (i % 2 === 0) output.push(it);
-          else output[output.length - 1] += it;
+        .split(/(?=[.!?][“"\n\s])|(?<=[.!?][“"\n\s])/).forEach(it => {
+          if (output[output.length - 1] && it.length < 5) {
+            output[output.length - 1] += it;
+          } else {
+            output.push(it);
+          }
         });
       resolve(output.map(it => it.trim()).filter(it => !/^[\s]*$/.test(it)));
     });

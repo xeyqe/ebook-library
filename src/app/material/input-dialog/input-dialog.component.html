@@ -1,5 +1,7 @@
 <div class="cont">
-  <h1 *ngIf="data.header" mat-dialog-title>{{ data.header }}</h1>
+  @if (data.header) {
+    <h1 mat-dialog-title>{{ data.header }}</h1>
+  }
   <ion-icon class="close-circle" name="close-circle" (click)="onClose()"></ion-icon>
   <div>
     <mat-form-field subscriptSizing="dynamic">

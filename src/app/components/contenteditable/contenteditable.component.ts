@@ -16,20 +16,19 @@ import { MatDialog } from '@angular/material/dialog';
 
 
 @Component({
-  selector: 'app-contenteditable',
-  standalone: true,
-  imports: [
-    ColorPickerModule,
-    MatAutocompleteModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatIconModule,
-    MatInputModule,
-    ReactiveFormsModule,
-  ],
-  providers: [{ provide: MatFormFieldControl, useExisting: ContenteditableComponent }],
-  templateUrl: './contenteditable.component.html',
-  styleUrl: './contenteditable.component.scss'
+    selector: 'app-contenteditable',
+    imports: [
+        ColorPickerModule,
+        MatAutocompleteModule,
+        MatButtonModule,
+        MatFormFieldModule,
+        MatIconModule,
+        MatInputModule,
+        ReactiveFormsModule,
+    ],
+    providers: [{ provide: MatFormFieldControl, useExisting: ContenteditableComponent }],
+    templateUrl: './contenteditable.component.html',
+    styleUrl: './contenteditable.component.scss'
 })
 export class ContenteditableComponent implements ControlValueAccessor, MatFormFieldControl<string>, OnInit, OnDestroy, DoCheck {
   @ViewChild('contenteditableEl', { static: true }) contenteditableEl: ElementRef;
@@ -252,10 +251,12 @@ export class ContenteditableComponent implements ControlValueAccessor, MatFormFi
   }
 
   protected change() {
-    if (this.oldValue !== this.contenteditableEl.nativeElement.innerHTML) {
-      this.oldValue = this.contenteditableEl.nativeElement.innerHTML;
+    const el = this.contenteditableEl.nativeElement;
+    const newVal = el.textContent ? el.innerHTML : null;
+    if (this.oldValue !== newVal) {
+      this.oldValue = newVal;
       if (!this.onChange) return;
-      this.onChange(this.oldValue);
+      this.onChange(newVal);
     }
   }
 

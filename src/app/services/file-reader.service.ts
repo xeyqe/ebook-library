@@ -72,7 +72,7 @@ export class FileReaderService {
       return await Filesystem.downloadFile({
         directory: this.dir.dir,
         path: 'ebook-library/Wilde, Oscar/The Picture of Dorian Gray.epub',
-        url: 'https://www.gutenberg.org/ebooks/174.epub.noimages?session_id=931e40dbce8a034672c993b24b343cb40c0e667d'
+        url: 'https://www.gutenberg.org/ebooks/174.epub'
       });
     } catch (e) {
       console.error('downloadDorian failed!');
@@ -319,7 +319,7 @@ export class FileReaderService {
     }).catch(async () => {
       return Filesystem.downloadFile({
         directory: this.dir.dir,
-        path: '/ebook-library/unknown.jpg',
+        path: 'ebook-library/unknown.jpg',
         url: 'https://p1.hiclipart.com/preview/584/221/301/sword-art-online-vector-icons-help-unknown-png-icon-thumbnail.jpg'
       });
     });
@@ -328,17 +328,17 @@ export class FileReaderService {
   public async getUniquePath(filePath: string, index?: number): Promise<string> {
     const suffix = index ? index : '';
     const path = filePath.substring(0, filePath.lastIndexOf('/'));
-    const fileName = filePath.substring(filePath.lastIndexOf('/') + 1, filePath.lastIndexOf('.')) + suffix;
     const isFile = filePath.substring(filePath.lastIndexOf('/') + 1).includes('.');
-    const extension = isFile ? filePath.substring(filePath.lastIndexOf('.') + 1) : '';
+    const fileName = isFile ? filePath.substring(filePath.lastIndexOf('/') + 1, filePath.lastIndexOf('.')) + suffix : '';
+    const extension = isFile ? ('.' + filePath.substring(filePath.lastIndexOf('.') + 1)) : '';
     try {
       await Filesystem.stat({
-        path: `${path}/${fileName}.${extension}`,
+        path: `${path}/${fileName}${extension}`,
         directory: this.dir.dir
       });
       return await this.getUniquePath(filePath, suffix ? suffix + 1 : 1);
     } catch (e) {
-      return `${path}/${fileName}.${extension}`;
+      return `${path}/${fileName}${extension}`;
     }
   }
 

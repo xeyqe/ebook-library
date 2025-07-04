@@ -1,16 +1,16 @@
 import { Component, OnInit, ViewChild, ElementRef, OnDestroy, Renderer2 } from '@angular/core';
 import { IonContent } from '@ionic/angular';
-import { HTTP } from '@awesome-cordova-plugins/http/ngx';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { animate, AUTO_STYLE, state, style, transition, trigger } from '@angular/animations';
+
+import { AllFilesAccess } from 'capacitor-all-files-access-permission';
 
 import { MatDialog } from '@angular/material/dialog';
 
 import { Capacitor } from '@capacitor/core';
 import { Filesystem } from '@capacitor/filesystem';
 import { FilePicker } from '@capawesome/capacitor-file-picker';
-import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
 
 import { Subscription } from 'rxjs';
 import { first } from 'rxjs/operators';
@@ -38,7 +38,8 @@ import { DialogComponent } from 'src/app/material/dialog/dialog.component';
       transition('false => true', animate(500 + 'ms ease-in')),
       transition('true => false', animate(500 + 'ms ease-out'))
     ])
-  ]
+  ],
+  standalone: false,
 })
 export class AuthorComponent implements OnInit, OnDestroy {
   @ViewChild('pictureC') pictureC: PictureComponent | undefined;
@@ -106,15 +107,12 @@ export class AuthorComponent implements OnInit, OnDestroy {
     private dialog: MatDialog,
     private directoryServ: DirectoryService,
     private fs: FileReaderService,
-    private http: HTTP,
-    // private jsonServ: JsonDataParserService,
-    private filePath: FilePath,
     private picsServ: NonusedPicsService,
     private renderer: Renderer2,
     private route: ActivatedRoute,
     private router: Router,
     private webScraper: WebScraperService,
-    private workingServ: BusyService
+    private workingServ: BusyService,
   ) { }
 
   ngOnInit() {
@@ -206,11 +204,6 @@ export class AuthorComponent implements OnInit, OnDestroy {
       fc.setValue((author[key] || null) as never);
       this.listsOfValues[key] = author[key] ? [author[key]] : [];
     });
-
-    // this.filteredOptions = this.authorForm.controls.surname.valueChanges.pipe(
-    //   startWith(''),
-    //   map((value) => this._filter(value))
-    // );
 
     this.subs.push(this.authorForm.valueChanges.subscribe(() => {
       this.authorChanged = true;
@@ -378,89 +371,89 @@ export class AuthorComponent implements OnInit, OnDestroy {
     this.setMinWidths();
   }
 
-  protected getFromWikipedia() {
-    const searchValue = this.authorForm.controls.name.value + ' ' + this.authorForm.controls.surname.value;
-    this.workingServ.busy();
+  // protected getFromWikipedia() {
+  //   const searchValue = this.authorForm.controls.name.value + ' ' + this.authorForm.controls.surname.value;
+  //   this.workingServ.busy();
 
-    this.http.get(
-      'https://wikipedia.org/w/api.php',
-      {
-        action: 'query',
-        list: 'search',
-        srsearch: 'intitle:' + searchValue,
-        rvprop: 'content',
-        rvsection: '0',
-        rvslots: '*',
-        format: 'json',
-      },
-      {}
-    ).then((output) => {
-      this.ready2editing = true;
-      this.wikiOutputBoolean = true;
-      this.fromWiki = JSON.parse(output.data).query.search;
-      this.workingServ.done();
-      this.scrollElement(this.target1);
-    }).catch((e) => {
-      this.ready2editing = false;
-      console.error(e);
-    });
-  }
+  //   this.http.get(
+  //     'https://wikipedia.org/w/api.php',
+  //     {
+  //       action: 'query',
+  //       list: 'search',
+  //       srsearch: 'intitle:' + searchValue,
+  //       rvprop: 'content',
+  //       rvsection: '0',
+  //       rvslots: '*',
+  //       format: 'json',
+  //     },
+  //     {}
+  //   ).then((output) => {
+  //     this.ready2editing = true;
+  //     this.wikiOutputBoolean = true;
+  //     this.fromWiki = JSON.parse(output.data).query.search;
+  //     this.workingServ.done();
+  //     this.scrollElement(this.target1);
+  //   }).catch((e) => {
+  //     this.ready2editing = false;
+  //     console.error(e);
+  //   });
+  // }
 
-  protected onSetWikipediaData(aa: WIKIPEDIADATA) {
-    const pageid = aa.pageid + '';
-    this.workingServ.busy();
-    this.http.get(
-      'https://wikipedia.org/w/api.php',
-      {
-        action: 'query',
-        prop: 'revisions|extracts|images|pageimages',
-        format: 'json',
-        rvprop: 'content',
-        rvsection: '0',
-        rvslots: '*',
-        pageids: pageid,
-        exintro: 'explaintext',
-        imlimit: '130',
-        piprop: 'thumbnail',
-        pithumbsize: '300',
-      },
-      {}
-    ).then((output) => {
-      try {
-        const data = JSON.parse(output.data);
-        const obj = { biography: null, img: null };
-        obj.biography = data.query.pages[pageid].extract.replace(/<[^>]*>/g, '').trim();
-        this.wikiOutputBoolean = false;
-        this.authorChanged = true;
-        const array = Array.from(data.query.pages[pageid].images, (im) => im['title']).filter(
-          (img) => !img.includes('.svg')
-        );
+  // protected onSetWikipediaData(aa: WIKIPEDIADATA) {
+  //   const pageid = aa.pageid + '';
+  //   this.workingServ.busy();
+  //   this.http.get(
+  //     'https://wikipedia.org/w/api.php',
+  //     {
+  //       action: 'query',
+  //       prop: 'revisions|extracts|images|pageimages',
+  //       format: 'json',
+  //       rvprop: 'content',
+  //       rvsection: '0',
+  //       rvslots: '*',
+  //       pageids: pageid,
+  //       exintro: 'explaintext',
+  //       imlimit: '130',
+  //       piprop: 'thumbnail',
+  //       pithumbsize: '300',
+  //     },
+  //     {}
+  //   ).then((output) => {
+  //     try {
+  //       const data = JSON.parse(output.data);
+  //       const obj = { biography: null, img: null };
+  //       obj.biography = data.query.pages[pageid].extract.replace(/<[^>]*>/g, '').trim();
+  //       this.wikiOutputBoolean = false;
+  //       this.authorChanged = true;
+  //       const array = Array.from(data.query.pages[pageid].images, (im) => im['title']).filter(
+  //         (img) => !img.includes('.svg')
+  //       );
 
-        Array.from(
-          array,
-          (item) => `https://commons.wikimedia.org/wiki/Special:FilePath/${item}?width=200`
-        ).forEach(img => {
-          if (!this.listsOfValues.img.includes(img))
-            this.listsOfValues.img.push(img);
-        });
+  //       Array.from(
+  //         array,
+  //         (item) => `https://commons.wikimedia.org/wiki/Special:FilePath/${item}?width=200`
+  //       ).forEach(img => {
+  //         if (!this.listsOfValues.img.includes(img))
+  //           this.listsOfValues.img.push(img);
+  //       });
 
-        if (data.query.pages[pageid].thumbnail) {
-          obj.img = data.query.pages[pageid].thumbnail.source;
-        }
-        ['biography', 'img'].forEach(key => {
-          this.authorForm.get(key).setValue(obj[key] || null);
-          if (obj[key] && !this.listsOfValues[key].includes(obj[key]))
-            this.listsOfValues[key].push(obj[key]);
-        });
-        this.parseInfobox(data.query.pages[pageid].revisions[0].slots.main['*']);
-      } catch (er) {
-        this.content.scrollToTop();
-        this.workingServ.done();
-        console.error(er);
-        console.error('cannot parse data from wikipedia');
-      }
-    });
-  }
+  //       if (data.query.pages[pageid].thumbnail) {
+  //         obj.img = data.query.pages[pageid].thumbnail.source;
+  //       }
+  //       ['biography', 'img'].forEach(key => {
+  //         this.authorForm.get(key).setValue(obj[key] || null);
+  //         if (obj[key] && !this.listsOfValues[key].includes(obj[key]))
+  //           this.listsOfValues[key].push(obj[key]);
+  //       });
+  //       this.parseInfobox(data.query.pages[pageid].revisions[0].slots.main['*']);
+  //     } catch (er) {
+  //       this.content.scrollToTop();
+  //       this.workingServ.done();
+  //       console.error(er);
+  //       console.error('cannot parse data from wikipedia');
+  //     }
+  //   });
+  // }
 
   protected onUnhtml(str: string): string {
     return str.replace(/<[^>]*>/g, '');
@@ -549,10 +542,13 @@ export class AuthorComponent implements OnInit, OnDestroy {
       alert('No internet connection!');
       return;
     }
-    const uri = this.authorForm.controls.img.value;
+    let uri = this.authorForm.controls.img.value;
+    if (uri.lastIndexOf('.') < uri.lastIndexOf('?')) {
+      uri = uri.substring(0, uri.lastIndexOf('?'));
+    }
     const path = this.author.path;
-    const index = this.authorForm.controls.img.value.lastIndexOf('.');
-    const extension = this.authorForm.controls.img.value.substring(index);
+    const index = uri.lastIndexOf('.');
+    const extension = uri.substring(index);
 
     const filename = this.authorForm.controls.name.value + '_' + this.authorForm.controls.surname.value + extension;
 
@@ -757,28 +753,54 @@ export class AuthorComponent implements OnInit, OnDestroy {
   protected onAddBook() {
     FilePicker.pickFiles({
       types: ['application/epub+zip', 'text/plain', 'application/pdf'],
-      multiple: true
+      // multiple: true
     }).then(async a => {
       for (const file of a.files) {
-        const name = file.name;
-        const path = await this.fs.getUniquePath(this.author.path + name);
-        const nm = path.slice(path.lastIndexOf('/') + 1, path.lastIndexOf('.'));
-        const from = await this.filePath.resolveNativePath(file.path);
+        const title = file.name.substring(0, file.name.lastIndexOf('.'));
+        const path = await this.fs.getUniquePath(this.author.path + file.name);
+        // const nm = path.slice(path.lastIndexOf('/') + 1, path.lastIndexOf('.'));
+        // let from = await this.filePath.resolveNativePath(file.path);
+        // console.log(encodeURI(file.path))
 
-        await Filesystem.copy({
-          from,
-          to: path,
-          toDirectory: this.directoryServ.dir
-        });
+        // const ar = [
+        //   { key: Directory.ExternalStorage, uri: (await Filesystem.getUri({ directory: Directory.ExternalStorage, path: '' })).uri },
+        //   { key: Directory.External, uri: (await Filesystem.getUri({ directory: Directory.External, path: '' })).uri },
+        //   { key: Directory.Cache, uri: (await Filesystem.getUri({ directory: Directory.Cache, path: '' })).uri },
+        //   { key: Directory.Data, uri: (await Filesystem.getUri({ directory: Directory.Data, path: '' })).uri },
+        //   { key: Directory.Documents, uri: (await Filesystem.getUri({ directory: Directory.Documents, path: '' })).uri },
+        //   { key: Directory.Library, uri: (await Filesystem.getUri({ directory: Directory.Library, path: '' })).uri },
+        // ].sort((a, b) => b.uri.length - a.uri.length);
+
+        // let directory: Directory;
+        // ar.forEach(it => {
+        //   if (from.startsWith(it.uri)) {
+        //     directory = it.key;
+        //     from = from.substring(it.uri.length, from.lastIndexOf('/') + 1) + name;
+        //     return;
+        //   }
+        // });
+        const destUri = (await Filesystem.getUri({
+          directory: this.directoryServ.dir,
+          path
+        })).uri;
+
+        await AllFilesAccess.copyFile({ sourceUri: file.path, destinationUri: destUri });
+
+        // await Filesystem.copy({
+        //   from: file.path,
+        //   to: path,
+        //   // directory,
+        //   toDirectory: this.directoryServ.dir
+        // });
         const bookId = await this.db.addBook({
-          id: null, title: nm, creatorIds: [this.author.id], originalTitle: null, annotation: null,
+          id: null, title: title, creatorIds: [this.author.id], originalTitle: null, annotation: null,
           publisher: null, published: null, genre: null, length: null, language: 'cs-CZ', translator: null,
           ISBN: null, path, progress: null, rating: null, img: null, serie: null, serieOrder: null,
           dtbkId: null, lgId: null, cbdbId: null, added: new Date(), lastRead: null, finished: null
         });
         this.books.push({
           id: bookId + '',
-          title: nm,
+          title: title,
           creatorIds: [this.author.id],
           progress: null,
           img: null,

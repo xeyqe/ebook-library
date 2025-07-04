@@ -14,18 +14,17 @@ import { InAppBrowser } from '@awesome-cordova-plugins/in-app-browser/ngx';
 import { PictureModule } from '../picture/picture.module';
 import { BookPageRoutingModule } from './book-routing.module';
 import { DialogModule } from '../../material/dialog/dialog.module';
-import { ApplicationPipesModuleModule } from 'src/app/application-pipes-module/application-pipes-module.module';
-
 
 import { NgsContenteditableModule } from '@ng-stack/contenteditable';
 
 import { BookComponent } from './book.page';
 import { ContenteditableComponent } from 'src/app/components/contenteditable/contenteditable.component';
+import { PercentPipe } from 'src/app/pipes/percent2.pipe';
 
 
 @NgModule({
   imports: [
-    ApplicationPipesModuleModule,
+    PercentPipe,
     BookPageRoutingModule,
     CommonModule,
     ContenteditableComponent,

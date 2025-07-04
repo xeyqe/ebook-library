@@ -1,24 +1,23 @@
-import { Component, ElementRef, EventEmitter, Input, Output, Renderer2, ViewChild } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, EventEmitter, Input, OnChanges, OnInit, Output, Renderer2, SimpleChanges, ViewChild } from '@angular/core';
 import { Filesystem } from '@capacitor/filesystem';
 import { IonicSlides } from '@ionic/angular';
 import { Capacitor } from '@capacitor/core';
-
-import { FilePath } from '@awesome-cordova-plugins/file-path/ngx';
 
 import { register } from 'swiper/element/bundle';
 
 import { DirectoryService } from 'src/app/services/directory.service';
 import { FilePicker } from '@capawesome/capacitor-file-picker';
-
+import { AllFilesAccess } from 'capacitor-all-files-access-permission';
 
 register();
 
 @Component({
   selector: 'app-picture',
   templateUrl: './picture.component.html',
-  styleUrls: ['./picture.component.scss']
+  styleUrls: ['./picture.component.scss'],
+  standalone: false,
 })
-export class PictureComponent {
+export class PictureComponent implements OnInit, OnChanges {
   @ViewChild('swiperRef') swiperRef: ElementRef | undefined;
 
   @Input() imgPreLink: string;
@@ -30,16 +29,24 @@ export class PictureComponent {
 
 
   constructor(
-    private renderer: Renderer2,
-    private filePath: FilePath,
     private dir: DirectoryService,
+    private renderer: Renderer2,
   ) { }
+
+  ngOnInit(): void {
+    this.imgIndex = this.swiperRef?.nativeElement.swiper.activeIndex ?? 0;
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    console.log(changes)
+  }
 
   protected onGetImgSrc(img: string): string {
     return img?.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink + img) : img;
   }
 
-  protected async onResizeSwiper(): Promise<void> {
+  protected onResizeSwiper = async (ev?): Promise<void> => {
+    console.log(ev)
     if (!this.swiperRef?.nativeElement) await this.wait(200);
     if (!this.swiperRef?.nativeElement) return;
     this.imgIndex = this.swiperRef?.nativeElement.swiper.activeIndex;
@@ -63,15 +70,16 @@ export class PictureComponent {
     FilePicker.pickFiles({
       types: ['image/*']
     }).then(async resp => {
-      const name = resp.files[0].name;
+      const file = resp.files[0];
+      const name = file.name;
       const extension = name.slice(name.lastIndexOf('.') + 1);
-
-      Filesystem.copy({
-        from: await this.filePath.resolveNativePath(resp.files[0].path),
-        to: await this.getUniqueFileName({ dir: this.dirPath, name: title, extension }),
-        toDirectory: this.dir.dir
-      }).then(a => {
-        this.images.push(decodeURI(a.uri.replace(/.*ebook-library/, '/ebook-library')).replace(/%2C /g, ', '));
+      const path = await this.getUniqueFileName({ dir: this.dirPath, name: title, extension });
+      const destUri = (await Filesystem.getUri({
+        directory: this.dir.dir,
+        path
+      })).uri;
+      AllFilesAccess.copyFile({ sourceUri: file.path, destinationUri: destUri }).then(() => {
+        this.images.push(decodeURI(destUri.replace(/.*ebook-library/, '/ebook-library')).replace(/%2C /g, ', '));
         this.swiperRef.nativeElement.swiper.slideTo(this.images.length - 1);
         this.imgIndex = this.images.length - 1;
         setTimeout(() => this.onResizeSwiper(), 100);

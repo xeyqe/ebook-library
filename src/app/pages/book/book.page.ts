@@ -33,6 +33,7 @@ import { DialogComponent } from 'src/app/material/dialog/dialog.component';
   selector: 'app-book',
   templateUrl: './book.page.html',
   styleUrls: ['./book.page.scss'],
+  standalone: false,
 })
 export class BookComponent implements OnDestroy {
   @ViewChild('pictureC') pictureC: PictureComponent | undefined;
@@ -492,10 +493,12 @@ export class BookComponent implements OnDestroy {
       alert('No internet connection!');
       return;
     }
-    const uri = this.bookForm.controls.img.value;
+    let uri = this.bookForm.controls.img.value;
+    if (uri.lastIndexOf('.') < uri.lastIndexOf('?')) {
+      uri = uri.substring(0, uri.lastIndexOf('?'));
+    }
     const path = this.book.path.substring(0, this.book.path.lastIndexOf('/') + 1);
-    const index = this.bookForm.controls.img.value.lastIndexOf('.');
-    const extension = this.bookForm.controls.img.value.substring(index);
+    const extension = uri.substring(uri.lastIndexOf('.'));
     const filename = this.book.title + extension;
 
     this.workingServ.busy();
@@ -747,6 +750,7 @@ export class BookComponent implements OnDestroy {
         if (e.data.originalTitle) {
           e.data.originalTitle = e.data.originalTitle.replace(' ,', ',');
         }
+        if (e.data.serie) e.data.serie = e.data.serie.trim();
         delete e.data.edition;
         delete e.data.editionOrder;
 
