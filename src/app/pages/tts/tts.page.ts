@@ -51,7 +51,8 @@ export class TtsComponent implements OnInit, OnDestroy {
     isSpritz: boolean,
     preText: string,
     redText: string,
-    postText: string,
+    postTextWhite: string,
+    postTextGray: string,
     sentense: string,
     fontSize: string;
     contHeight: string;
@@ -362,35 +363,35 @@ export class TtsComponent implements OnInit, OnDestroy {
     return output;
   }
 
-  protected speak(index: number) {
-    console.log(index)
-    if (!this.texts?.[index])
-      throw new Error('leak');
-    if (!this.working.isSpeaking) this.working.isSpeaking = true;
-    this.speechObj.isSpeaking = true;
-    const params = {
-      text: this.texts[index],
-      ...this.speakParams
-    };
-    if (this.speechObj.voice) params[`voiceURI`] = this.speechObj.voice;
-    TTS.speak(params).then(() => {
-      this.progress.update(old => old++);
-      if (this.last + 1 < this.texts.length) {
-        this.setProgress2DB();
-        this.last++;
-        this.speak(this.last);
-      } else if (this.progress() === this.texts.length - 1) {
-        this.working.isSpeaking = false;
-        this.speechObj.isSpeaking = false;
-        this.removeAudioFocus();
-      }
-    }).catch((reason) => {
-      this.working.isSpeaking = false;
-      this.speechObj.isSpeaking = false;
-      console.error('tts speak failed: ');
-      console.error(reason);
-    });
-  }
+  // protected speak(index: number) {
+  //   console.log(index)
+  //   if (!this.texts?.[index])
+  //     throw new Error('leak');
+  //   if (!this.working.isSpeaking) this.working.isSpeaking = true;
+  //   this.speechObj.isSpeaking = true;
+  //   const params = {
+  //     text: this.texts[index],
+  //     ...this.speakParams
+  //   };
+  //   if (this.speechObj.voice) params[`voiceURI`] = this.speechObj.voice;
+  //   TTS.speak(params).then(() => {
+  //     this.progress.update(old => old++);
+  //     if (this.last + 1 < this.texts.length) {
+  //       this.setProgress2DB();
+  //       this.last++;
+  //       this.speak(this.last);
+  //     } else if (this.progress() === this.texts.length - 1) {
+  //       this.working.isSpeaking = false;
+  //       this.speechObj.isSpeaking = false;
+  //       this.removeAudioFocus();
+  //     }
+  //   }).catch((reason) => {
+  //     this.working.isSpeaking = false;
+  //     this.speechObj.isSpeaking = false;
+  //     console.error('tts speak failed: ');
+  //     console.error(reason);
+  //   });
+  // }
 
   private saveAuthorTitle() {
     this.db.saveValue('author', this.htmlData.authorName);
@@ -427,6 +428,7 @@ export class TtsComponent implements OnInit, OnDestroy {
           TTS.addListener("progressArrayEvent", (resp) => {
             console.log(resp)
             this.progress.set(resp.progress);
+            this.setProgress2DB();
           });
           // this.speak(this.progress());
           // if (this.progress() < this.texts.length - 1) {
@@ -620,8 +622,7 @@ export class TtsComponent implements OnInit, OnDestroy {
       const words = this.texts[i].split(/[\s]+/);
       this.spritzObj.sentense = this.texts[i];
       for (let i = 0; i < words.length; i++) {
-        const word = words[i];
-        const wordTrimmed = word.trim();
+        const wordTrimmed = words[i].trim();
         if (!/[A-Za-z0-9]+/.test(wordTrimmed)) continue;
         for (const index of this.redIndexFinder(wordTrimmed.length)) {
           this.printWord(wordTrimmed, index, words.slice(i + 1).join(' '));
@@ -643,8 +644,11 @@ export class TtsComponent implements OnInit, OnDestroy {
   private printWord(word: string, index: number, suffix: string) {
     this.spritzObj.preText = word.slice(0, index - 1);
     this.spritzObj.redText = word[index - 1];
-    const postText = word.length >= index ? word.slice(index) : '';
-    this.spritzObj.postText = postText + ' ' + suffix;
+    // const postText = word.length >= index ? word.slice(index, index + 1) : '';
+    // const splits = postText.split(' ');
+    // this.spritzObj.postText = postText + ' ' + suffix;
+    this.spritzObj.postTextWhite = word.length >= index ? word.slice(index) : '';
+    this.spritzObj.postTextGray = ' ' + suffix; // splits.slice(1).join(' ');
   }
 
   protected increaseFontSize() {

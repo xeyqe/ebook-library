@@ -42,8 +42,11 @@
                         </ion-col>
 
                         <ion-col class="col flexed" size="10">
-                            <ion-label class="red">{{ spritzObj.redText }}</ion-label>
-                            <ion-label class="overflowed">{{ spritzObj.postText }}</ion-label>
+                            <div>
+                                <ion-label class="red">{{ spritzObj.redText }}</ion-label>
+                                <ion-label>{{ spritzObj.postTextWhite }}</ion-label>
+                            </div>
+                            <ion-label class="overflowed">{{ spritzObj.postTextGray }}</ion-label>
                         </ion-col>
                     </ion-row>
 
@@ -158,9 +161,7 @@
                         </ion-button>
 
                         <ion-button [disabled]="!initialized" (click)="onOff()">
-                            <ion-icon
-                                slot="icon-only"
-                                [name]="speechObj.isSpeaking ? 'pause-sharp' : 'play-sharp'">
+                            <ion-icon slot="icon-only" [name]="speechObj.isSpeaking ? 'pause-sharp' : 'play-sharp'">
                             </ion-icon>
                         </ion-button>
 
@@ -169,9 +170,7 @@
                         </ion-button>
                     </ion-item>
 
-                    @if (texts?.length) {
-                        <ion-label class="white"> {{ texts.length - 1 | number: "1.0-0" : "cs" }} </ion-label>
-                    }
+                    <ion-label class="white"> {{ (texts?.length || 1) - 1 | number: "1.0-0" : "cs" }} </ion-label>
                 </ion-row>
 
                 @if (texts?.length) {
