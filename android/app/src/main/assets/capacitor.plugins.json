@@ -48,10 +48,6 @@
 		"classpath": "com.capacitor.safearea.SafeAreaPlugin"
 	},
 	{
-		"pkg": "capacitor-wakelock",
-		"classpath": "com.xeyqe.plugins.wakelock.WakeLockPlugin"
-	},
-	{
 		"pkg": "capacitor-zip4j",
 		"classpath": "com.xeyqe.plugins.zipj4.Zip4JPlugin"
 	}

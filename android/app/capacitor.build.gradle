@@ -21,7 +21,6 @@ dependencies {
     implementation project(':capacitor-all-files-access-permission')
     implementation project(':capacitor-audio-focus')
     implementation project(':capacitor-plugin-safe-area')
-    implementation project(':capacitor-wakelock')
     implementation project(':capacitor-zip4j')
 
 }
