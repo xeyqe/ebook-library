@@ -452,8 +452,20 @@ export class TtsComponent implements OnInit, OnDestroy {
       serviceType: 2 as any,
       // serviceType: 1073741824 as any,
       silent: true,
+      // TODO pause button or smth
+      // buttons: [
+      //   {
+      //     title: 'Button 1',
+      //     id: 1,
+      //   },
+      //   {
+      //     title: 'Button 2',
+      //     id: 2,
+      //   },
+      // ],
       notificationChannelId: 'default',
     });
+    // ForegroundService.addListener('buttonClicked', (a) => console.error(a))
   };
 
   private stopForegroundService = async () => {
@@ -461,8 +473,8 @@ export class TtsComponent implements OnInit, OnDestroy {
     await ForegroundService.stopForegroundService();
   };
 
-  private createNotificationChannel = async () => {
-    await ForegroundService.createNotificationChannel({
+  private createNotificationChannel = () => {
+    return ForegroundService.createNotificationChannel({
       id: 'default',
       name: 'Default',
       description: 'Default channel',
