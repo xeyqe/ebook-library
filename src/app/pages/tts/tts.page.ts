@@ -80,6 +80,7 @@ export class TtsComponent implements OnInit, OnDestroy {
     voice: FormControl<string>,
   }>;
   protected interval: ReturnType<typeof setTimeout>;
+  protected intervalDB: ReturnType<typeof setTimeout>;
 
   private lastReadSet: boolean;
   private audioFocusPluginListener: PluginListenerHandle;
@@ -424,7 +425,9 @@ export class TtsComponent implements OnInit, OnDestroy {
           console.log(params)
           if (!this.working.isSpeaking) this.working.isSpeaking = true;
           this.speechObj.isSpeaking = true;
-          TTS.read(params);
+          TTS.read(params).then(() => {
+            this.stopForegroundService();
+          });
           TTS.addListener("progressArrayEvent", (resp) => {
             console.log(resp)
             this.progress.set(resp.progress);
@@ -573,12 +576,15 @@ export class TtsComponent implements OnInit, OnDestroy {
 
   private setProgress2DB() {
     if (!this.texts?.length) return;
-    const progress2DB = (this.progress() || 0) + '/' + (this.texts.length - 1);
-
-    this.db.updateBookProgress(this.id, progress2DB).then(() => {
-      if (this.progress() === this.texts.length - 1)
-        this.db.updateBookFinished(this.id, new Date());
-    });
+    clearInterval(this.intervalDB);
+    this.intervalDB = setTimeout(() => {
+      const progress2DB = (this.progress() || 0) + '/' + (this.texts.length - 1);
+  
+      this.db.updateBookProgress(this.id, progress2DB).then(() => {
+        if (this.progress() === this.texts.length - 1)
+          this.db.updateBookFinished(this.id, new Date());
+      });
+    }, 200);
   }
 
   protected stopStartSpeaking() {
