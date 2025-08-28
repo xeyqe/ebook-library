@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, OnDestroy, Renderer2 } from '@angular/core';
+import { Component, ViewChild, ElementRef, OnDestroy, Renderer2, signal, WritableSignal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormControl, FormGroup } from '@angular/forms';
 
@@ -42,7 +42,7 @@ export class BookComponent implements OnDestroy {
   protected book: BOOK = null;
 
   protected bookChanged = false;
-  protected ready2editing = false;
+  protected ready2editing: WritableSignal<boolean> = signal(false);
   protected jsonBooks: INDEXOFBOOK[];
   protected showAble = false;
 
@@ -340,9 +340,9 @@ export class BookComponent implements OnDestroy {
 
     this.db.updateBook(this.book).then(() => {
       this.bookChanged = false;
-      this.ready2editing = !this.ready2editing;
+      this.ready2editing.set(!this.ready2editing());
       Object.entries(this.bookForm.controls).forEach(ent => {
-        this.ready2editing ? ent[1].enable({ emitEvent: false }) : ent[1].disable({ emitEvent: false });
+        this.ready2editing() ? ent[1].enable({ emitEvent: false }) : ent[1].disable({ emitEvent: false });
       });
     }).catch((e) => {
       console.error('updateBook failed: ');
@@ -351,9 +351,9 @@ export class BookComponent implements OnDestroy {
   }
 
   protected editable() {
-    this.ready2editing = !this.ready2editing;
+    this.ready2editing.set(!this.ready2editing());
     Object.entries(this.bookForm.controls).forEach(ent => {
-      this.ready2editing ? ent[1].enable({ emitEvent: false }) : ent[1].disable({ emitEvent: false });
+      this.ready2editing() ? ent[1].enable({ emitEvent: false }) : ent[1].disable({ emitEvent: false });
       // this.onAreaResize(ent[0]);
     });
     this.bookChanged = false;
@@ -744,11 +744,14 @@ export class BookComponent implements OnDestroy {
         if (e.data.genre) {
           e.data.genre = e.data.genre.replace(/ , /g, ', ');
         }
+        if (e.data.serie) {
+          e.data.serie = e.data.serie.trim();
+        }
         if (e.data.serieOrder) {
           e.data.serieOrder = +e.data.serieOrder.replace(/^(\d*).*/, "$1");
         }
         if (e.data.originalTitle) {
-          e.data.originalTitle = e.data.originalTitle.replace(' ,', ',');
+          e.data.originalTitle = e.data.originalTitle.trim(); //e.data.originalTitle.replace(' ,', ',');
         }
         if (e.data.serie) e.data.serie = e.data.serie.trim();
         delete e.data.edition;
@@ -760,36 +763,26 @@ export class BookComponent implements OnDestroy {
 
       browser.on('loadstop').subscribe(() => {
         browser.executeScript({
-          code: "function a(el, i) {\
-            if (el) {\
-              if (i == 'click') {\
-                el.click();\
-              } else{\
-                return el[i];\
-              }\
-            } else {\
-              return null;\
-            }\
-          }\
-          a(document.querySelector('#abinfo > a'),'click');\
-          a(document.querySelector('.show_hide_more'),'click');\
+          code: "\
+          document.querySelector('.show_hide_more')?.click();\
+          document.querySelector('#moreBookDetails > a')?.click();\
           setTimeout(() => {\
             var o={\
-              annotation:a(document.querySelector('.justify.new2.odtop'),'textContent'),\
-              genre:a(document.querySelector('[itemprop=genre]'),'innerText'),\
-              img:a(document.querySelector('.kniha_img'),'src'),\
-              language:a(document.querySelector('[itemprop=language]'),'innerText'),\
-              originalTitle:a(document.querySelector('#bdetail_rest>div.detail_description>h4'),'innerText'),\
-              length:a(document.querySelector('[itemprop=numberOfPages]'),'innerText'),\
-              published:a(document.querySelector('[itemprop=datePublished]'),'textContent'),\
-              publisher:a(document.querySelector('[itemprop=publisher]'),'innerText'),\
-              title:a(document.querySelector('[itemprop=name]'),'innerText'),\
-              translator:a(document.querySelector('[itemprop=translator]'),'innerText'),\
-              ISBN:a(document.querySelector('[itemprop=isbn]'),'innerText'),\
-              serie:a(document.querySelector('a.odright_pet'),'textContent'),\
-              serieOrder:a(document.querySelector('span.odright_pet'),'textContent'),\
-              edition:a(document.querySelector('[itemprop=bookEdition]'), 'textContent'),\
-              editionOrder:a(document.querySelector('em.info.st_normal'),'textContent')\
+              annotation: document.querySelector('.new2.odtop')?.textContent,\
+              genre: Array.from(document.querySelectorAll('.genre')).map(it => it.textContent).join(', '),\
+              img: document.querySelector('.kniha_img')?.src,\
+              language: Array.from(document.querySelectorAll('.category')).find(it => it.textContent === 'Jazyk vydání:')?.nextElementSibling?.innerText,\
+              originalTitle: Array.from(document.querySelectorAll('.category'))?.find(it => it.textContent === 'Originální název:')?.nextSibling?.textContent,\
+              length: document.querySelector('[itemprop=numberOfPages]')?.innerText,\
+              published: Array.from(document.querySelectorAll('.category'))?.find(it => it.textContent === 'Vydáno:')?.nextElementSibling.textContent,\
+              publisher: document.querySelector('[href*=nakladatelstvi]')?.innerText,\
+              title: document.querySelector('.oddown_five')?.innerText,\
+              translator: document.querySelector('[itemprop=translator]')?.innerText,\
+              ISBN: Array.from(document.querySelectorAll('.category')).find(it => it.textContent.includes('ISBN'))?.nextElementSibling?.innerText,\
+              serie: document.querySelector('a.odright_pet')?.innerText,\
+              serieOrder: document.querySelector('span.odright_pet')?.textContent,\
+              edition: document.querySelector('[itemprop=bookEdition]')?.textContent,\
+              editionOrder: document.querySelector('em.info.st_normal')?.textContent\
             };\
             webkit.messageHandlers.cordova_iab.postMessage(JSON.stringify(o)\
           )},1000)"

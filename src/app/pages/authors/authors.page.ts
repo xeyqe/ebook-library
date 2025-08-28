@@ -60,7 +60,7 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
   ];
   private scrollTop = 0;
   protected state: 'default' | 'animated' = 'default';
-
+  private searchInterval: ReturnType<typeof setTimeout>;
 
   constructor(
     private db: DatabaseService,
@@ -117,7 +117,7 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.selectedCharacter = await this.db.getValue('character');
     this.bookSearchBy = await this.db.getValue('bookSearchBy') as any;
 
-    const searchVal = this.seachBarEl.value;
+    const searchVal = this.seachBarEl?.value; // TODO
     if (searchVal) this.search(searchVal);
     else this.load();
 
@@ -256,13 +256,17 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   protected async onSearch(event: Event) {
-    const val = event.target['value'];
-    if (!val) {
-      this.onSearchClear();
-      return;
-    }
-    if (val.length < 3) return;
-    this.search(val);
+    clearInterval(this.searchInterval);
+    this.searchInterval = setTimeout(() => {
+      console.log(event)
+      const val = event.target['value'];
+      if (!val) {
+        this.onSearchClear();
+        return;
+      }
+      if (val.length < 3) return;
+      this.search(val);
+    }, 500);
   }
 
   private async search(val: string) {
@@ -321,6 +325,20 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
         this.router.navigate(['/author', authorId]);
       });
     });
+  }
+
+  protected onSearchClicked(input: HTMLInputElement, event: Event): void {
+    if (!this.hideCharacters) return;
+    input.blur();
+    input.value = null;
+    this.onSearchClear();
+    event.stopPropagation();
+  }
+  
+  protected onToggleCharVisibility(hide: boolean): void {
+    setTimeout(() => {
+      this.hideCharacters = hide;
+    })
   }
 
   ngOnDestroy() {

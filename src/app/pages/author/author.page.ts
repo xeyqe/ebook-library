@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef, OnDestroy, Renderer2 } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, OnDestroy, Renderer2, WritableSignal, signal, Signal, computed } from '@angular/core';
 import { IonContent } from '@ionic/angular';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -53,7 +53,9 @@ export class AuthorComponent implements OnInit, OnDestroy {
   protected biography = '';
   protected textareaFocus = false;
   protected authorChanged = false;
-  protected ready2editing = false;
+  protected ready2editing: WritableSignal<boolean> = signal(false);
+  protected contEdClass: Signal<'white' | 'gray'> = computed(() => this.ready2editing() ? 'white' : 'gray');
+
   protected fromWiki: WIKIPEDIADATA[];
   protected wikiOutputBoolean = false;
   protected listOfPictures: string[];
@@ -342,7 +344,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
     this.db.updateAuthor(this.author).then(() => {
       this.wikiOutputBoolean = false;
       this.authorChanged = false;
-      this.ready2editing = false;
+      this.ready2editing.set(false);
       this.fromWiki = null;
     }).catch((e) => {
       console.log(this.author);
@@ -352,16 +354,15 @@ export class AuthorComponent implements OnInit, OnDestroy {
   }
 
   protected async onEditable() {
-    this.ready2editing = !this.ready2editing;
-    if (!this.ready2editing) {
+    this.ready2editing.set(!this.ready2editing());
+    if (!this.ready2editing()) {
       this.wikiOutputBoolean = false;
     }
-    Object.entries(this.authorForm.controls).forEach(ent => {
-      const key = ent[0];
-      const fc = ent[1];
-      if (this.ready2editing)
+    Object.keys(this.authorForm.controls).forEach(key => {
+      const fc = this.authorForm.controls[key];
+      if (this.ready2editing()) {
         fc.enable();
-      else {
+      } else {
         fc.setValue((this.author[key] || null) as never);
         fc.disable();
       }

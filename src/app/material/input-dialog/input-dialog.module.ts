@@ -6,6 +6,7 @@ import { IonicModule } from '@ionic/angular';
 
 import { MatInputModule } from '@angular/material/input';
 import { MatDialogModule } from '@angular/material/dialog';
+import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 
 import { InputDialogComponent } from './input-dialog.component';
@@ -14,6 +15,7 @@ import { InputDialogComponent } from './input-dialog.component';
   imports: [
     CommonModule,
     IonicModule,
+    MatButtonModule,
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,

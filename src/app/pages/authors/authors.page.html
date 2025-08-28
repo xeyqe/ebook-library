@@ -1,103 +1,112 @@
-<ion-header [@expandCollapse]="state">
-    <ion-toolbar>
-        <ion-row>
-            <ion-col size="10">
-                <ion-searchbar
-                    show-cancel-button="focus"
-                    [debounce]="1000"
-                    (ionInput)="onSearch($event)"
-                    (ionFocus)="hideCharacters = true"
-                    (ionBlur)="hideCharacters = false"
-                    (ionClear)="onSearchClear()"
-                    #seachBarEl></ion-searchbar>
-            </ion-col>
-            <ion-col size="1">
-                <ion-button (click)="where2SearchFn()"> {{ where2Search }} </ion-button>
-            </ion-col>
-        </ion-row>
-    </ion-toolbar>
+<div [@expandCollapse]="state" class="overflowed">
+    <div class="row">
+        <mat-form-field subscriptSizing="dynamic">
+            <button mat-icon-button matPrefix (click)="onSearchClicked(input, $event)">
+                <mat-icon>{{ hideCharacters ? "arrow_back" : "search" }}</mat-icon>
+            </button>
+            <mat-label>Search</mat-label>
+            <input
+                matInput
+                (input)="onSearch($event)"
+                (focusin)="onToggleCharVisibility(true)"
+                (focusout)="onToggleCharVisibility(false)"
+                #input />
+        </mat-form-field>
+        <button mat-mini-fab (click)="where2SearchFn()">
+            {{ where2Search }}
+        </button>
+    </div>
     @if (!hideCharacters) {
         @if (where2Search === "A") {
-            <ion-segment scrollable [value]="selectedCharacter">
-                @for (character of alphabet; track $index) {
-                    <ion-segment-button [value]="character" (click)="changeSelectedChar(character, 'authors')">
-                        <ion-label>{{ character }}</ion-label>
-                    </ion-segment-button>
+            <div class="chars">
+                @for (char of alphabet; track $index) {
+                    <button
+                        mat-mini-fab
+                        [disabled]="selectedCharacter === char"
+                        (click)="changeSelectedChar(char, 'authors')">
+                        <span>{{ char }}</span>
+                    </button>
                 }
-            </ion-segment>
+            </div>
         } @else if (where2Search === "B") {
-            <ion-segment scrollable [value]="bookSearchBy">
-                @for (character of ["liked", "started", "finished"]; track $index) {
-                    <ion-segment-button [value]="character" (click)="changeSelectedChar(character, 'books')">
-                        <ion-label>{{ character }}</ion-label>
-                    </ion-segment-button>
+            <div class="chars">
+                @for (char of ["liked", "started", "finished"]; track $index) {
+                    <button
+                        mat-fab extended
+                        [disabled]="bookSearchBy === char"
+                        (click)="changeSelectedChar(char, 'books')">
+                        <span>{{ char }}</span>
+                    </button>
                 }
-            </ion-segment>
+            </div>
         }
     }
-</ion-header>
+</div>
 
 <ion-content [scrollEvents]="true" (ionScrollStart)="onScrollStart($event)" (ionScrollEnd)="onScrollEnd($event)">
-    <ion-list class="ion-padding">
+    <div class="boxes">
         @if (where2Search === "A") {
             @for (author of _authors; track author) {
-                <ion-item [routerLink]="['/author', author.id]">
+                <div [routerLink]="['/author', author.id]" class="box">
                     <ion-avatar>
                         <img [src]="onGetImgSrc(author.img)" alt="img" />
                     </ion-avatar>
 
-                    <ion-label>
+                    <div class="width">
                         @if (author.surname || author.name) {
-                            <h2>{{ author.surname || "" }}</h2>
-                            <p>{{ author.name || "" }}</p>
+                            <div class="column">
+                                <span class="weighted">{{ author.surname || "" }}</span>
+                                <span class="grayed">{{ author.name || "" }}</span>
+                            </div>
                         } @else {
-                            <h2>{{ author.pseudonym }}</h2>
+                            <span class="weighted">{{ author.pseudonym }}</span>
                         }
                         @if (author.progress) {
-                            <ion-progress-bar [value]="author.progress"> </ion-progress-bar>
+                            <mat-progress-bar mode="determinate" [value]="author.progress * 100"> </mat-progress-bar>
                         }
-                    </ion-label>
-                </ion-item>
+                    </div>
+                </div>
             }
             <ion-infinite-scroll (ionInfinite)="onAuthorsIonInfinite($any($event))">
                 <ion-infinite-scroll-content></ion-infinite-scroll-content>
             </ion-infinite-scroll>
         } @else if (where2Search === "B") {
             @for (book of _books; track book) {
-                <ion-item [routerLink]="['/book', book.id]">
+                <div [routerLink]="['/book', book.id]" class="box">
                     <ion-avatar>
                         <img [src]="onGetImgSrc(book.img)" alt="img" />
                     </ion-avatar>
 
-                    <ion-label>
-                        <h2 class="ion-text-wrap">{{ book.title }}</h2>
-                        <p>{{ book.authors }}</p>
+                    <div class="width">
+                        <div class="column">
+                            <span class="weighted">{{ book.title || "" }}</span>
+                            <span class="grayed">{{ book.authors || "" }}</span>
+                        </div>
                         @if (book.progress) {
-                            <ion-progress-bar [value]="(book.progress | percent2: book.progress) / 100">
-                            </ion-progress-bar>
+                            <mat-progress-bar mode="determinate" [value]="book.progress | percent2: book.progress"> </mat-progress-bar>
                         }
-                    </ion-label>
-                </ion-item>
+                    </div>
+                </div>
             }
             <ion-infinite-scroll (ionInfinite)="onBooksIonInfinite($any($event))">
                 <ion-infinite-scroll-content></ion-infinite-scroll-content>
             </ion-infinite-scroll>
         }
-    </ion-list>
+    </div>
 
     <div class="bb">
         @if (lastListened) {
-            <ion-button (click)="onShowDialog()">
-                <ion-icon slot="icon-only" name="share"></ion-icon>
-            </ion-button>
+            <button mat-mini-fab (click)="onShowDialog()">
+                <mat-icon>upload</mat-icon>
+            </button>
         }
-        <ion-button (click)="onAddAuthor()">
-            <ion-icon slot="icon-only" name="add-circle-sharp"></ion-icon>
-        </ion-button>
+        <button mat-mini-fab (click)="onAddAuthor()">
+            <mat-icon>add_circle</mat-icon>
+        </button>
         @if (lastListened) {
-            <ion-button (click)="onGo2Last()">
-                <ion-icon slot="icon-only" name="play-sharp"></ion-icon>
-            </ion-button>
+            <button mat-mini-fab (click)="onGo2Last()">
+                <mat-icon>play_arrow</mat-icon>
+            </button>
         }
     </div>
 </ion-content>

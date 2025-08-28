@@ -1,78 +1,71 @@
-<ion-header>
-    <ion-toolbar>
-        <ion-row>
-            @if (ready2editing) {
-                <ion-col>
-                    <ion-button (click)="deleteBook()">
-                        <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
-                    </ion-button>
-                </ion-col>
-            } @else {
-                <ion-title>book</ion-title>
+<div class="header">
+    @if (ready2editing()) {
+        <button mat-mini-fab (click)="deleteBook()">
+            <mat-icon>delete</mat-icon>
+        </button>
+    } @else {
+        <div class="wdth"></div>
+        <ion-title>book</ion-title>
+    }
+
+    @if (book) {
+        <div class="buttons">
+            @if (!ready2editing()) {
+                <button mat-mini-fab (click)="onGo2('speech')">
+                    <mat-icon>campaign</mat-icon>
+                </button>
+                <button mat-mini-fab (click)="onGo2('spritz')">
+                    <mat-icon>auto_stories</mat-icon>
+                </button>
+            }
+            @if (bookChanged) {
+                <button mat-mini-fab (click)="updateBook()">
+                    <mat-icon>save</mat-icon>
+                </button>
             }
 
-            @if (book) {
-                <div class="buttons">
-                    @if (!ready2editing) {
-                        <ion-button (click)="onGo2('speech')">
-                            <ion-icon slot="icon-only" name="megaphone"></ion-icon>
-                        </ion-button>
-                        <ion-button (click)="onGo2('spritz')">
-                            <ion-icon slot="icon-only" name="book"></ion-icon>
-                        </ion-button>
-                    }
-                    @if (bookChanged) {
-                        <ion-button (click)="updateBook()">
-                            <ion-icon slot="icon-only" name="save"></ion-icon>
-                        </ion-button>
-                    }
-                    <ion-button (click)="editable()">
-                        @if (ready2editing) {
-                            <ion-icon slot="icon-only" name="close"></ion-icon>
-                        } @else {
-                            <ion-icon slot="icon-only" name="create"></ion-icon>
-                        }
-                    </ion-button>
-                    @if (ready2editing) {
-                        @if (showAble) {
-                            <ion-button (click)="onGetBooksList()">
-                                <ion-icon slot="icon-only" name="add-circle-sharp"></ion-icon>
-                            </ion-button>
-                        }
-                        @if (book.path.substring(book.path.length - 4) === "epub") {
-                            <ion-button (click)="getMetadataFromEpub()"> EPUB </ion-button>
-                        }
-                    }
-                </div>
-            }
-        </ion-row>
-    </ion-toolbar>
-</ion-header>
+            <button mat-mini-fab (click)="editable()">
+                <mat-icon>{{ ready2editing() ? "clear" : "edit" }}</mat-icon>
+            </button>
 
-<ion-content>
+            @if (ready2editing()) {
+                @if (showAble) {
+                    <button mat-mini-fab (click)="onGetBooksList()">
+                        <mat-icon>add_circle</mat-icon>
+                    </button>
+                }
+                @if (book.path.substring(book.path.length - 4) === "epub") {
+                    <button class="upper" mat-mini-fab (click)="getMetadataFromEpub()">EPUB</button>
+                }
+            }
+        </div>
+    }
+</div>
+
+<div class="spaced">
     @if (book && bookForm) {
         <form [formGroup]="bookForm">
-            @if (ready2editing || bookForm.controls.img.value) {
+            @if (ready2editing() || bookForm.controls.img.value) {
                 <div class="pic-container">
                     <div class="bu-change-pic">
-                        @if (ready2editing) {
+                        @if (ready2editing()) {
                             @if (bookForm.controls.img.value) {
                                 @if (!bookForm.controls.img.value.startsWith("/")) {
-                                    <ion-button (click)="downloadPicture()">
-                                        <ion-icon slot="icon-only" name="download-sharp"></ion-icon>
-                                    </ion-button>
+                                    <button mat-mini-fab (click)="downloadPicture()">
+                                        <mat-icon>download_for_offline</mat-icon>
+                                    </button>
                                 }
-                                <ion-button (click)="onRemovePic()">
-                                    <ion-icon slot="icon-only" name="remove"></ion-icon>
-                                </ion-button>
+                                <button mat-mini-fab (click)="onRemovePic()">
+                                    <mat-icon>remove_circle</mat-icon>
+                                </button>
                             }
-                            <ion-button (click)="onAddPicture()">
-                                <ion-icon slot="icon-only" name="add-circle-sharp"></ion-icon>
-                            </ion-button>
+                            <button mat-mini-fab (click)="onAddPicture()">
+                                <mat-icon>add_circle</mat-icon>
+                            </button>
                         }
                     </div>
 
-                    @if (ready2editing) {
+                    @if (ready2editing()) {
                         <app-picture
                             [imgPreLink]="dir.imgPreLink"
                             [images]="listsOfValues.img"
@@ -87,19 +80,19 @@
             }
 
             <div class="flexed" #contEl>
-                @if (bookForm.controls.serie.value || ready2editing) {
+                @if (bookForm.controls.serie.value || ready2editing()) {
                     <div class="clm">
                         <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
                             <mat-label class="red">Serie</mat-label>
                             <app-contenteditable
                                 #appContenteditable
                                 [formControl]="bookForm.controls.serie"
-                                [ngClass]="ready2editing ? 'white' : 'gray'"
+                                [ngClass]="ready2editing() ? 'white' : 'gray'"
                                 (_onFocus)="onFocus('serie')"
                                 (_onBlur)="onBlur()">
                             </app-contenteditable>
                         </mat-form-field>
-                        @if (ready2editing && focusedOn === "serie" && listsOfValues.serie?.length) {
+                        @if (ready2editing() && focusedOn === "serie" && listsOfValues.serie?.length) {
                             <div class="overflowed">
                                 @for (serie of listsOfValues.serie; track $index) {
                                     @if (bookForm.controls.serie.value !== serie) {
@@ -116,19 +109,19 @@
                     </div>
                 }
 
-                @if (bookForm.controls.serieOrder.value || ready2editing) {
+                @if (bookForm.controls.serieOrder.value || ready2editing()) {
                     <div class="clm">
                         <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
                             <mat-label class="red">Serie order</mat-label>
                             <app-contenteditable
                                 #appContenteditable
                                 [formControl]="bookForm.controls.serieOrder"
-                                [ngClass]="ready2editing ? 'white' : 'gray'"
+                                [ngClass]="ready2editing() ? 'white' : 'gray'"
                                 (_onFocus)="onFocus('serieOrder')"
                                 (_onBlur)="onBlur()">
                             </app-contenteditable>
                         </mat-form-field>
-                        @if (ready2editing && focusedOn === "serieOrder" && listsOfValues?.length) {
+                        @if (ready2editing() && focusedOn === "serieOrder" && listsOfValues?.length) {
                             <div class="overflowed">
                                 @for (serieOrder of listsOfValues.serieOrder; track $index) {
                                     @if (bookForm.controls.serieOrder.value !== serieOrder) {
@@ -145,19 +138,19 @@
                     </div>
                 }
 
-                @if (bookForm.controls.title.value || ready2editing) {
+                @if (bookForm.controls.title.value || ready2editing()) {
                     <div class="clm">
                         <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
                             <mat-label class="red">Title</mat-label>
                             <app-contenteditable
                                 #appContenteditable
                                 [formControl]="bookForm.controls.title"
-                                [ngClass]="ready2editing ? 'white' : 'gray'"
+                                [ngClass]="ready2editing() ? 'white' : 'gray'"
                                 (_onFocus)="onFocus('title')"
                                 (_onBlur)="onBlur()">
                             </app-contenteditable>
                         </mat-form-field>
-                        @if (ready2editing && focusedOn === "title" && listsOfValues.title?.length) {
+                        @if (ready2editing() && focusedOn === "title" && listsOfValues.title?.length) {
                             <div class="overflowed">
                                 @for (title of listsOfValues.title; track $index) {
                                     @if (bookForm.controls.title.value !== title) {
@@ -174,7 +167,7 @@
                     </div>
                 }
 
-                <!-- @if (jsonBooks && ready2editing) {
+                <!-- @if (jsonBooks && ready2editing()) {
                     <mat-form-field subscriptSizing="dynamic">
                         <mat-label class="red">Choose an option</mat-label>
                         <mat-select (selectionChange)="getBookData($event.value)">
@@ -187,19 +180,19 @@
                     </mat-form-field>
                 } -->
 
-                @if (bookForm.controls.originalTitle.value || ready2editing) {
+                @if (bookForm.controls.originalTitle.value || ready2editing()) {
                     <div class="clm">
                         <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
                             <mat-label class="red">Original title</mat-label>
                             <app-contenteditable
                                 #appContenteditable
                                 [formControl]="bookForm.controls.originalTitle"
-                                [ngClass]="ready2editing ? 'white' : 'gray'"
+                                [ngClass]="ready2editing() ? 'white' : 'gray'"
                                 (_onFocus)="onFocus('originalTitle')"
                                 (_onBlur)="onBlur()">
                             </app-contenteditable>
                         </mat-form-field>
-                        @if (ready2editing && focusedOn === "originalTitle" && listsOfValues.originalTitle) {
+                        @if (ready2editing() && focusedOn === "originalTitle" && listsOfValues.originalTitle) {
                             <div class="overflowed">
                                 @for (originalTitle of listsOfValues.originalTitle; track $index) {
                                     @if (bookForm.controls.originalTitle.value !== originalTitle) {
@@ -216,19 +209,19 @@
                     </div>
                 }
 
-                @if (bookForm.controls.genre.value || ready2editing) {
+                @if (bookForm.controls.genre.value || ready2editing()) {
                     <div class="clm">
                         <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
                             <mat-label class="red">Genre</mat-label>
                             <app-contenteditable
                                 #appContenteditable
                                 [formControl]="bookForm.controls.genre"
-                                [ngClass]="ready2editing ? 'white' : 'gray'"
+                                [ngClass]="ready2editing() ? 'white' : 'gray'"
                                 (_onFocus)="onFocus('genre')"
                                 (_onBlur)="onBlur()">
                             </app-contenteditable>
                         </mat-form-field>
-                        @if (ready2editing && focusedOn === "genre" && listsOfValues.genre?.length) {
+                        @if (ready2editing() && focusedOn === "genre" && listsOfValues.genre?.length) {
                             <div class="overflowed">
                                 @for (genre of listsOfValues.genre; track $index) {
                                     @if (bookForm.controls.genre.value !== genre) {
@@ -245,19 +238,19 @@
                     </div>
                 }
 
-                @if (bookForm.controls.ISBN.value || ready2editing) {
+                @if (bookForm.controls.ISBN.value || ready2editing()) {
                     <div class="clm">
                         <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
                             <mat-label class="red">ISBN</mat-label>
                             <app-contenteditable
                                 #appContenteditable
                                 [formControl]="bookForm.controls.ISBN"
-                                [ngClass]="ready2editing ? 'white' : 'gray'"
+                                [ngClass]="ready2editing() ? 'white' : 'gray'"
                                 (_onFocus)="onFocus('ISBN')"
                                 (_onBlur)="onBlur()">
                             </app-contenteditable>
                         </mat-form-field>
-                        @if (ready2editing && focusedOn === "ISBN" && listsOfValues.ISBN?.length) {
+                        @if (ready2editing() && focusedOn === "ISBN" && listsOfValues.ISBN?.length) {
                             <div class="overflowed">
                                 @for (ISBN of listsOfValues.ISBN; track $index) {
                                     @if (bookForm.controls.ISBN.value !== ISBN) {
@@ -274,19 +267,19 @@
                     </div>
                 }
 
-                @if (bookForm.controls.publisher.value || ready2editing) {
+                @if (bookForm.controls.publisher.value || ready2editing()) {
                     <div class="clm">
                         <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
                             <mat-label class="red">Publisher</mat-label>
                             <app-contenteditable
                                 #appContenteditable
                                 [formControl]="bookForm.controls.publisher"
-                                [ngClass]="ready2editing ? 'white' : 'gray'"
+                                [ngClass]="ready2editing() ? 'white' : 'gray'"
                                 (_onFocus)="onFocus('publisher')"
                                 (_onBlur)="onBlur()">
                             </app-contenteditable>
                         </mat-form-field>
-                        @if (ready2editing && focusedOn === "publisher" && listsOfValues?.length) {
+                        @if (ready2editing() && focusedOn === "publisher" && listsOfValues?.length) {
                             <div class="overflowed">
                                 @for (publisher of listsOfValues.publisher; track $index) {
                                     @if (bookForm.controls.publisher.value !== publisher) {
@@ -303,19 +296,19 @@
                     </div>
                 }
 
-                @if (bookForm.controls.published.value || ready2editing) {
+                @if (bookForm.controls.published.value || ready2editing()) {
                     <div class="clm">
                         <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
                             <mat-label class="red">Published</mat-label>
                             <app-contenteditable
                                 #appContenteditable
                                 [formControl]="bookForm.controls.published"
-                                [ngClass]="ready2editing ? 'white' : 'gray'"
+                                [ngClass]="ready2editing() ? 'white' : 'gray'"
                                 (_onFocus)="onFocus('published')"
                                 (_onBlur)="onBlur()">
                             </app-contenteditable>
                         </mat-form-field>
-                        @if (ready2editing && focusedOn === "published" && listsOfValues?.length) {
+                        @if (ready2editing() && focusedOn === "published" && listsOfValues?.length) {
                             <div class="overflowed">
                                 @for (published of listsOfValues.published; track $index) {
                                     @if (bookForm.controls.published.value !== published) {
@@ -332,13 +325,13 @@
                     </div>
                 }
 
-                @if (bookForm.controls.language.value || ready2editing) {
+                @if (bookForm.controls.language.value || ready2editing()) {
                     <mat-form-field subscriptSizing="dynamic">
                         <mat-label class="red">Language</mat-label>
                         <mat-select
                             interface="popover"
                             formControlName="language"
-                            [ngClass]="ready2editing ? 'white' : 'gray'">
+                            [ngClass]="ready2editing() ? 'white' : 'gray'">
                             <mat-option value="cs-CZ">Česky</mat-option>
                             <mat-option value="en-US">English</mat-option>
                             <mat-option value="de-DE">Deutsch</mat-option>
@@ -347,19 +340,19 @@
                     </mat-form-field>
                 }
 
-                @if (bookForm.controls.translator.value || ready2editing) {
+                @if (bookForm.controls.translator.value || ready2editing()) {
                     <div class="clm">
                         <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
                             <mat-label class="red">Tranlator</mat-label>
                             <app-contenteditable
                                 #appContenteditable
                                 [formControl]="bookForm.controls.translator"
-                                [ngClass]="ready2editing ? 'white' : 'gray'"
+                                [ngClass]="ready2editing() ? 'white' : 'gray'"
                                 (_onFocus)="onFocus('translator')"
                                 (_onBlur)="onBlur()">
                             </app-contenteditable>
                         </mat-form-field>
-                        @if (ready2editing && focusedOn === "translator" && listsOfValues?.length) {
+                        @if (ready2editing() && focusedOn === "translator" && listsOfValues?.length) {
                             <div class="overflowed">
                                 @for (translator of listsOfValues.translator; track $index) {
                                     @if (bookForm.controls.translator.value !== translator) {
@@ -376,19 +369,19 @@
                     </div>
                 }
 
-                @if (bookForm.controls.length.value || ready2editing) {
+                @if (bookForm.controls.length.value || ready2editing()) {
                     <div class="clm">
                         <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
                             <mat-label class="red">Pages</mat-label>
                             <app-contenteditable
                                 #appContenteditable
                                 [formControl]="bookForm.controls.length"
-                                [ngClass]="ready2editing ? 'white' : 'gray'"
+                                [ngClass]="ready2editing() ? 'white' : 'gray'"
                                 (_onFocus)="onFocus('length')"
                                 (_onBlur)="onBlur()">
                             </app-contenteditable>
                         </mat-form-field>
-                        @if (ready2editing && focusedOn === "length" && listsOfValues.length?.length) {
+                        @if (ready2editing() && focusedOn === "length" && listsOfValues.length?.length) {
                             <div class="overflowed">
                                 @for (length of listsOfValues.length; track $index) {
                                     @if (bookForm.controls.length.value !== length) {
@@ -453,13 +446,13 @@
                     </mat-form-field>
                 }
 
-                @if (bookForm.controls.rating.value || ready2editing) {
+                @if (bookForm.controls.rating.value || ready2editing()) {
                     <mat-form-field subscriptSizing="dynamic">
                         <mat-label class="red">Rating</mat-label>
                         <mat-select
                             interface="popover"
                             formControlName="rating"
-                            [ngClass]="ready2editing ? 'white' : 'gray'">
+                            [ngClass]="ready2editing() ? 'white' : 'gray'">
                             <mat-option [value]="0">0</mat-option>
                             <mat-option [value]="1">1</mat-option>
                             <mat-option [value]="2">2</mat-option>
@@ -471,23 +464,23 @@
                 }
             </div>
 
-            @if (bookForm.controls.annotation.value || ready2editing) {
+            @if (bookForm.controls.annotation.value || ready2editing()) {
                 <div class="marged biogr">
                     <mat-label class="red">Annotation</mat-label>
                     <div (click)="onReduceHeight()">
                         <p
                             class="contenteditable"
-                            [editable]="ready2editing"
+                            [editable]="ready2editing()"
                             formControlName="annotation"
                             matInput
-                            [class]="ready2editing ? 'white' : 'gray'"
+                            [class]="ready2editing() ? 'white' : 'gray'"
                             [ngClass]="{ reduced: bookForm.controls.annotation.disabled && _textAreaReduced }"></p>
                     </div>
                 </div>
             }
 
             @if (
-                ready2editing &&
+                ready2editing() &&
                 (onlineAllBooksList?.length ||
                     onlineBookList?.length ||
                     onlineBookListLegie?.length ||
@@ -560,7 +553,7 @@
 
                     @if (onlineBookListCBDB) {
                         <div class="cbdb">
-                            @for (dt of ['main','foreign', 'partly']; track $index) {
+                            @for (dt of ["main", "foreign", "partly"]; track $index) {
                                 <div>
                                     @for (book of onlineBookListCBDB[dt]; track $index) {
                                         <div (click)="downloadBookInfoCBDB(book.link)">
@@ -610,4 +603,4 @@
             }
         </form>
     }
-</ion-content>
+</div>

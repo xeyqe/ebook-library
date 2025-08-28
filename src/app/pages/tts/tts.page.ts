@@ -6,7 +6,6 @@ import { ActivatedRoute } from '@angular/router';
 import { Platform } from '@ionic/angular';
 import { TTS } from '@xeyqe/capacitor-tts';
 import { Storage } from '@ionic/storage-angular';
-import { AudioFocus } from 'capacitor-audio-focus';
 
 import { Subscription } from 'rxjs';
 
@@ -97,6 +96,7 @@ export class TtsComponent implements OnInit, OnDestroy {
     };
   protected audioFocus = true;
   private last: number;
+  // private bookId: number;
 
   constructor(
     private db: DatabaseService,
@@ -209,6 +209,7 @@ export class TtsComponent implements OnInit, OnDestroy {
   private async initVariablesFromDatabase() {
     if (!(await this.waitTillDbReady())) throw new Error('initVariablesFromDatabase failed')
     const book = await this.db.getBook(this.id);
+    // this.bookId = book.id;
     if (!book) return;
     this.path = book.path;
     this.htmlData.title = book.title;
@@ -420,13 +421,17 @@ export class TtsComponent implements OnInit, OnDestroy {
           const params = {
             texts: this.texts,
             progress: this.progress(),
-            ...this.speakParams
+            ...this.speakParams,
+            // bookId: null // this.bookId,
           };
           console.log(params)
           if (!this.working.isSpeaking) this.working.isSpeaking = true;
           this.speechObj.isSpeaking = true;
-          TTS.read(params).then(() => {
+          TTS.read(params).finally(() => {
             this.stopForegroundService();
+            this.removeAudioFocus();
+            this.speechObj.isSpeaking = false;
+            this.working.isSpeaking = false;
           });
           TTS.addListener("progressArrayEvent", (resp) => {
             console.log(resp)
@@ -466,7 +471,7 @@ export class TtsComponent implements OnInit, OnDestroy {
       //     id: 2,
       //   },
       // ],
-      notificationChannelId: 'default',
+      notificationChannelId: 'mehe',
     });
     // ForegroundService.addListener('buttonClicked', (a) => console.error(a))
   };
@@ -478,7 +483,7 @@ export class TtsComponent implements OnInit, OnDestroy {
 
   private createNotificationChannel = () => {
     return ForegroundService.createNotificationChannel({
-      id: 'default',
+      id: 'mehe',
       name: 'Default',
       description: 'Default channel',
       importance: Importance.Default,
@@ -487,22 +492,18 @@ export class TtsComponent implements OnInit, OnDestroy {
 
   private deleteNotificationChannel = async () => {
     await ForegroundService.deleteNotificationChannel({
-      id: 'default',
+      id: 'mehe',
     });
   };
 
   private async setAudioFocus(): Promise<void> {
     if (!this.audioFocus) return;
-    this.audioFocusPluginListener = await AudioFocus.addListener('audioFocusChangeEvent', (resp) => {
-      if (resp.type === 'AUDIOFOCUS_LOSS') this.stopSpeaking();
-    });
-    await AudioFocus.requestFocus();
+    await TTS.requestFocus();
   }
 
   private removeAudioFocus(): void {
     if (!this.audioFocus || !this.audioFocusPluginListener) return;
-    AudioFocus.abandonFocus();
-    this.audioFocusPluginListener.remove();
+    TTS.abandonFocus();
   }
 
   protected onChangeAudioFocus() {
@@ -559,6 +560,7 @@ export class TtsComponent implements OnInit, OnDestroy {
   }
 
   protected changeProgress(progress: number) {
+    console.log('progress', progress)
     if (this.spritzObj.isSpritz) {
       this.progress.set(progress);
     } else {
@@ -579,7 +581,7 @@ export class TtsComponent implements OnInit, OnDestroy {
     clearInterval(this.intervalDB);
     this.intervalDB = setTimeout(() => {
       const progress2DB = (this.progress() || 0) + '/' + (this.texts.length - 1);
-  
+
       this.db.updateBookProgress(this.id, progress2DB).then(() => {
         if (this.progress() === this.texts.length - 1)
           this.db.updateBookFinished(this.id, new Date());

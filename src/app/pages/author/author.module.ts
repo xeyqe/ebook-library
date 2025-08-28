@@ -2,9 +2,12 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 
 import { IonicModule } from '@ionic/angular';
@@ -22,7 +25,6 @@ import { ContenteditableComponent } from 'src/app/components/contenteditable/con
 
 @NgModule({
   imports: [
-    PercentPipe,
     AuthorPageRoutingModule,
     CommonModule,
     ContenteditableComponent,
@@ -30,13 +32,17 @@ import { ContenteditableComponent } from 'src/app/components/contenteditable/con
     FormsModule,
     IonicModule,
     MatAutocompleteModule,
+    MatButtonModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
+    MatProgressBarModule,
     MatSelectModule,
     NgsContenteditableModule,
+    PercentPipe,
     PictureModule,
     ReactiveFormsModule,
   ],
   declarations: [AuthorComponent],
 })
-export class AuthorPageModule {}
+export class AuthorPageModule { }
