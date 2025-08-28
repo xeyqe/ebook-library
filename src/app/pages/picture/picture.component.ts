@@ -39,6 +39,7 @@ export class PictureComponent implements OnInit, OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     console.log(changes)
+    this.wait(200).then(() => this.onResizeSwiper());
   }
 
   protected onGetImgSrc(img: string): string {
@@ -57,7 +58,7 @@ export class PictureComponent implements OnInit, OnChanges {
       height = height * window.innerWidth / width;
     }
     this.renderer.setStyle(this.swiperRef.nativeElement, 'height', `${Math.max(height, 100)}px`);
-    this.changeEvent.emit(this.images[this.imgIndex] || null);
+    if (ev) this.changeEvent.emit(this.images[this.imgIndex] || null);
   }
 
   private async wait(n: number): Promise<void> {
