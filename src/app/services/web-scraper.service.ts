@@ -52,16 +52,17 @@ export class WebScraperService {
         output.name = null;
       }
     }
-    const birthDeath = (data.querySelector('.norma') as HTMLElement)?.innerText?.match(/[0-9]+/g) || null;
+    const birthDeath = (data.querySelector('[href*=filtrovani-autoru]') as HTMLElement).nextSibling.nextSibling.textContent.trim().split('-').map(it => it.trim())
+//  (data.querySelector('.norma') as HTMLElement)?.innerText?.match(/[0-9]+/g) || null;
 
-    if (birthDeath && birthDeath[0]) {
+    if (birthDeath?.[0] && /^[\d]+$/.test(birthDeath?.[0])) {
       output.birth = birthDeath[0];
     }
-    if (birthDeath && birthDeath[1]) {
+    if (birthDeath?.[1] && /^[\d]+$/.test(birthDeath?.[1])) {
       output.death = birthDeath[1];
     }
-    if (data.querySelector('.norma a')) {
-      output.nationality = (data.querySelector('.norma a') as HTMLElement).innerText;
+    if ((data.querySelector('[href*=filtrovani-autoru]') as HTMLElement)) {
+      output.nationality = (data.querySelector('[href*=filtrovani-autoru]') as HTMLElement).innerText;
     }
     const link = (data.querySelector('#tab_cv').parentElement as HTMLLinkElement).href;
     const cv = await this._getHtml(link);
