@@ -37,6 +37,12 @@ import { DialogComponent } from 'src/app/material/dialog/dialog.component';
       state('false', style({ height: '0', visibility: 'hidden' })),
       transition('false => true', animate(500 + 'ms ease-in')),
       transition('true => false', animate(500 + 'ms ease-out'))
+    ]),
+    trigger('collapse2', [
+      state('true', style({ height: '100%' })),
+      state('false', style({ height: '10rem' })),
+      transition('false => true', animate(500 + 'ms ease-in')),
+      transition('true => false', animate(500 + 'ms ease-out'))
     ])
   ],
   standalone: false,

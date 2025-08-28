@@ -282,7 +282,7 @@
             </div>
 
             @if (authorForm.controls.biography.value || ready2editing()) {
-                <div class="marged">
+                <div class="marged collapsable" [@collapse2]="authorForm.controls.biography.disabled && !_textAreaReduced">
                     <mat-label class="red">Biography</mat-label>
                     <div (click)="onReduceHeight()">
                         <p
@@ -290,8 +290,7 @@
                             [editable]="ready2editing()"
                             formControlName="biography"
                             matInput
-                            [class]="contEdClass()"
-                            [ngClass]="{ reduced: authorForm.controls.biography.disabled && _textAreaReduced }"></p>
+                            [class]="contEdClass()"></p>
                     </div>
                 </div>
             }
