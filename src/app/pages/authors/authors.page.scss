@@ -24,3 +24,70 @@ h2 {
 ion-header {
     overflow: hidden;
 }
+
+.chars {
+    display: flex;
+    gap: .5rem;
+    width: 100%;
+    overflow: auto;
+    margin: .5rem;
+
+    &>div {
+        padding: .5rem;
+    }
+
+    .selected-char {
+        font-weight: 500;
+        background-color: var(--mat-sys-secondary-container);
+        border-radius: .5rem;
+    }
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+
+    mat-form-field {
+        width: 100%;
+    }
+}
+
+.boxes {
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+    padding: .5rem;
+    background-color: var(--mat-sys-surface);
+}
+
+.box {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background-color: var(--mat-sys-on-secondary-fixed);
+    border-radius: 2rem;
+    padding: .5rem;
+
+    .width {
+        width: 70%;
+    }
+
+    .column {
+        display: flex;
+        flex-direction: column;
+
+        .weighted {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .grayed {
+            color: #9e9e9e
+        }
+    }
+}
+
+.overflowed {
+    overflow: hidden;
+}

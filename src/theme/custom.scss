@@ -1,4 +1,4 @@
-// @use '@angular/material' as mat;
+@use '@angular/material' as mat;
 
 // $light-theme: mat.define-theme((
 //  color: (
@@ -38,14 +38,12 @@
 }
 
 body {
-    background-color: black;
-    --ion-color-primary: #ff3838;
+    --ion-color-primary: var(--mat-sys-primary-container);
     --ion-color-primary-rgb: 56, 128, 255;
     --ion-color-primary-contrast: #ffffff;
     --ion-color-primary-contrast-rgb: 255, 255, 255;
     --ion-color-primary-shade: #e03131;
     --ion-color-primary-tint: #ff4c4c;
-    --ion-background-color: black;
     --ion-text-color: white;
 
 
@@ -61,52 +59,15 @@ body {
         color: unset !important;
     }
 
-    .mdc-text-field--disabled.mdc-text-field--filled {
-        background-color: black;
-    }
-}
-
-body.my-light-theme {
-    --ion-background-color: white;
-    --ion-text-color: black;
-
-    ion-searchbar,
-    ion-segment-button {
-        color: #000 !important;
-    }
-}
-
-.item-native {
-    background-color: black !important;
-
-    .item-inner {
-        background-color: black !important;
-    }
-}
-
-.toolbar-content {
-    background-color: black !important;
-}
-
-.mdc-text-field--filled:not(.mdc-text-field--disabled), .mat-mdc-option, .mdc-menu-surface {
-    background-color: #121212 !important;
-}
-
-.mat-mdc-option:hover:not(.mdc-list-item--disabled), .mat-mdc-option:focus:not(.mdc-list-item--disabled), .mat-mdc-option.mat-mdc-option-active, .mat-mdc-option.mdc-list-item--selected:not(.mat-mdc-option-multiple):not(.mdc-list-item--disabled) {
-    background: #121212;
-}
-
-.mat-mdc-form-field-focus-overlay {
-    background: #0d0d0d;
 }
 
 ion-textarea {
     .label-text {
-        color: #ff3d3d !important;
+        color: var(--mat-sys-primary-container) !important;
     }
+
     .textarea-wrapper.sc-ion-textarea-md {
         margin: .5rem;
-        background-color: #121212;
     }
 
     .textarea-disabled.sc-ion-textarea-md-h {
@@ -117,13 +78,10 @@ ion-textarea {
         opacity: unset;
     }
 
-    &.textarea-disabled .textarea-wrapper.sc-ion-textarea-md {
-        background-color: black;
-    }
 }
 
-.ion-valid.sc-ion-textarea-md-h  {
-    --highlight-color: #ff3d3d;
+.ion-valid.sc-ion-textarea-md-h {
+    --highlight-color: var(--mat-sys-primary-container);
 }
 
 .sc-ion-textarea-md {
@@ -142,4 +100,28 @@ ion-textarea {
 
 html:not(.hydrated) body {
     display: initial !important;
+}
+
+mat-select.hidden-arrow {
+    .mat-mdc-select-arrow-wrapper {
+        display: none;
+    }
+}
+
+:root {
+    @include mat.slider-overrides((
+            active-track-color: var(--mat-sys-primary-container),
+            inactive-track-color: var(--mat-sys-secondary-container),
+            handle-color: var(--mat-sys-primary-container),
+        ));
+}
+
+.thicker {
+        @include mat.slider-overrides((
+            active-track-color: var(--mat-sys-primary-container),
+            inactive-track-color: var(--mat-sys-secondary-container),
+            handle-color: var(--mat-sys-primary-container),
+            inactive-track-height: 20,
+            active-track-height: 20,
+        ));
 }

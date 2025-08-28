@@ -27,4 +27,26 @@
 
 @use "./theme/custom.scss";
 
-@use "./theme/theme.css";
+@use "./theme/theme.scss";
+
+// @use "./theme/royal_bouquet.scss";
+// @use "./theme/sliced_citrus.scss";
+
+@use '@angular/material' as mat;
+
+body {
+    background: var(--mat-sys-surface);
+    color: var(--mat-sys-on-surface);
+}
+
+html {
+    color-scheme: dark;
+    @include mat.theme((color: theme.$primary-palette,
+            typography: Roboto,
+            density: 0,
+        ));
+}
+
+.item-native {
+    background-color: unset;
+}

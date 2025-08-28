@@ -1,5 +1,16 @@
+.header {
+    display: flex;
+    justify-content: space-between;
+    height: fit-content;
+    margin-bottom: 1rem;
+
+    .wdth {
+        width: 44px;
+    }
+}
+
 .red {
-    color: #ff3d3d !important;
+    color: var(--mat-sys-primary-container) !important;
 }
 
 ion-label {
@@ -15,16 +26,16 @@ ion-label {
 
 .ng-invalid {
     color: white;
-    background: #ff3d3d;
+    // background: var(--mat-sys-primary-container);
 }
 
-mat-option {
-    background-color: black;
-    color: white;
-}
+// mat-option {
+//     background-color: black;
+//     color: white;
+// }
 
 .gray {
-    color: #545454;
+    color: #737373;
 }
 
 .height100 {
@@ -45,7 +56,7 @@ mat-option {
 
 .contenteditable {
     text-align: justify;
-    outline-color: #ff3d3d;
+    outline-color: var(--mat-sys-primary-container);
     overflow: hidden;
 }
 
@@ -83,6 +94,7 @@ mat-option {
 }
 
 .pic-container {
+    position: relative;
     img {
         display: flex;
         margin: 1rem auto;
@@ -153,9 +165,9 @@ mat-option {
     flex-basis: 53px;
 }
 
-.img {
-    background-color: #413d3d;
-}
+// .img {
+//     background-color: #413d3d;
+// }
 
 .ad-bu-cont {
     display: flex;
@@ -163,11 +175,12 @@ mat-option {
     margin: 1rem;
 }
 
-ion-content .spaced {
+.spaced {
     height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    overflow-x: auto;
 }
 
 mat-form-field {

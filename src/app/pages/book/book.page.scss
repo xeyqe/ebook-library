@@ -1,14 +1,33 @@
 ion-label {
-    color: #ff3d3d !important;
+    color: var(--mat-sys-primary-container) !important;
     opacity: 1 !important;
 }
 
+.header {
+    display: flex;
+    justify-content: space-between;
+    height: fit-content;
+    margin-bottom: 1rem;
+
+    .wdth {
+        width: 132px;
+    }
+}
+
+.spaced {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow-x: auto;
+}
+
 .red {
-    color: #ff3d3d !important;
+    color: var(--mat-sys-primary-container) !important;
 }
 
 .ng-invalid {
-    color: red;
+    color: var(--mat-sys-primary-container);
 }
 
 .bu-change-pic {
@@ -44,23 +63,23 @@ ion-select-popover {
     color: white !important;
 }
 
-mat-option {
-    background: black;
-    color: white;
-}
+// mat-option {
+//     background: black;
+//     color: white;
+// }
 
-mat-option:hover {
-    background: rgb(56, 54, 54);
-    color: white;
-}
+// mat-option:hover {
+//     background: rgb(56, 54, 54);
+//     color: white;
+// }
 
 .gray {
-    color: #545454;
+    color: #737373;
 }
 
 .contenteditable {
     text-align: justify;
-    outline-color: #ff3d3d;
+    outline-color: var(--mat-sys-primary-container);
     overflow: hidden;
 }
 
@@ -94,6 +113,8 @@ mat-select {
 }
 
 .pic-container {
+    position: relative;
+
     img {
         display: flex;
         margin: 1rem auto;
@@ -187,4 +208,8 @@ app-contenteditable {
     width: fit-content;
     max-width: 100%;
     display: flex;
+}
+
+.upper {
+    transform: translateY(-6px);
 }
