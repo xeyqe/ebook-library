@@ -27,10 +27,10 @@ include ':capawesome-capacitor-file-picker'
 project(':capawesome-capacitor-file-picker').projectDir = new File('../node_modules/@capawesome/capacitor-file-picker/android')
 
 include ':xeyqe-capacitor-tts'
-project(':xeyqe-capacitor-tts').projectDir = new File('../../capacitor/capacitor-tts/android')
+project(':xeyqe-capacitor-tts').projectDir = new File('../node_modules/@xeyqe/capacitor-tts/android')
 
 include ':capacitor-all-files-access-permission'
-project(':capacitor-all-files-access-permission').projectDir = new File('../../capacitor/capacitor-all-files-access-permission/android')
+project(':capacitor-all-files-access-permission').projectDir = new File('../node_modules/capacitor-all-files-access-permission/android')
 
 include ':capacitor-plugin-safe-area'
 project(':capacitor-plugin-safe-area').projectDir = new File('../node_modules/capacitor-plugin-safe-area/android')
