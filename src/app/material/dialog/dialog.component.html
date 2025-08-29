@@ -2,15 +2,15 @@
     @if (data.header) {
         <h1 mat-dialog-title>{{ data.header }}</h1>
     }
-    <ion-icon name="close-circle" (click)="onClose()"></ion-icon>
+    <mat-icon (click)="onClose()">cancel</mat-icon>
     @if (data.message) {
         <p class="message">{{ data.message }}</p>
     }
     <div class="cont__bb">
         @for (item of data.selects; track $index) {
-            <ion-button [mat-dialog-close]="$index">
+            <button [mat-dialog-close]="$index">
                 {{ item }}
-            </ion-button>
+            </button>
         }
     </div>
 </div>

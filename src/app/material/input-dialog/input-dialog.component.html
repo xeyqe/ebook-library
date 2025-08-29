@@ -2,7 +2,7 @@
     @if (data.header) {
         <h1 mat-dialog-title>{{ data.header }}</h1>
     }
-    <ion-icon class="close-circle" name="close-circle" (click)="onClose()"></ion-icon>
+    <mat-icon class="close-circle" (click)="onClose()">cancel</mat-icon>
     <div>
         <mat-form-field subscriptSizing="dynamic">
             <mat-label class="red" position="floating">Name</mat-label>

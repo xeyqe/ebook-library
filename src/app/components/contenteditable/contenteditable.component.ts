@@ -7,7 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldControl, MatFormFieldModule } from '@angular/material/form-field';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 
-import { ColorPickerModule } from 'ngx-color-picker';
+// import { ColorPickerDirective } from 'ngx-color-picker';
 
 import { Subject } from 'rxjs';
 import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
@@ -18,7 +18,7 @@ import { MatDialog } from '@angular/material/dialog';
 @Component({
     selector: 'app-contenteditable',
     imports: [
-        ColorPickerModule,
+        // ColorPickerDirective,
         MatAutocompleteModule,
         MatButtonModule,
         MatFormFieldModule,

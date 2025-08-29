@@ -5,19 +5,19 @@ const routes: Routes = [
   { path: '', redirectTo: 'authors', pathMatch: 'full' },
   {
     path: 'authors',
-    loadChildren: () => import('./pages/authors/authors.module').then((m) => m.AuthorsPageModule)
+    loadComponent: () => import('./pages/authors/authors.page').then((m) => m.AuthorsComponent)
   },
   {
     path: 'author/:id',
-    loadChildren: () => import('./pages/author/author.module').then((m) => m.AuthorPageModule)
+    loadComponent: () => import('./pages/author/author.page').then((m) => m.AuthorComponent)
   },
   {
     path: 'book/:id',
-    loadChildren: () => import('./pages/book/book.module').then((m) => m.BookPageModule)
+    loadComponent: () => import('./pages/book/book.page').then((m) => m.BookComponent)
   },
   {
     path: 'tts/:id',
-    loadChildren: () => import('./pages/tts/tts.module').then((m) => m.TtsPageModule)
+    loadComponent: () => import('./pages/tts/tts.page').then((m) => m.TtsComponent)
   }
 ];
 

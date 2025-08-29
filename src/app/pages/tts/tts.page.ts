@@ -1,11 +1,20 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, HostListener, signal } from '@angular/core';
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { Component, OnInit, OnDestroy, HostListener, signal } from '@angular/core';
 import { Capacitor, PluginListenerHandle } from '@capacitor/core';
-import { FormControl, FormGroup } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { DecimalPipe } from '@angular/common';
 
-import { Platform } from '@ionic/angular';
 import { TTS } from '@xeyqe/capacitor-tts';
 import { Storage } from '@ionic/storage-angular';
+import { IonicModule, Platform } from '@ionic/angular';
+import { ForegroundService, Importance } from '@capawesome-team/capacitor-android-foreground-service';
+
+import { MatIconModule } from '@angular/material/icon';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatOptionModule } from '@angular/material/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select';
+import { MatSliderModule } from '@angular/material/slider';
 
 import { Subscription } from 'rxjs';
 
@@ -17,7 +26,6 @@ import { FileReaderService } from 'src/app/services/file-reader.service';
 
 
 import { getDocument } from "pdfjs-dist/build/pdf.mjs";
-import { ForegroundService, Importance } from '@capawesome-team/capacitor-android-foreground-service';
 
 
 
@@ -25,7 +33,18 @@ import { ForegroundService, Importance } from '@capawesome-team/capacitor-androi
   selector: 'app-tts',
   templateUrl: './tts.page.html',
   styleUrls: ['./tts.page.scss'],
-  standalone: false,
+  imports: [
+    DecimalPipe,
+    FormsModule,
+    IonicModule,
+    MatButtonModule, 
+    MatChipsModule,
+    MatIconModule,
+    MatOptionModule,
+    MatSelectModule,
+    MatSliderModule,
+    ReactiveFormsModule,
+  ]
 })
 export class TtsComponent implements OnInit, OnDestroy {
   @HostListener('window:orientationchange')
@@ -40,7 +59,7 @@ export class TtsComponent implements OnInit, OnDestroy {
   protected progress = signal(0);
 
   protected htmlData: {
-    inBg: boolean,
+    // inBg: boolean,
     speed: number,
     title: string,
     authorName: string,
@@ -104,7 +123,7 @@ export class TtsComponent implements OnInit, OnDestroy {
     private epubService: EpubService,
     private fs: FileReaderService,
     private platform: Platform,
-    private ref: ChangeDetectorRef,
+    // private ref: ChangeDetectorRef,
     private route: ActivatedRoute,
     private strg: Storage,
     private working: BusyService,
@@ -134,15 +153,9 @@ export class TtsComponent implements OnInit, OnDestroy {
 
   private takeCareOfResume() {
     this.subs.push(this.platform.resume.subscribe(() => {
-      this.htmlData.inBg = false;
       setTimeout(() => {
-        this.ref.detach();
-        this.ref.detectChanges();
-        this.ref.reattach();
-      }, 500);
-    }));
-    this.subs.push(this.platform.pause.subscribe(() => {
-      this.htmlData.inBg = true;
+        this.isPortrait = window.screen.orientation.type.startsWith('portrait');
+      });
     }));
   }
 

@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild } from '@angular/core';
 import { animate, state, style, transition, trigger } from '@angular/animations';
-import { InfiniteScrollCustomEvent, IonSearchbar } from '@ionic/angular';
-import { Router } from '@angular/router';
+import { InfiniteScrollCustomEvent, IonicModule } from '@ionic/angular';
+import { Router, RouterModule } from '@angular/router';
 
 import { MatDialog } from '@angular/material/dialog';
 
@@ -21,6 +21,13 @@ import { DialogComponent } from 'src/app/material/dialog/dialog.component';
 import { InputDialogComponent } from 'src/app/material/input-dialog/input-dialog.component';
 
 import { BOOKSIMPLIFIED, AUTHORSIMPLIFIED } from 'src/app/services/interfaces';
+import { MatInput, MatInputModule } from '@angular/material/input';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { PercentPipe } from 'src/app/pipes/percent2.pipe';
 
 
 @Component({
@@ -37,10 +44,21 @@ import { BOOKSIMPLIFIED, AUTHORSIMPLIFIED } from 'src/app/services/interfaces';
       transition('default => animated', animate('200ms ease-in'))
     ])
   ],
-  standalone: false,
+  imports: [
+    FormsModule,
+    IonicModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatProgressBarModule,
+    ReactiveFormsModule,
+    RouterModule,
+    PercentPipe,
+  ],
 })
 export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
-  @ViewChild('seachBarEl') seachBarEl: IonSearchbar;
+  @ViewChild('input') input: MatInput;
   private subs: Subscription[] = [];
   private authors: AUTHORSIMPLIFIED[] = [];
   protected _authors: AUTHORSIMPLIFIED[] = [];
@@ -117,7 +135,7 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.selectedCharacter = await this.db.getValue('character');
     this.bookSearchBy = await this.db.getValue('bookSearchBy') as any;
 
-    const searchVal = this.seachBarEl?.value; // TODO
+    const searchVal = this.input?.value; // TODO
     if (searchVal) this.search(searchVal);
     else this.load();
 
@@ -334,7 +352,7 @@ export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.onSearchClear();
     event.stopPropagation();
   }
-  
+
   protected onToggleCharVisibility(hide: boolean): void {
     setTimeout(() => {
       this.hideCharacters = hide;

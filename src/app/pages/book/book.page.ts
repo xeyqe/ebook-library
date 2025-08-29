@@ -1,6 +1,7 @@
 import { Component, ViewChild, ElementRef, OnDestroy, Renderer2, signal, WritableSignal } from '@angular/core';
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FormControl, FormGroup } from '@angular/forms';
+import { DatePipe, NgClass } from '@angular/common';
 
 import { Subscription } from 'rxjs';
 import { first } from 'rxjs/operators';
@@ -8,10 +9,18 @@ import { first } from 'rxjs/operators';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem } from '@capacitor/filesystem';
 
-import { IonContent } from '@ionic/angular';
+import { IonContent, IonicModule } from '@ionic/angular';
 import { InAppBrowser } from '@awesome-cordova-plugins/in-app-browser/ngx';
 
 import { MatDialog } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+
+import { NgsContenteditableModule } from '@ng-stack/contenteditable';
 
 import { BookService } from './book.service';
 import { EpubService } from 'src/app/services/epub.service';
@@ -27,13 +36,29 @@ import { BOOK, ONLINEBOOKLINK, INDEXOFBOOK, AUTHOR, ONLINEAUTHORLEGIE } from 'sr
 
 import { PictureComponent } from '../picture/picture.component';
 import { DialogComponent } from 'src/app/material/dialog/dialog.component';
-
+import { ContenteditableComponent } from 'src/app/components/contenteditable/contenteditable.component';
 
 @Component({
   selector: 'app-book',
   templateUrl: './book.page.html',
   styleUrls: ['./book.page.scss'],
-  standalone: false,
+  imports: [
+    ContenteditableComponent,
+    DatePipe,
+    FormsModule,
+    IonicModule,
+    MatAutocompleteModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatSelectModule,
+    NgClass,
+    NgsContenteditableModule,
+    PictureComponent,
+    ReactiveFormsModule,
+  ],
+  providers: [InAppBrowser],
 })
 export class BookComponent implements OnDestroy {
   @ViewChild('pictureC') pictureC: PictureComponent | undefined;

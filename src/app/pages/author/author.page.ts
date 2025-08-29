@@ -1,12 +1,20 @@
 import { Component, OnInit, ViewChild, ElementRef, OnDestroy, Renderer2, WritableSignal, signal, Signal, computed } from '@angular/core';
-import { IonContent } from '@ionic/angular';
-import { FormControl, FormGroup } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
 import { animate, AUTO_STYLE, state, style, transition, trigger } from '@angular/animations';
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { IonContent, IonicModule } from '@ionic/angular';
+import { NgClass, NgStyle } from '@angular/common';
 
 import { AllFilesAccess } from 'capacitor-all-files-access-permission';
 
 import { MatDialog } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 
 import { Capacitor } from '@capacitor/core';
 import { Filesystem } from '@capacitor/filesystem';
@@ -14,6 +22,8 @@ import { FilePicker } from '@capawesome/capacitor-file-picker';
 
 import { Subscription } from 'rxjs';
 import { first } from 'rxjs/operators';
+
+import { PercentPipe } from 'src/app/pipes/percent2.pipe';
 
 import { NonusedPicsService } from './nonused-pics.service';
 import { BusyService } from 'src/app/services/busy.service';
@@ -25,6 +35,9 @@ import { AUTHOR, WIKIPEDIADATA, ONLINEAUTHORLINK, AUTHORSBOOKS } from 'src/app/s
 
 import { PictureComponent } from '../picture/picture.component';
 import { DialogComponent } from 'src/app/material/dialog/dialog.component';
+import { ContenteditableComponent } from 'src/app/components/contenteditable/contenteditable.component';
+
+import { NgsContenteditableModule } from '@ng-stack/contenteditable';
 
 
 @Component({
@@ -43,9 +56,27 @@ import { DialogComponent } from 'src/app/material/dialog/dialog.component';
       state('false', style({ height: '10rem' })),
       transition('false => true', animate(500 + 'ms ease-in')),
       transition('true => false', animate(500 + 'ms ease-out'))
-    ])
+    ]),
   ],
-  standalone: false,
+  imports: [
+    ContenteditableComponent,
+    FormsModule,
+    IonicModule,
+    MatAutocompleteModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatProgressBarModule,
+    MatSelectModule,
+    NgClass,
+    NgsContenteditableModule,
+    NgStyle,
+    PercentPipe,
+    PictureComponent,
+    ReactiveFormsModule,
+    RouterModule,
+  ],
 })
 export class AuthorComponent implements OnInit, OnDestroy {
   @ViewChild('pictureC') pictureC: PictureComponent | undefined;

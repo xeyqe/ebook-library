@@ -15,7 +15,7 @@ register();
   selector: 'app-picture',
   templateUrl: './picture.component.html',
   styleUrls: ['./picture.component.scss'],
-  standalone: false,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class PictureComponent implements OnInit, OnChanges {
   @ViewChild('swiperRef') swiperRef: ElementRef | undefined;
