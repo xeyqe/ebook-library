@@ -377,10 +377,19 @@ export class BookComponent implements OnDestroy {
 
   protected editable() {
     this.ready2editing.set(!this.ready2editing());
-    Object.entries(this.bookForm.controls).forEach(ent => {
-      this.ready2editing() ? ent[1].enable({ emitEvent: false }) : ent[1].disable({ emitEvent: false });
+    Object.keys(this.bookForm.controls).forEach(key => {
+      const fc = this.bookForm.controls[key];
+      if (this.ready2editing()) {
+        fc.enable({ emitEvent: false })
+      } else {
+        fc.disable({ emitEvent: false });
+      }
       // this.onAreaResize(ent[0]);
     });
+    if (!this.ready2editing()) {
+      const ar = Array.from(document.querySelectorAll('mat-form-field'))
+      ar.forEach(el => el[`click`]());
+    }
     this.bookChanged = false;
     this.setMinWidths();
   }
@@ -797,11 +806,11 @@ export class BookComponent implements OnDestroy {
               genre: Array.from(document.querySelectorAll('.genre')).map(it => it.textContent).join(', '),\
               img: document.querySelector('.kniha_img')?.src,\
               language: Array.from(document.querySelectorAll('.category')).find(it => it.textContent === 'Jazyk vydání:')?.nextElementSibling?.innerText,\
-              originalTitle: Array.from(document.querySelectorAll('.category'))?.find(it => it.textContent === 'Originální název:')?.nextSibling?.textContent,\
+              originalTitle: Array.from(document.querySelectorAll('.category'))?.find(it => it.textContent === 'Originální název:')?.nextSibling?.textContent?.trim(),\
               length: document.querySelector('[itemprop=numberOfPages]')?.innerText,\
               published: Array.from(document.querySelectorAll('.category'))?.find(it => it.textContent === 'Vydáno:')?.nextElementSibling.textContent,\
               publisher: document.querySelector('[href*=nakladatelstvi]')?.innerText,\
-              title: document.querySelector('.oddown_five')?.innerText,\
+              title: document.querySelector('.oddown_five')?.innerText?.replace(' přehled', ''),\
               translator: document.querySelector('[itemprop=translator]')?.innerText,\
               ISBN: Array.from(document.querySelectorAll('.category')).find(it => it.textContent.includes('ISBN'))?.nextElementSibling?.innerText,\
               serie: document.querySelector('a.odright_pet')?.innerText,\
