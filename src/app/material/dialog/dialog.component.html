@@ -8,7 +8,7 @@
     }
     <div class="cont__bb">
         @for (item of data.selects; track $index) {
-            <button [mat-dialog-close]="$index">
+            <button mat-flat-button [mat-dialog-close]="$index">
                 {{ item }}
             </button>
         }
