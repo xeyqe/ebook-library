@@ -52,7 +52,7 @@ import { NgsContenteditableModule } from '@ng-stack/contenteditable';
       transition('true => false', animate(500 + 'ms ease-out'))
     ]),
     trigger('collapse2', [
-      state('true', style({ height: '100%' })),
+      state('true', style({ height: AUTO_STYLE })),
       state('false', style({ height: '10rem' })),
       transition('false => true', animate(500 + 'ms ease-in')),
       transition('true => false', animate(500 + 'ms ease-out'))
@@ -80,7 +80,7 @@ import { NgsContenteditableModule } from '@ng-stack/contenteditable';
 })
 export class AuthorComponent implements OnInit, OnDestroy {
   @ViewChild('pictureC') pictureC: PictureComponent | undefined;
-  @ViewChild(IonContent) content: IonContent;
+  @ViewChild('content') content: ElementRef;
   @ViewChild('target1') target1: ElementRef;
   @ViewChild('target2') target2: ElementRef;
   @ViewChild('contEl') contEl: ElementRef;
@@ -572,7 +572,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
     });
 
     this.workingServ.done();
-    this.content.scrollToTop();
+    this.scrollElement(this.content);
   }
 
   protected onDownloadPicture() {
@@ -596,10 +596,10 @@ export class AuthorComponent implements OnInit, OnDestroy {
       const img = src?.replace(/^.*ebook-library/, '/ebook-library');
       this.authorForm.controls.img.setValue(img);
       this.pictureC.deleteCurrentImg(img);
-      this.content.scrollToTop();
+      this.scrollElement(this.content);
     }).catch((e) => {
       this.workingServ.done();
-      this.content.scrollToTop();
+      this.scrollElement(this.content);
       console.error(e);
       alert(JSON.stringify(e));
     });
@@ -692,7 +692,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
         }
       }).finally(() => {
         this.workingServ.done();
-        this.content.scrollToTop();
+        this.scrollElement(this.content);
       });
     } else if (item.lgId) {
       this.webScraper.getLegieAuthor(item.link).then((data) => {
@@ -708,7 +708,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
         }
       }).finally(() => {
         this.workingServ.done();
-        this.content.scrollToTop();
+        this.scrollElement(this.content);
       });
     }
   }
@@ -728,14 +728,14 @@ export class AuthorComponent implements OnInit, OnDestroy {
         });
       }
     }).finally(() => {
-      this.content.scrollToTop();
+      this.scrollElement(this.content);
       this.workingServ.done();
     });
   }
 
   private scrollElement(target: ElementRef) {
     if (!target) return;
-    this.content.scrollToPoint(0, target.nativeElement.offsetTop, 500);
+    window.scrollTo(0, target.nativeElement.offsetTop);
   }
 
   protected onRemovePic() {
