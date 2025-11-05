@@ -115,7 +115,7 @@ export class TtsComponent implements OnInit, OnDestroy {
     };
   protected audioFocus = true;
   private last: number;
-  // private bookId: number;
+  private bookId: number;
 
   constructor(
     private db: DatabaseService,
@@ -222,7 +222,7 @@ export class TtsComponent implements OnInit, OnDestroy {
   private async initVariablesFromDatabase() {
     if (!(await this.waitTillDbReady())) throw new Error('initVariablesFromDatabase failed')
     const book = await this.db.getBook(this.id);
-    // this.bookId = book.id;
+    this.bookId = book.id;
     if (!book) return;
     this.path = book.path;
     this.htmlData.title = book.title;
@@ -435,12 +435,14 @@ export class TtsComponent implements OnInit, OnDestroy {
             texts: this.texts,
             progress: this.progress(),
             ...this.speakParams,
-            // bookId: null // this.bookId,
+            bookId: this.bookId,
           };
           console.log(params)
           if (!this.working.isSpeaking) this.working.isSpeaking = true;
           this.speechObj.isSpeaking = true;
-          TTS.read(params).finally(() => {
+          TTS.read(params).then(() => {
+            this.setProgress2DB();
+          }).finally(() => {
             this.stopForegroundService();
             this.removeAudioFocus();
             this.speechObj.isSpeaking = false;
@@ -449,7 +451,7 @@ export class TtsComponent implements OnInit, OnDestroy {
           TTS.addListener("progressArrayEvent", (resp) => {
             console.log(resp)
             this.progress.set(resp.progress);
-            this.setProgress2DB();
+            // this.setProgress2DB();
           });
           // this.speak(this.progress());
           // if (this.progress() < this.texts.length - 1) {
