@@ -387,8 +387,10 @@ export class BookComponent implements OnDestroy {
       // this.onAreaResize(ent[0]);
     });
     if (!this.ready2editing()) {
-      const ar = Array.from(document.querySelectorAll('mat-form-field'))
-      ar.forEach(el => el[`click`]());
+      setTimeout(() => {
+        const ar = Array.from(document.querySelectorAll('mat-form-field'))
+        ar.forEach(el => el[`click`]());
+      });
     }
     this.bookChanged = false;
     this.setMinWidths();
