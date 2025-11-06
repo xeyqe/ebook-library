@@ -13,3 +13,9 @@ ion-spinner {
     top: 50%;
     color: white;
 }
+
+ion-app {
+    position: absolute;
+    width: -webkit-fill-available;
+    height: -webkit-fill-available;
+}

@@ -1,4 +1,4 @@
-import { Component, ElementRef, inject, OnInit, Renderer2, ViewChild } from '@angular/core';
+import { Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { NavController, Platform, ToastController } from '@ionic/angular';
@@ -10,7 +10,7 @@ import { FileReaderService } from './services/file-reader.service';
 import { DatabaseService } from 'src/app/services/database.service';
 
 import { StatusBar } from '@capacitor/status-bar';
-import { SafeArea } from 'capacitor-plugin-safe-area';
+import { SafeArea, SafeAreaInsets } from 'capacitor-plugin-safe-area';
 import { AllFilesAccess } from 'capacitor-all-files-access-permission';
 import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
 
@@ -31,7 +31,6 @@ export class AppComponent implements OnInit {
   private navCtrl = inject(NavController);
   private platform = inject(Platform);
   private router = inject(Router);
-  private renderer = inject(Renderer2);
   private toastCtrl = inject(ToastController);
   protected workingServ = inject(BusyService);
 
@@ -63,26 +62,22 @@ export class AppComponent implements OnInit {
   private saveArea(): void {
     SafeArea.setImmersiveNavigationBar();
     SafeArea.getSafeAreaInsets().then((result) => {
-      this.setSaveAreaMargin(result.insets);
+      this.setSaveAreaMargin(result);
     });
     SafeArea.addListener('safeAreaChanged', (result) => {
-      this.setSaveAreaMargin(result.insets);
+      this.setSaveAreaMargin(result);
     });
   }
 
-  private setSaveAreaMargin(
-    saveArea: {
-      top: number;
-      right: number;
-      bottom: number;
-      left: number;
+  private setSaveAreaMargin(data: SafeAreaInsets): void {
+    const { insets } = data;
+    for (const [key, value] of Object.entries(insets)) {
+      const el = this.elRef.nativeElement || document.querySelector('ion-app');
+      el.style.setProperty(
+        `margin-${key}`,
+        `${value}px`,
+      );
     }
-  ): void {
-    this.renderer.setStyle(
-      this.elRef.nativeElement || this.elRef[`el`],
-      'margin',
-      `${saveArea.top}px ${saveArea.right}px ${saveArea.bottom}px ${saveArea.left}px`
-    );
   }
 
   private async initializeApp(): Promise<void> {
