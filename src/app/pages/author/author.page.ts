@@ -642,7 +642,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
     this.webScraper.getAuthorsList(authorName).then((data) => {
       this.onlineAuthorsList = data;
       this.workingServ.done();
-      this.scrollElement(this.target2);
+      setTimeout(() => this.scrollElement(this.target2));
     }).finally(() => this.workingServ.done());
   }
 
@@ -735,7 +735,8 @@ export class AuthorComponent implements OnInit, OnDestroy {
 
   private scrollElement(target: ElementRef) {
     if (!target) return;
-    window.scrollTo(0, target.nativeElement.offsetTop);
+    // window.scrollTo(0, target.nativeElement.offsetTop);
+    target.nativeElement.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
   }
 
   protected onRemovePic() {

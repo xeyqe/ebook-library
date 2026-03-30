@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, OnDestroy, Renderer2, signal, WritableSignal } from '@angular/core';
+import { Component, ViewChild, ElementRef, OnDestroy, Renderer2, signal, WritableSignal, viewChild } from '@angular/core';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DatePipe, NgClass } from '@angular/common';
@@ -167,7 +167,8 @@ export class BookComponent implements OnDestroy {
     'ru-RU': 'русский',
   };
 
-  @ViewChild(IonContent) content: IonContent;
+  // @ViewChild(IonContent) content: IonContent;
+  private content = viewChild<ElementRef>('content');
   @ViewChild('target') target: ElementRef;
 
   constructor(
@@ -627,7 +628,7 @@ export class BookComponent implements OnDestroy {
       });
 
       this.bookChanged = true;
-      this.content.scrollToTop();
+      this.content()?.nativeElement?.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
     }
   }
 
@@ -651,7 +652,7 @@ export class BookComponent implements OnDestroy {
         }
       });
       this.bookChanged = true;
-      this.content.scrollToTop();
+      this.content()?.nativeElement?.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
     }
     if (author.cbdbId) {
       this.onlineBookListOfAuthorCBDB = await this.webScrapper.getCBDBBooksOfAuthor(author.cbdbId);
@@ -696,7 +697,7 @@ export class BookComponent implements OnDestroy {
             }
           });
           this.bookChanged = true;
-          this.content.scrollToTop();
+          this.content()?.nativeElement?.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
         }
       }).finally(() => this.workingServ.done());
     } else if (item.lgId) {
@@ -714,7 +715,7 @@ export class BookComponent implements OnDestroy {
         }
       });
       this.bookChanged = true;
-      this.content.scrollToTop();
+      this.content()?.nativeElement?.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
       this.workingServ.done();
     }
   }
@@ -730,7 +731,7 @@ export class BookComponent implements OnDestroy {
       console.error(e);
     }
     this.bookChanged = true;
-    this.content.scrollToTop();
+    this.content()?.nativeElement?.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
     this.workingServ.done();
   }
 
@@ -750,7 +751,7 @@ export class BookComponent implements OnDestroy {
       }
     });
     this.bookChanged = true;
-    this.content.scrollToTop();
+    this.content()?.nativeElement?.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
   }
 
   protected async getBook2(url: string): Promise<{

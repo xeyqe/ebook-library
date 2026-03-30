@@ -42,7 +42,7 @@
     }
 </div>
 
-<div class="spaced">
+<div class="spaced" #content>
     @if (book && bookForm) {
         <form [formGroup]="bookForm">
             @if (ready2editing() || bookForm.controls.img.value) {
