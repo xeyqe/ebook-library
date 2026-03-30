@@ -784,14 +784,12 @@ export class BookComponent implements OnDestroy {
           e.data.serie = e.data.serie.trim();
         }
         if (e.data.serieOrder) {
-          e.data.serieOrder = +e.data.serieOrder.replace(/^(\d*).*/, "$1");
+          e.data.serieOrder = +e.data.serieOrder.replace(/[^\d]/g, '');
         }
         if (e.data.originalTitle) {
           e.data.originalTitle = e.data.originalTitle.trim(); //e.data.originalTitle.replace(' ,', ',');
         }
         if (e.data.serie) e.data.serie = e.data.serie.trim();
-        delete e.data.edition;
-        delete e.data.editionOrder;
 
         resolve(e.data as any);
         browser.close();
@@ -815,10 +813,8 @@ export class BookComponent implements OnDestroy {
               title: document.querySelector('.oddown_five')?.innerText?.replace(' přehled', ''),\
               translator: document.querySelector('[itemprop=translator]')?.innerText,\
               ISBN: Array.from(document.querySelectorAll('.category')).find(it => it.textContent.includes('ISBN'))?.nextElementSibling?.innerText,\
-              serie: document.querySelector('a.odright_pet')?.innerText,\
-              serieOrder: document.querySelector('span.odright_pet')?.textContent,\
-              edition: document.querySelector('[itemprop=bookEdition]')?.textContent,\
-              editionOrder: document.querySelector('em.info.st_normal')?.textContent\
+              serie: document.querySelector('[itemprop=bookEdition]')?.innerText,\
+              serieOrder: document.querySelector('[itemprop=bookEdition]')?.nextElementSibling?.textContent,\
             };\
             webkit.messageHandlers.cordova_iab.postMessage(JSON.stringify(o)\
           )},1000)"
