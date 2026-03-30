@@ -16,19 +16,19 @@ import { MatDialog } from '@angular/material/dialog';
 
 
 @Component({
-    selector: 'app-contenteditable',
-    imports: [
-        // ColorPickerDirective,
-        MatAutocompleteModule,
-        MatButtonModule,
-        MatFormFieldModule,
-        MatIconModule,
-        MatInputModule,
-        ReactiveFormsModule,
-    ],
-    providers: [{ provide: MatFormFieldControl, useExisting: ContenteditableComponent }],
-    templateUrl: './contenteditable.component.html',
-    styleUrl: './contenteditable.component.scss'
+  selector: 'app-contenteditable',
+  imports: [
+    // ColorPickerDirective,
+    MatAutocompleteModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    ReactiveFormsModule,
+  ],
+  providers: [{ provide: MatFormFieldControl, useExisting: ContenteditableComponent }],
+  templateUrl: './contenteditable.component.html',
+  styleUrl: './contenteditable.component.scss'
 })
 export class ContenteditableComponent implements ControlValueAccessor, MatFormFieldControl<string>, OnInit, OnDestroy, DoCheck {
   @ViewChild('contenteditableEl', { static: true }) contenteditableEl: ElementRef;
@@ -54,7 +54,7 @@ export class ContenteditableComponent implements ControlValueAccessor, MatFormFi
   protected color: string;
   private interval: ReturnType<typeof setTimeout>;
 
-  private onTouched: () => void = () => {};
+  private onTouched: () => void = () => { };
   private onChange: (innerText: string) => void;
   private oldValue: string;
   stateChanges = new Subject<void>();
@@ -125,10 +125,10 @@ export class ContenteditableComponent implements ControlValueAccessor, MatFormFi
     }
     const range = document.createRange()
     const sel = window.getSelection()
-    
+
     range.setStart(lastChild, lastChild.textContent.length)
     range.collapse(true)
-    
+
     sel.removeAllRanges()
     sel.addRange(range)
   }
@@ -258,6 +258,15 @@ export class ContenteditableComponent implements ControlValueAccessor, MatFormFi
       if (!this.onChange) return;
       this.onChange(newVal);
     }
+  }
+
+  protected onPaste(event: ClipboardEvent): void {
+    event.preventDefault();
+
+    let text = event.clipboardData?.getData('text/plain') || '';
+    text = text.replace(/ /g, '\u00A0');
+
+    document.execCommand('insertHTML', false, text);
   }
 
   ngOnDestroy(): void {
