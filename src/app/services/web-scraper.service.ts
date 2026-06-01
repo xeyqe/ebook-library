@@ -43,7 +43,7 @@ export class WebScraperService {
     if (data.querySelector('.img_author_detail')) {
       output.img = (data.querySelector('.img_author_detail') as HTMLElement)?.style?.backgroundImage?.replace(/url\("(.*)"\)/, "$1") || null;
     }
-    const names = (data.querySelector('#left_less h1') as HTMLElement)?.textContent?.trim();
+    const names = data.querySelector('#left>.lora>.nobold').textContent;
     if (names) {
       output.name = names.slice(0, names.lastIndexOf(' ')) || null;
       output.surname = names.slice(names.lastIndexOf(' ') + 1) || null;
@@ -181,7 +181,7 @@ export class WebScraperService {
     const parsedList = [];
     list.forEach(item => {
       const imgLink = (item.firstElementChild.firstElementChild as HTMLImageElement).style.backgroundImage;
-      const link = (item.firstElementChild as HTMLLinkElement).href;
+      const link = (item.firstElementChild as HTMLLinkElement).href.replace('/autori/', '/zivotopis/');
       const dtbkId = link.substring(link.lastIndexOf('/') + 1);
       parsedList.push({
         name: (item.firstElementChild as HTMLElement).innerText.trim(),
