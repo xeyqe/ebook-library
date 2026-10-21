@@ -1,4 +1,4 @@
-import { Component, DoCheck, ElementRef, EventEmitter, HostBinding, Input, OnDestroy, OnInit, Optional, Output, Self, ViewChild } from '@angular/core';
+import { Component, DoCheck, ElementRef, EventEmitter, HostBinding, Input, OnDestroy, OnInit, Optional, Output, Self, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { ControlValueAccessor, FormControl, FormGroupDirective, NgControl, NgForm, ReactiveFormsModule } from '@angular/forms';
 
 import { MatIconModule } from '@angular/material/icon';
@@ -28,6 +28,7 @@ import { MatDialog } from '@angular/material/dialog';
   ],
   providers: [{ provide: MatFormFieldControl, useExisting: ContenteditableComponent }],
   templateUrl: './contenteditable.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './contenteditable.component.scss'
 })
 export class ContenteditableComponent implements ControlValueAccessor, MatFormFieldControl<string>, OnInit, OnDestroy, DoCheck {

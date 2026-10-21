@@ -1,12 +1,12 @@
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { Component, OnInit, OnDestroy, HostListener, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, OnDestroy, HostListener, signal } from '@angular/core';
 import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 import { ActivatedRoute } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 
 import { TTS } from '@xeyqe/capacitor-tts';
 import { Storage } from '@ionic/storage-angular';
-import { IonicModule, Platform } from '@ionic/angular';
+import { IonicModule, Platform } from '@ionic/angular/lazy';
 import { ForegroundService, Importance } from '@capawesome-team/capacitor-android-foreground-service';
 
 import { MatIconModule } from '@angular/material/icon';
@@ -30,6 +30,7 @@ import { getDocument } from "pdfjs-dist/build/pdf.mjs";
 
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.Eager,
   selector: 'app-tts',
   templateUrl: './tts.page.html',
   styleUrls: ['./tts.page.scss'],

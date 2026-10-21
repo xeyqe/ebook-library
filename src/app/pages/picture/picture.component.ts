@@ -1,4 +1,4 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, EventEmitter, Input, OnChanges, OnInit, Output, Renderer2, SimpleChanges, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, EventEmitter, Input, OnChanges, OnInit, Output, Renderer2, SimpleChanges, ViewChild } from '@angular/core';
 import { Filesystem } from '@capacitor/filesystem';
 import { IonicSlides } from '@ionic/angular';
 import { Capacitor } from '@capacitor/core';
@@ -12,6 +12,7 @@ import { AllFilesAccess } from 'capacitor-all-files-access-permission';
 register();
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.Eager,
   selector: 'app-picture',
   templateUrl: './picture.component.html',
   styleUrls: ['./picture.component.scss'],

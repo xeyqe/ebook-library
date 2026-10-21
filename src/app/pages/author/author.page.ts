@@ -1,8 +1,8 @@
-import { Component, OnInit, ViewChild, ElementRef, OnDestroy, Renderer2, WritableSignal, signal, Signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, ViewChild, ElementRef, OnDestroy, Renderer2, WritableSignal, signal, Signal, computed } from '@angular/core';
 import { animate, AUTO_STYLE, state, style, transition, trigger } from '@angular/animations';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { IonContent, IonicModule } from '@ionic/angular';
+import { IonContent, IonicModule } from '@ionic/angular/lazy';
 import { NgClass, NgStyle } from '@angular/common';
 
 import { AllFilesAccess } from 'capacitor-all-files-access-permission';
@@ -41,6 +41,7 @@ import { NgsContenteditableModule } from '@ng-stack/contenteditable';
 
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.Eager,
   selector: 'app-author',
   templateUrl: './author.page.html',
   styleUrls: ['./author.page.scss'],

@@ -1,11 +1,12 @@
 import { NgModule } from '@angular/core';
 import { RouteReuseStrategy } from '@angular/router';
 import { HttpClientModule } from '@angular/common/http';
-import { BrowserModule, HammerModule } from '@angular/platform-browser';
+import { BrowserModule, EVENT_MANAGER_PLUGINS } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 import { IonicStorageModule } from '@ionic/storage-angular';
-import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
+import { IonicModule, IonicRouteStrategy } from '@ionic/angular/lazy';
+import { PinchEventPlugin } from './pinch-event.plugin';
 
 import { SQLite } from '@awesome-cordova-plugins/sqlite/ngx';
 import { WebView } from '@awesome-cordova-plugins/ionic-webview/ngx';
@@ -35,10 +36,10 @@ registerLocaleData(localeCs);
         AppRoutingModule,
         BrowserAnimationsModule,
         IonicStorageModule.forRoot(),
-        HammerModule,
         HttpClientModule,
     ],
     providers: [
+        { provide: EVENT_MANAGER_PLUGINS, useClass: PinchEventPlugin, multi: true },
         { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
         DatabaseService,
         DirectoryService,

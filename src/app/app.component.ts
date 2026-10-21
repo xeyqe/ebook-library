@@ -1,4 +1,4 @@
-import { Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { NavController, Platform, ToastController } from '@ionic/angular';
@@ -15,6 +15,7 @@ import { AllFilesAccess } from 'capacitor-all-files-access-permission';
 import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.Eager,
   selector: 'app-root',
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],

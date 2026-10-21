@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, OnDestroy, Renderer2, signal, WritableSignal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ViewChild, ElementRef, OnDestroy, Renderer2, signal, WritableSignal, viewChild } from '@angular/core';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DatePipe, NgClass } from '@angular/common';
@@ -9,7 +9,7 @@ import { first } from 'rxjs/operators';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem } from '@capacitor/filesystem';
 
-import { IonContent, IonicModule } from '@ionic/angular';
+import { IonContent, IonicModule } from '@ionic/angular/lazy';
 import { InAppBrowser } from '@awesome-cordova-plugins/in-app-browser/ngx';
 
 import { MatDialog } from '@angular/material/dialog';
@@ -39,6 +39,7 @@ import { DialogComponent } from 'src/app/material/dialog/dialog.component';
 import { ContenteditableComponent } from 'src/app/components/contenteditable/contenteditable.component';
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.Eager,
   selector: 'app-book',
   templateUrl: './book.page.html',
   styleUrls: ['./book.page.scss'],
