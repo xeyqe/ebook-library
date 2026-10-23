@@ -1,0 +1,13 @@
+node_modules/
+.angular/
+www/
+dist/
+out-tsc/
+coverage/
+android/
+ios/
+platforms/
+plugins/
+resources/
+src/assets/
+package-lock.json

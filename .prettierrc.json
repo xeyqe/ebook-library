@@ -1,7 +1,16 @@
 {
-	"bracketSameLine": true,
-	"singleAttributePerLine": false,
-	"printWidth": 120,
-	"tabWidth": 4,
-	"parser": "angular"
+  "bracketSameLine": true,
+  "singleAttributePerLine": false,
+  "printWidth": 120,
+  "tabWidth": 2,
+  "singleQuote": true,
+  "overrides": [
+    {
+      "files": "*.html",
+      "options": {
+        "parser": "angular",
+        "tabWidth": 4
+      }
+    }
+  ]
 }

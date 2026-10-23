@@ -4,7 +4,6 @@ const config: CapacitorConfig = {
   appId: 'io.ionic.starter',
   appName: 'ebook-library',
   webDir: 'www',
-  bundledWebRuntime: false,
   plugins: {
     SplashScreen: {
       launchShowDuration: 3000,
@@ -17,9 +16,9 @@ const config: CapacitorConfig = {
       splashFullScreen: true,
       splashImmersive: false,
       layoutName: 'splash_screen',
-      useDialog: false
+      useDialog: false,
     },
-  }
+  },
 };
 
 export default config;
