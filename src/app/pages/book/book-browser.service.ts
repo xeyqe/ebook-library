@@ -11,7 +11,7 @@ export class BookBrowserService {
       const browser = this.browser.create(url, '_blank', 'location=yes,hidden=false,beforeload=yes');
       const subscriptions = new Subscription();
       let completed = false;
-      let unregister = () => {};
+      let unregister = () => { };
       const finish = (data?: BookData, error?: unknown) => {
         if (completed) return;
         completed = true;
@@ -42,22 +42,28 @@ export class BookBrowserService {
                 document.querySelector('.show_hide_more')?.click();
                 document.querySelector('#moreBookDetails > a')?.click();
                 setTimeout(() => {
-                  const categories = Array.from(document.querySelectorAll('.category'));
-                  const category = label => categories.find(item => item.textContent === label);
+                  const details = [...document.querySelectorAll('.book-details__row')].map(it => {
+                      return {
+                          key: it.children?.[0]?.textContent,
+                          value: it.children?.[1]?.innerText?.trim(),
+                      }
+                  });
+                  const publisherEl = document.querySelector('[href*=nakladatelstvi]');
+                  const category = key => details.find(it => it.key === key)?.value;
                   const book = {
                     annotation: document.querySelector('.new2.odtop')?.textContent,
-                    genre: Array.from(document.querySelectorAll('.genre')).map(item => item.textContent).join(', '),
+                    genre: [...document.querySelectorAll('[href^="/zanr"]')]?.map(it => it.textContent)?.join(', ') || null,
                     img: document.querySelector('.kniha_img')?.src,
-                    language: category('Jazyk vydání:')?.nextElementSibling?.innerText,
-                    originalTitle: category('Originální název:')?.nextSibling?.textContent?.trim(),
+                    language: category('Jazyk vydání'),
+                    originalTitle: category('Originální název'),
                     length: document.querySelector('[itemprop=numberOfPages]')?.innerText,
-                    published: category('Vydáno:')?.nextElementSibling?.textContent,
-                    publisher: document.querySelector('[href*=nakladatelstvi]')?.innerText,
-                    title: document.querySelector('.oddown_five')?.innerText?.replace(' přehled', ''),
+                    published: publisherEl?.previousSibling?.previousSibling?.previousSibling?.textContent?.trim(),
+                    publisher: publisherEl?.innerText,
+                    title: document.querySelector('.oddown_zero')?.textContent,
                     translator: document.querySelector('[itemprop=translator]')?.innerText,
-                    ISBN: categories.find(item => item.textContent.includes('ISBN'))?.nextElementSibling?.innerText,
-                    serie: document.querySelector('[itemprop=bookEdition]')?.innerText,
-                    serieOrder: document.querySelector('[itemprop=bookEdition]')?.nextElementSibling?.textContent,
+                    ISBN: category('ISBN'),
+                    serie: document.querySelector('.book_detail_serie_info .inline a')?.textContent?.trim(),
+                    serieOrder: document.querySelector('.book_detail_serie_info .nowrap')?.firstElementChild?.textContent?.split('.')?.[0],
                   };
                   webkit.messageHandlers.cordova_iab.postMessage(JSON.stringify(book));
                 }, 1000);
