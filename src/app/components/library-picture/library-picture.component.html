@@ -1,0 +1,28 @@
+@if (editing() || imageControl().value) {
+    <div class="pic-container">
+        @if (editing()) {
+            <div class="bu-change-pic">
+                @if (imageControl().value && !imageControl().value.startsWith('/')) {
+                    <button type="button" mat-mini-fab (click)="downloadPicture()">
+                        <mat-icon>download_for_offline</mat-icon>
+                    </button>
+                }
+                @if (canRemovePicture()) {
+                    <button type="button" mat-mini-fab (click)="onRemovePic()">
+                        <mat-icon>remove_circle</mat-icon>
+                    </button>
+                }
+                <button type="button" mat-mini-fab (click)="onAddPicture()">
+                    <mat-icon>add_circle</mat-icon>
+                </button>
+            </div>
+            <app-picture
+                [imgPreLink]="dir.imgPreLink"
+                [images]="images()"
+                [dirPath]="directory()"
+                (changeEvent)="onPicChanged($event)" />
+        } @else {
+            <img height="auto" width="auto" [src]="onGetImgSrc(imageControl().value)" alt="img" />
+        }
+    </div>
+}

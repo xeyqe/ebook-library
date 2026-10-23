@@ -1,0 +1,112 @@
+<div>
+    @for (item of onlineBookList; track $index) {
+        <div class="online-item" (click)="downloadBookInfo(item)">
+            @if (item.img) {
+                <ion-avatar>
+                    <img [src]="item.img" alt="img" />
+                </ion-avatar>
+            }
+            <div class="ion-text-wrap">
+                <h2>{{ item.title }}</h2>
+                <p>{{ item.comment }}</p>
+            </div>
+        </div>
+    }
+
+    @for (item of onlineAllBooksList; track $index) {
+        <div class="online-item" (click)="downloadBookInfo(item)">
+            @if (item.img) {
+                <ion-avatar>
+                    <img [src]="item.img" alt="img" />
+                </ion-avatar>
+            }
+            <div class="ion-text-wrap">
+                <h2>{{ item.title }}</h2>
+                <p>{{ item.comment }}</p>
+            </div>
+        </div>
+    }
+    @for (item of onlineBookListLegie; track $index) {
+        <div class="legies">
+            @if (item.serie?.title) {
+                <h1 class="legies__serie">{{ item.serie.title }}</h1>
+            }
+            @for (book of item.books; track $index) {
+                <div class="legies__book" (click)="downloadBookInfo(book)">
+                    @if (book.title) {
+                        @if (book.title) {
+                            <h2>{{ book.title }}</h2>
+                        }
+                    }
+                    @if (book.review) {
+                        <span>{{ book.review }}</span>
+                    }
+                </div>
+            }
+        </div>
+    }
+    @if (onlineShortStoriesListLegie?.length) {
+        <h1 class="legies__serie">Short stories</h1>
+    }
+    @for (item of onlineShortStoriesListLegie; track $index) {
+        <div class="legies">
+            <div class="legies__book" (click)="downloadShortStoryInfo(item)">
+                @if (item.title) {
+                    <h2>{{ item.title }}</h2>
+                }
+                @if (item.review) {
+                    <span>{{ item.review }}</span>
+                }
+            </div>
+        </div>
+    }
+
+    @if (onlineBookListCBDB) {
+        <div class="cbdb">
+            @for (dt of cbdbGroups; track dt) {
+                <div>
+                    @for (book of onlineBookListCBDB[dt]; track $index) {
+                        <div (click)="downloadBookInfoCBDB(book.link)">
+                            @if (book.img) {
+                                <ion-avatar>
+                                    <img [src]="book.img" alt="img" />
+                                </ion-avatar>
+                            }
+                            @if ('flag' in book && book.flag) {
+                                <ion-avatar>
+                                    <img [src]="'flag' in book && book.flag" alt="img" />
+                                </ion-avatar>
+                            }
+                            @if (book.title) {
+                                <h2>{{ book.title }}</h2>
+                            }
+                            @if (book.author) {
+                                <span>{{ book.author }}</span>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+
+    @if (onlineBookListOfAuthorCBDB?.length) {
+        <div class="legies">
+            @for (book of onlineBookListOfAuthorCBDB; track $index) {
+                <div (click)="downloadBookInfoCBDB(book.link)">
+                    @if (book.img) {
+                        <ion-avatar>
+                            <img [src]="book.img" alt="img" />
+                        </ion-avatar>
+                    }
+                    @if (book.title) {
+                        <h2>{{ book.title }}</h2>
+                    }
+                    @if (book.rating) {
+                        <span>{{ book.rating }}</span>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>

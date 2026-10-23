@@ -1,16 +1,19 @@
 :host {
   display: block;
 }
+
 .pic-container {
   position: relative;
+
   img {
     display: flex;
     margin: 1rem auto;
   }
 }
+
 .bu-change-pic {
   position: absolute;
-  top: 0%;
-  left: 0%;
+  top: 0;
+  left: 0;
   z-index: 10;
 }

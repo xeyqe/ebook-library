@@ -28,12 +28,16 @@
 <div class="spaced" #content>
     @if (author) {
         <div>
-            <app-author-picture
-                [form]="authorForm"
-                [path]="author.path"
+            <app-library-picture
+                [imageControl]="authorForm.controls.img"
+                [owner]="{
+                    type: 'author',
+                    path: author.path,
+                    name: authorForm.controls.name.value,
+                    surname: authorForm.controls.surname.value,
+                }"
                 [images]="suggestions.img"
                 [editing]="isEditing()"
-                [imagePrefix]="imgPreLink"
                 (operationFinished)="scrollToContent()" />
             <app-author-details [form]="authorForm" [suggestions]="suggestions" [editing]="isEditing()" />
             <app-author-books

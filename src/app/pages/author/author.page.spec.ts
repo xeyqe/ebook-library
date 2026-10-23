@@ -13,7 +13,7 @@ import { AUTHOR, AUTHORSBOOKS } from 'src/app/services/interfaces';
 import { WebScraperService } from 'src/app/services/web-scraper.service';
 import { AuthorComponent } from './author.page';
 import { AuthorDetailsComponent } from './components/author-details.component';
-import { AuthorPictureComponent } from './components/author-picture.component';
+import { LibraryPictureComponent } from 'src/app/components/library-picture/library-picture.component';
 import { AuthorBooksComponent } from './components/author-books.component';
 import { AuthorOnlineSearchComponent } from './components/author-online-search.component';
 import { NonusedPicsService } from './nonused-pics.service';
@@ -79,7 +79,7 @@ describe('AuthorComponent', () => {
         NonusedPicsService,
       ],
     });
-    TestBed.overrideComponent(AuthorPictureComponent, { set: { template: '', imports: [] } });
+    TestBed.overrideComponent(LibraryPictureComponent, { set: { template: '', imports: [] } });
     page = TestBed.runInInjectionContext(() => new AuthorComponent());
   });
 
@@ -211,7 +211,7 @@ describe('AuthorComponent', () => {
     search.dataSelected.emit({ data: { cbdbId: 'downloaded-id' }, fields: ['cbdbId'] });
     expect(component.authorForm.controls.cbdbId.value).toBe('downloaded-id');
 
-    const picture = fixture.debugElement.query(By.directive(AuthorPictureComponent)).componentInstance;
+    const picture = fixture.debugElement.query(By.directive(LibraryPictureComponent)).componentInstance;
     picture.onPicChanged('/ebook-library/selected.jpg');
     await component.onUpdateAuthor();
     expect(database.updateAuthor).toHaveBeenCalledWith(
@@ -241,12 +241,16 @@ describe('AuthorComponent', () => {
     await initialize();
     vi.spyOn(console, 'error').mockImplementation(() => {});
     files.removeFile.mockRejectedValue(new Error('File is in use'));
-    const fixture = TestBed.createComponent(AuthorPictureComponent);
-    fixture.componentRef.setInput('form', page.authorForm);
-    fixture.componentRef.setInput('path', author.path);
+    const fixture = TestBed.createComponent(LibraryPictureComponent);
+    fixture.componentRef.setInput('imageControl', page.authorForm.controls.img);
+    fixture.componentRef.setInput('owner', {
+      type: 'author',
+      path: author.path,
+      name: author.name,
+      surname: author.surname,
+    });
     fixture.componentRef.setInput('images', [author.img]);
     fixture.componentRef.setInput('editing', true);
-    fixture.componentRef.setInput('imagePrefix', 'file://');
     await (fixture.componentInstance as any).onRemovePic();
     expect(page.authorForm.controls.img.value).toBe(author.img);
   });

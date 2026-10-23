@@ -33,7 +33,7 @@ import {
   createAuthorSuggestions,
 } from './author-form';
 import { AuthorDetailsComponent } from './components/author-details.component';
-import { AuthorPictureComponent } from './components/author-picture.component';
+import { LibraryPictureComponent } from 'src/app/components/library-picture/library-picture.component';
 import { AuthorBooksComponent, AuthorSeries } from './components/author-books.component';
 import { AuthorOnlineSearchComponent } from './components/author-online-search.component';
 
@@ -46,7 +46,7 @@ import { AuthorOnlineSearchComponent } from './components/author-online-search.c
     MatButtonModule,
     MatIconModule,
     AuthorDetailsComponent,
-    AuthorPictureComponent,
+    LibraryPictureComponent,
     AuthorBooksComponent,
     AuthorOnlineSearchComponent,
   ],
@@ -61,7 +61,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly workingServ = inject(BusyService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly picture = viewChild(AuthorPictureComponent);
+  private readonly picture = viewChild(LibraryPictureComponent);
   private readonly content = viewChild<ElementRef<HTMLElement>>('content');
   protected readonly onlineSearch = viewChild(AuthorOnlineSearchComponent);
   protected readonly bookList = viewChild(AuthorBooksComponent);

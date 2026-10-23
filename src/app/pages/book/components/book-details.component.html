@@ -1,0 +1,151 @@
+<div class="flexed">
+    @for (field of fields; track field.key) {
+        @if (form().controls[field.key].value || editing()) {
+            <div class="clm">
+                <mat-form-field subscriptSizing="dynamic" (click)="editor.focus()">
+                    <mat-label class="red">{{ field.label }}</mat-label>
+                    <app-contenteditable
+                        #editor
+                        [formControl]="form().controls[field.key]"
+                        [class]="textColor()"
+                        (_onFocus)="onFocus(field.key)"
+                        (_onBlur)="onBlur()" />
+                </mat-form-field>
+                @if (editing() && focusedOn === field.key && suggestions()[field.key].length) {
+                    <div class="overflowed">
+                        @for (value of suggestions()[field.key]; track $index) {
+                            @if (form().controls[field.key].value !== value) {
+                                <mat-option
+                                    class="autocomplete-option"
+                                    [value]="value"
+                                    (onSelectionChange)="onInput(field.key, value)"
+                                    >{{ value }}</mat-option
+                                >
+                            }
+                        }
+                    </div>
+                }
+            </div>
+        }
+    }
+    @if (form().controls.language.value || editing()) {
+        <mat-form-field subscriptSizing="dynamic">
+            <mat-label class="red">Language</mat-label>
+            <mat-select
+                interface="popover"
+                [formControl]="form().controls.language"
+                [class]="editing() ? 'white' : 'gray'">
+                <mat-option value="cs-CZ">Česky</mat-option>
+                <mat-option value="en-US">English</mat-option>
+                <mat-option value="de-DE">Deutsch</mat-option>
+                <mat-option value="ru-RU">русский</mat-option>
+            </mat-select>
+        </mat-form-field>
+    }
+
+    @if (form().controls.translator.value || editing()) {
+        <div class="clm">
+            <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
+                <mat-label class="red">Translator</mat-label>
+                <app-contenteditable
+                    #appContenteditable
+                    [formControl]="form().controls.translator"
+                    [class]="editing() ? 'white' : 'gray'"
+                    (_onFocus)="onFocus('translator')"
+                    (_onBlur)="onBlur()">
+                </app-contenteditable>
+            </mat-form-field>
+            @if (editing() && focusedOn === 'translator' && suggestions().translator.length) {
+                <div class="overflowed">
+                    @for (translator of suggestions().translator; track $index) {
+                        @if (form().controls.translator.value !== translator) {
+                            <mat-option
+                                class="autocomplete-option"
+                                [value]="translator"
+                                (onSelectionChange)="onInput('translator', translator)">
+                                {{ translator }}
+                            </mat-option>
+                        }
+                    }
+                </div>
+            }
+        </div>
+    }
+
+    @if (form().controls.length.value || editing()) {
+        <div class="clm">
+            <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
+                <mat-label class="red">Pages</mat-label>
+                <app-contenteditable
+                    #appContenteditable
+                    [formControl]="form().controls.length"
+                    [class]="editing() ? 'white' : 'gray'"
+                    (_onFocus)="onFocus('length')"
+                    (_onBlur)="onBlur()">
+                </app-contenteditable>
+            </mat-form-field>
+            @if (editing() && focusedOn === 'length' && suggestions().length?.length) {
+                <div class="overflowed">
+                    @for (length of suggestions().length; track $index) {
+                        @if (form().controls.length.value !== length) {
+                            <mat-option
+                                class="autocomplete-option"
+                                [value]="length"
+                                (onSelectionChange)="onInput('length', length)">
+                                {{ length }}
+                            </mat-option>
+                        }
+                    }
+                </div>
+            }
+        </div>
+    }
+
+    @if (form().controls.progress.value) {
+        <mat-form-field subscriptSizing="dynamic">
+            <mat-label class="red">Progress</mat-label>
+            <app-contenteditable class="gray" [formControl]="form().controls.progress" />
+        </mat-form-field>
+    }
+    @for (date of dates; track date.key) {
+        @if (form().controls[date.key].value) {
+            <mat-form-field subscriptSizing="dynamic">
+                <mat-label class="red">{{ date.label }}</mat-label>
+                <app-contenteditable
+                    disabled
+                    class="gray"
+                    [value]="form().controls[date.key].value | date: 'd.M.yy, H:mm:ss'" />
+            </mat-form-field>
+        }
+    }
+    @if (form().controls.rating.value || editing()) {
+        <mat-form-field subscriptSizing="dynamic">
+            <mat-label class="red">Rating</mat-label>
+            <mat-select
+                interface="popover"
+                [formControl]="form().controls.rating"
+                [class]="editing() ? 'white' : 'gray'">
+                <mat-option [value]="0">0</mat-option>
+                <mat-option [value]="1">1</mat-option>
+                <mat-option [value]="2">2</mat-option>
+                <mat-option [value]="3">3</mat-option>
+                <mat-option [value]="4">4</mat-option>
+                <mat-option [value]="5">5</mat-option>
+            </mat-select>
+        </mat-form-field>
+    }
+</div>
+@if (form().controls.annotation.value || editing()) {
+    <div class="marged biogr">
+        <mat-label class="red">Annotation</mat-label>
+        <div (click)="onReduceHeight()">
+            <p
+                class="contenteditable"
+                [editable]="editing()"
+                [formControl]="form().controls.annotation"
+                matInput
+                [class]="editing() ? 'white' : 'gray'"
+                [class.reduced]="form().controls.annotation.disabled && annotationReduced"></p>
+        </div>
+    </div>
+}
