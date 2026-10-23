@@ -1,6 +1,6 @@
 <div class="header">
-    @if (ready2editing()) {
-        <button mat-mini-fab (click)="deleteAuthor()">
+    @if (isEditing()) {
+        <button type="button" mat-mini-fab (click)="deleteAuthor()">
             <mat-icon>delete</mat-icon>
         </button>
     } @else {
@@ -8,21 +8,17 @@
         <h2>author</h2>
     }
     <div class="col text-right">
-        @if (authorChanged && ready2editing()) {
-            <button mat-mini-fab (click)="onUpdateAuthor()">
+        @if (authorChanged && isEditing()) {
+            <button type="button" mat-mini-fab (click)="onUpdateAuthor()">
                 <mat-icon>save</mat-icon>
             </button>
         }
-        <button mat-mini-fab (click)="onEditable()">
-            <mat-icon>{{ ready2editing() ? "clear" : "edit" }}</mat-icon>
+        <button type="button" mat-mini-fab [disabled]="!author" (click)="onEditable()">
+            <mat-icon>{{ isEditing() ? 'clear' : 'edit' }}</mat-icon>
         </button>
-        <!-- @if (ready2editing()) {
-            <button mat-mini-fab (click)="getFromWikipedia()">
-                W
-            </button>
-        } -->
-        @if (ready2editing() && showAble) {
-            <button mat-mini-fab (click)="onGetAuthor()">
+
+        @if (isEditing() && showOnlineSearch) {
+            <button type="button" mat-mini-fab (click)="onlineSearch()?.search()">
                 <mat-icon>add_circle</mat-icon>
             </button>
         }
@@ -30,391 +26,31 @@
 </div>
 
 <div class="spaced" #content>
-    @if (author && authorForm) {
-        <form [formGroup]="authorForm">
-            <div class="pic-container">
-                @if (ready2editing()) {
-                    <div class="bu-change-pic">
-                        @if (onDownloadBuVisible(authorForm.controls.img.value)) {
-                            <button mat-mini-fab (click)="onDownloadPicture()">
-                                <mat-icon>download_for_offline</mat-icon>
-                            </button>
-                        }
-                        @if (authorForm.controls.img.value?.at(0) === "/") {
-                            <button mat-mini-fab (click)="onRemovePic()">
-                                <mat-icon>remove_circle</mat-icon>
-                            </button>
-                        }
-                        <button mat-mini-fab (click)="onAddPicture()">
-                            <mat-icon>add_circle</mat-icon>
-                        </button>
-                    </div>
-                    <app-picture
-                        [imgPreLink]="imgPreLink"
-                        [images]="listsOfValues.img"
-                        [dirPath]="author.path"
-                        (changeEvent)="onPicChanged($event)"
-                        #pictureC>
-                    </app-picture>
-                }
-
-                @if (authorForm.controls.img.value && !ready2editing()) {
-                    <img height="auto" width="auto" [src]="onGetImgSrc(authorForm.controls.img.value)" alt="img" />
-                }
-            </div>
-
-            <div class="flexed" #contEl>
-                @for (key of ["name", "surname", "pseudonym", "nationality", "birth", "death"]; track $index) {
-                    @if (authorForm.controls[key].value || ready2editing()) {
-                        <!-- <div class="clm">
-                            <mat-form-field subscriptSizing="dynamic" [id]="key">
-                                <mat-label class="red" position="floating">{{ key }}</mat-label>
-                                <input
-                                    type="text"
-                                    matInput
-                                    [matAutocomplete]="auto"
-                                    [formControl]="authorForm.controls[key]"
-                                    [ngClass]="ready2editing ? 'white' : 'gray'" />
-                                <mat-autocomplete #auto="matAutocomplete" panelWidth="auto">
-                                    @for (val of listsOfValues[key]; track $index) {
-                                        @if (authorForm.controls[key].value !== val) {
-                                            <mat-option [value]="val">
-                                                {{ val }}
-                                            </mat-option>
-                                        }
-                                    }
-                                </mat-autocomplete>
-                            </mat-form-field>
-                        </div> -->
-                        <div class="clm">
-                            <mat-form-field subscriptSizing="dynamic">
-                                <mat-label class="red" position="floating">{{key}}</mat-label>
-                                <app-contenteditable
-                                    [formControl]="authorForm.controls[key]"
-                                    [ngClass]="contEdClass()"
-                                    (_onFocus)="onFocus(key)"
-                                    (_onBlur)="onBlur()">
-                                </app-contenteditable>
-                            </mat-form-field>
-                            @if (ready2editing() && focusedOn === key && listsOfValues[key]?.length) {
-                                <div class="overflowed">
-                                    @for (val of listsOfValues[key]; track $index) {
-                                        @if (authorForm.controls[key].value !== val) {
-                                            <mat-option
-                                                class="autocomplete-option"
-                                                [value]="val"
-                                                (onSelectionChange)="onInput(key, val)">
-                                                {{ val }}
-                                            </mat-option>
-                                        }
-                                    }
-                                </div>
-                            }
-                        </div>
-                    }
-                }
-                <!-- @if (authorForm.controls.name.value || ready2editing()) {
-                    <div class="clm">
-                        <mat-form-field subscriptSizing="dynamic">
-                            <mat-label class="red" position="floating">Name</mat-label>
-                            <app-contenteditable
-                                [formControl]="authorForm.controls.name"
-                                [ngClass]="contEdClass()"
-                                (_onFocus)="onFocus('name')"
-                                (_onBlur)="onBlur()">
-                            </app-contenteditable>
-                        </mat-form-field>
-                        @if (ready2editing() && focusedOn === "name" && listsOfValues.name?.length) {
-                            <div class="overflowed">
-                                @for (name of listsOfValues.name; track $index) {
-                                    @if (authorForm.controls.name.value !== name) {
-                                        <mat-option
-                                            class="autocomplete-option"
-                                            [value]="name"
-                                            (onSelectionChange)="onInput('name', name)">
-                                            {{ name }}
-                                        </mat-option>
-                                    }
-                                }
-                            </div>
-                        }
-                    </div>
-                }
-                @if (authorForm.controls.surname.value || ready2editing()) {
-                    <div class="clm">
-                        <mat-form-field subscriptSizing="dynamic">
-                            <mat-label class="red">Surname</mat-label>
-                            <app-contenteditable
-                                [formControl]="authorForm.controls.surname"
-                                [ngClass]="contEdClass()"
-                                (_onFocus)="onFocus('surname')"
-                                (_onBlur)="onBlur()">
-                            </app-contenteditable>
-                        </mat-form-field>
-                        @if (ready2editing() && focusedOn === "surname" && listsOfValues.surname?.length) {
-                            <div class="overflowed">
-                                @for (surname of listsOfValues.surname; track $index) {
-                                    @if (authorForm.controls.surname.value !== surname) {
-                                        <mat-option
-                                            class="autocomplete-option"
-                                            [value]="surname"
-                                            (onSelectionChange)="onInput('surname', surname)">
-                                            {{ surname }}
-                                        </mat-option>
-                                    }
-                                }
-                            </div>
-                        }
-                    </div>
-                } -->
-
-                <!-- @if (authorForm.controls.pseudonym.value || ready2editing()) {
-                    <div class="clm">
-                        <mat-form-field subscriptSizing="dynamic" id="pseudonym">
-                            <mat-label class="red">Pseudonym</mat-label>
-                            <app-contenteditable
-                                [formControl]="authorForm.controls.pseudonym"
-                                [ngClass]="contEdClass()"
-                                (_onFocus)="onFocus('pseudonym')"
-                                (_onBlur)="onBlur()">
-                            </app-contenteditable>
-                        </mat-form-field>
-                        @if (ready2editing() && focusedOn === "pseudonym" && listsOfValues.pseudonym?.length) {
-                            <div class="overflowed">
-                                @for (pseudonym of listsOfValues.pseudonym; track $index) {
-                                    @if (authorForm.controls.pseudonym.value !== pseudonym) {
-                                        <mat-option
-                                            class="autocomplete-option"
-                                            [value]="pseudonym"
-                                            (onSelectionChange)="onInput('pseudonym', pseudonym)">
-                                            {{ pseudonym }}
-                                        </mat-option>
-                                    }
-                                }
-                            </div>
-                        }
-                    </div>
-                } -->
-
-                <!-- @if (authorForm.controls.nationality.value || ready2editing()) {
-                    <div class="clm">
-                        <mat-form-field subscriptSizing="dynamic">
-                            <mat-label class="red" position="floating">Nationality</mat-label>
-                            <app-contenteditable
-                                [formControl]="authorForm.controls.nationality"
-                                [ngClass]="contEdClass()"
-                                (_onFocus)="onFocus('nationality')"
-                                (_onBlur)="onBlur()">
-                            </app-contenteditable>
-                        </mat-form-field>
-                        @if (ready2editing() && focusedOn === "nationality" && listsOfValues.nationality?.length) {
-                            <div class="overflowed">
-                                @for (nationality of listsOfValues.nationality; track $index) {
-                                    @if (authorForm.controls.nationality.value !== nationality) {
-                                        <mat-option
-                                            class="autocomplete-option"
-                                            [value]="nationality"
-                                            (onSelectionChange)="onInput('nationality', nationality)">
-                                            {{ nationality }}
-                                        </mat-option>
-                                    }
-                                }
-                            </div>
-                        }
-                    </div>
-                } -->
-
-                <!-- @if (authorForm.controls.birth.value || ready2editing()) {
-                    <div class="clm">
-                        <mat-form-field subscriptSizing="dynamic" class="reduced-width">
-                            <mat-label class="red" position="floating">Birth</mat-label>
-                            <app-contenteditable
-                                [formControl]="authorForm.controls.birth"
-                                [ngClass]="contEdClass()"
-                                (_onFocus)="onFocus('birth')"
-                                (_onBlur)="onBlur()">
-                            </app-contenteditable>
-                        </mat-form-field>
-                        @if (ready2editing() && focusedOn === "birth" && listsOfValues.birth?.length) {
-                            <div class="overflowed">
-                                @for (birth of listsOfValues.birth; track $index) {
-                                    @if (authorForm.controls.birth.value !== birth) {
-                                        <mat-option
-                                            class="autocomplete-option"
-                                            [value]="birth"
-                                            (onSelectionChange)="onInput('birth', birth)">
-                                            {{ birth }}
-                                        </mat-option>
-                                    }
-                                }
-                            </div>
-                        }
-                    </div>
-                } -->
-
-                <!-- @if (authorForm.controls.death.value || ready2editing()) {
-                    <div class="clm">
-                        <mat-form-field subscriptSizing="dynamic" class="reduced-width">
-                            <mat-label class="red" position="floating">Death</mat-label>
-                            <app-contenteditable
-                                [formControl]="authorForm.controls.death"
-                                [ngClass]="contEdClass()"
-                                (_onFocus)="onFocus('death')"
-                                (_onBlur)="onBlur()">
-                            </app-contenteditable>
-                        </mat-form-field>
-                        @if (ready2editing() && focusedOn === "death" && listsOfValues.death?.length) {
-                            <div class="overflowed">
-                                @for (death of listsOfValues.death; track $index) {
-                                    @if (authorForm.controls.death.value !== death) {
-                                        <mat-option
-                                            class="autocomplete-option"
-                                            [value]="death"
-                                            (onSelectionChange)="onInput('death', death)">
-                                            {{ death }}
-                                        </mat-option>
-                                    }
-                                }
-                            </div>
-                        }
-                    </div>
-                } -->
-            </div>
-
-            @if (authorForm.controls.biography.value || ready2editing()) {
-                <div class="marged collapsable" [@collapse2]="authorForm.controls.biography.disabled && !_textAreaReduced">
-                    <mat-label class="red">Biography</mat-label>
-                    <div (click)="onReduceHeight()">
-                        <p
-                            class="contenteditable"
-                            [editable]="ready2editing()"
-                            formControlName="biography"
-                            matInput
-                            [class]="contEdClass()"></p>
-                    </div>
-                </div>
-            }
-
-            <!-- @if (!wikiOutputBoolean) { -->
-            @for (serie of seriesCont; track $index) {
-                <div class="serie-cont">
-                    <div class="serie-cont__name" (click)="serie.open = !serie.open">{{ serie.name }}</div>
-                    <div class="serie-cont__books" [@collapse]="serie.open">
-                        @for (book of serie.books; track book) {
-                            <div [routerLink]="['/book', book.id]" [ngStyle]="{ order: book.serieOrder }">
-                                <span>{{ book.serieOrder }}</span>
-                                <ion-avatar>
-                                    <img [src]="onGetImgSrc(book.img)" alt="img" />
-                                </ion-avatar>
-                                <mat-label class="book-title">
-                                    <div class="ion-text-wrap">
-                                        <h2>{{ book.title }}</h2>
-                                    </div>
-                                    @if (book.progress) {
-                                        <mat-progress-bar
-                                            mode="determinate"
-                                            [value]="book.progress | percent2: book.progress">
-                                        </mat-progress-bar>
-                                    }
-                                </mat-label>
-                            </div>
-                        }
-                    </div>
-                </div>
-            }
-            @for (book of books; track $index) {
-                <div class="book-cont" [routerLink]="['/book', book.id]">
-                    @if (book.img) {
-                        <ion-avatar>
-                            <img [src]="onGetImgSrc(book.img)" alt="img" />
-                        </ion-avatar>
-                    }
-                    <div>
-                        <h2>{{ book.title }}</h2>
-                        @if (book.progress) {
-                            <mat-progress-bar mode="determinate" [value]="book.progress | percent2: book.progress">
-                            </mat-progress-bar>
-                        }
-                    </div>
-                </div>
-            }
-            <!-- } -->
-
-            <!-- @if (wikiOutputBoolean) {
-                    <div #target1>
-                        <ion-list>
-                            @for (output of fromWiki; track output) {
-                                <ion-item button (click)="onSetWikipediaData(output)">
-                                    <ion-grid>
-                                        <ion-row><span>{{ output.title }}</span></ion-row>
-                                        <ion-row>
-                                            <p>
-                                                <small> {{ onUnhtml(output.snippet) }}...</small>
-                                            </p>
-                                        </ion-row>
-                                    </ion-grid>
-                                </ion-item>
-                            }
-                        </ion-list>
-                    </div>
-                } -->
-
-            @if (ready2editing()) {
-                <div #target2>
-                    @for (item of onlineAuthorsList; track item) {
-                        <div class="online-item" (click)="onDownloadAuthorInfo(item)">
-                            @if (item.img) {
-                                <ion-avatar>
-                                    <img [src]="item.img" alt="img" />
-                                </ion-avatar>
-                            }
-                            <div class="ion-text-wrap">
-                                @if (item.name || $any(item).surname) {
-                                    <h2>{{ (item.name || "") + " " + ($any(item).surname || "") }}</h2>
-                                }
-                                @if (item.year) {
-                                    <p>{{ item.year }}</p>
-                                }
-                            </div>
-                        </div>
-                    }
-                    @for (item of onlineAuthorsListLegie; track item) {
-                        <div class="online-item" (click)="onDownloadAuthorInfo(item)">
-                            <div class="ion-text-wrap">
-                                @if (item.name || $any(item).surname) {
-                                    <h2>{{ (item.name || "") + " " + ($any(item).surname || "") }}</h2>
-                                }
-                                @if (item.year) {
-                                    <p>{{ item.year }}</p>
-                                }
-                            </div>
-                        </div>
-                    }
-                    @for (item of onlineAuthorsListCBDB; track item) {
-                        <div class="online-item" (click)="onDownloadAuthorInfoCBDB(item.cbdbId)">
-                            @if (item.img) {
-                                <ion-avatar>
-                                    <img [src]="item.img" alt="img" />
-                                </ion-avatar>
-                            }
-                            <div class="ion-text-wrap">
-                                @if (item.name) {
-                                    <h2>{{ item.name }}</h2>
-                                }
-                                @if (item.date) {
-                                    <p>{{ item.date }}</p>
-                                }
-                            </div>
-                        </div>
-                    }
-                </div>
-            }
-        </form>
+    @if (author) {
+        <div>
+            <app-author-picture
+                [form]="authorForm"
+                [path]="author.path"
+                [images]="suggestions.img"
+                [editing]="isEditing()"
+                [imagePrefix]="imgPreLink"
+                (operationFinished)="scrollToContent()" />
+            <app-author-details [form]="authorForm" [suggestions]="suggestions" [editing]="isEditing()" />
+            <app-author-books
+                [author]="author"
+                [books]="books"
+                [series]="series"
+                [imagePrefix]="imgPreLink"
+                (bookAdded)="onBookAdded($event)" />
+            <app-author-online-search
+                [hidden]="!isEditing()"
+                [form]="authorForm"
+                (dataSelected)="onOnlineData($event)" />
+        </div>
     }
-
-    @if (!ready2editing()) {
+    @if (!isEditing()) {
         <div class="ad-bu-cont">
-            <button mat-mini-fab (click)="onAddBook()">
+            <button type="button" mat-mini-fab [disabled]="!author" (click)="bookList()?.addBooks()">
                 <mat-icon>add_circle</mat-icon>
             </button>
         </div>

@@ -1,0 +1,48 @@
+<div>
+    @for (item of onlineAuthors; track item) {
+        <div class="online-item" (click)="onDownloadAuthorInfo(item)">
+            @if (item.img) {
+                <ion-avatar>
+                    <img [src]="item.img" alt="img" />
+                </ion-avatar>
+            }
+            <div class="ion-text-wrap">
+                @if (item.name || item.surname) {
+                    <h2>{{ (item.name || '') + ' ' + (item.surname || '') }}</h2>
+                }
+                @if (item.year) {
+                    <p>{{ item.year }}</p>
+                }
+            </div>
+        </div>
+    }
+    @for (item of legieAuthors; track item) {
+        <div class="online-item" (click)="onDownloadAuthorInfo(item)">
+            <div class="ion-text-wrap">
+                @if (item.name || item.surname) {
+                    <h2>{{ (item.name || '') + ' ' + (item.surname || '') }}</h2>
+                }
+                @if (item.year) {
+                    <p>{{ item.year }}</p>
+                }
+            </div>
+        </div>
+    }
+    @for (item of cbdbAuthors; track item) {
+        <div class="online-item" (click)="onDownloadAuthorInfoCBDB(item.cbdbId)">
+            @if (item.img) {
+                <ion-avatar>
+                    <img [src]="item.img" alt="img" />
+                </ion-avatar>
+            }
+            <div class="ion-text-wrap">
+                @if (item.name) {
+                    <h2>{{ item.name }}</h2>
+                }
+                @if (item.date) {
+                    <p>{{ item.date }}</p>
+                }
+            </div>
+        </div>
+    }
+</div>

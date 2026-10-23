@@ -1,0 +1,47 @@
+:host {
+  display: block;
+}
+.book-title {
+  margin-left: 1rem;
+  width: 100%;
+}
+.serie-cont {
+  border-bottom: thin double gray;
+  border-top: thin double gray;
+
+  &__books {
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+
+    & > div {
+      display: flex;
+      width: 100%;
+      flex-direction: row;
+      align-items: center;
+      flex-shrink: 0;
+      margin-bottom: 0.5rem;
+
+      & > span {
+        margin: auto 0.5rem;
+        font-size: 1.5rem;
+      }
+    }
+  }
+
+  &__name {
+    text-align: center;
+    margin: 1rem auto;
+    font-size: 1.5rem;
+  }
+}
+.book-cont {
+  display: flex;
+  margin: 0.5rem;
+  column-gap: 0.5rem;
+  align-items: center;
+
+  & > div {
+    width: 100%;
+  }
+}
