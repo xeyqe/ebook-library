@@ -1,190 +1,184 @@
-<!-- @if (!htmlData.inBg) { -->
-    <div class="cont">
-        <div class="header">
-            <div class="header__name">
-                <span>{{ htmlData.authorName }}</span>
-                <span>{{ htmlData.title }}</span>
-            </div>
-            @if (spritzObj.isSpritz) {
-                <div class="header__speed">
-                    <button mat-mini-fab (click)="changeSpeed('-')">
-                        <mat-icon>remove</mat-icon>
-                    </button>
-                    <span> {{ spritzObj.isSpritz ? htmlData.speed : htmlData.speed / 10 }} </span>
-                    <button mat-mini-fab (click)="changeSpeed('+')">
-                        <mat-icon>add</mat-icon>
-                    </button>
-                </div>
-            }
+<div class="cont">
+    <div class="header">
+        <div class="header__name">
+            <span>{{ readingDetails.authorName }}</span>
+            <span>{{ readingDetails.title }}</span>
         </div>
-
-        @if (spritzObj.isSpritz) {
-            <ion-content (pinchout)="increaseFontSize()" (pinchin)="decreaseFontSize()">
-                <div
-                    class="spritz-cont"
-                    [style.fontSize]="spritzObj.fontSize"
-                    [style.lineHeight]="spritzObj.fontSize"
-                    [style.height]="spritzObj.contHeight">
-                    <ion-row>
-                        <ion-col size="2"></ion-col>
-                        <ion-col size="10">
-                            <ion-label class="red" style="float: left">|</ion-label>
-                        </ion-col>
-                    </ion-row>
-
-                    <ion-row [style.height]="spritzObj.fontSize">
-                        <ion-col class="col" size="2">
-                            <ion-label class="right">{{ spritzObj.preText }}</ion-label>
-                        </ion-col>
-
-                        <ion-col class="col flexed" size="10">
-                            <div>
-                                <ion-label class="red">{{ spritzObj.redText }}</ion-label>
-                                <ion-label>{{ spritzObj.postTextWhite }}</ion-label>
-                            </div>
-                            <ion-label class="overflowed">{{ spritzObj.postTextGray }}</ion-label>
-                        </ion-col>
-                    </ion-row>
-
-                    <ion-row>
-                        <ion-col size="2"></ion-col>
-                        <ion-col size="10">
-                            <ion-label class="red" style="float: left">|</ion-label>
-                        </ion-col>
-                    </ion-row>
-                </div>
-
-                <div class="mrgt" [style.fontSize]="spritzObj.fontSize" [style.lineHeight]="spritzObj.fontSize">
-                    {{ spritzObj.sentense }}
-                </div>
-                <!-- <ion-textarea readonly="true" class="mrgt" [style.fontSize]="spritzObj.fontSize"
-                    [style.lineHeight]="spritzObj.fontSize">
-                    {{ spritzObj.sentense }}
-                </ion-textarea> -->
-            </ion-content>
-        }
-        <div>
-            @if (myForm && !spritzObj.isSpritz) {
-                <form [formGroup]="myForm">
-                    <div class="flexed {{ isPortrait ? 'vert' : 'horiz' }}">
-                        <div class="ranges">
-                            <mat-chip-listbox>
-                                <mat-chip-option (click)="onChangeAudioFocus()" [selected]="audioFocus">
-                                    Audio focus
-                                </mat-chip-option>
-                            </mat-chip-listbox>
-
-                            <div class="slider-cont">
-                                <mat-icon>speed</mat-icon>
-                                <mat-slider [max]="4" [min]="0.5" [step]="0.1" [discrete]="true" [showTickMarks]="true">
-                                    <input
-                                        matSliderThumb
-                                        [value]="speakParams.rate"
-                                        (dragEnd)="onRateChange($event.value)" />
-                                </mat-slider>
-                            </div>
-
-                            <div class="slider-cont">
-                                <mat-icon>volume_up</mat-icon>
-                                <mat-slider [max]="1" [min]="0" [step]="0.1" [discrete]="true" [showTickMarks]="true">
-                                    <input
-                                        matSliderThumb
-                                        [value]="speakParams.volume"
-                                        (dragEnd)="onVolumeChange($event.value)" />
-                                </mat-slider>
-                            </div>
-                        </div>
-
-                        <div class="fields">
-                            @if (speechObj.engines) {
-                                <mat-chip class="primary-bg">
-                                    <mat-select
-                                        [formControl]="myForm.controls.engine"
-                                        class="hidden-arrow"
-                                        panelWidth="">
-                                        @for (it of speechObj?.engines || []; track $index) {
-                                            <mat-option [value]="it.name">{{ it.label }}</mat-option>
-                                        }
-                                    </mat-select>
-                                </mat-chip>
-                            }
-
-                            @if (speechObj.language) {
-                                <mat-chip class="primary-bg">
-                                    <mat-select
-                                        [formControl]="myForm.controls.language"
-                                        class="hidden-arrow"
-                                        panelWidth="">
-                                        @for (it of speechObj?.languages || []; track $index) {
-                                            <mat-option [value]="it">{{ it }}</mat-option>
-                                        }
-                                    </mat-select>
-                                </mat-chip>
-                            }
-
-                            @if (
-                                speechObj.voices && speechObj.language && speechObj.voices[speechObj.language]?.length
-                            ) {
-                                <mat-chip class="primary-bg">
-                                    <mat-select
-                                        [formControl]="myForm.controls.voice"
-                                        class="hidden-arrow"
-                                        panelWidth="">
-                                        @for (it of speechObj?.voices[speechObj.language] || []; track $index) {
-                                            <mat-option [value]="it.voiceURI">{{ it.voiceURI }}</mat-option>
-                                        }
-                                    </mat-select>
-                                </mat-chip>
-                            }
-                        </div>
-                    </div>
-                </form>
-            }
-
-            <div class="flexed {{ isPortrait ? 'vert' : 'horiz' }}">
-                <div class="progress-cont">
-                    <ion-label class="white">{{ progress() || 0 | number: "1.0-0" : "cs" }}</ion-label>
-
-                    <div class="bb">
-                        <button mat-mini-fab (pointerdown)="onStartRewinding(0)" (pointerup)="onStopRewinding(0)">
-                            <mat-icon>keyboard_double_arrow_left</mat-icon>
-                        </button>
-
-                        <button mat-mini-fab [disabled]="!initialized" (click)="onOff()">
-                            <mat-icon>{{ speechObj.isSpeaking ? "pause" : "play_arrow" }}</mat-icon>
-                        </button>
-
-                        <button mat-mini-fab (pointerdown)="onStartRewinding(1)" (pointerup)="onStopRewinding(1)">
-                            <mat-icon>keyboard_double_arrow_right</mat-icon>
-                        </button>
-                    </div>
-
-                    <ion-label class="white"> {{ (texts?.length || 1) - 1 | number: "1.0-0" : "cs" }} </ion-label>
-                </div>
-
-                @if (texts?.length) {
-                    <ion-item class="progress">
-                        <ion-range
-                            [value]="progress()"
-                            min="0"
-                            [max]="texts.length"
-                            step="1"
-                            color="primary"
-                            style="height: 0px"
-                            (ionChange)="changeProgress($any($event).detail.value)"
-                            (touchend)="stopStartSpeaking()">
-                        </ion-range>
-                    </ion-item>
-
-                    <!-- <mat-slider [max]="texts.length" [min]="0" [step]="1" [discrete]="true" [showTickMarks]="true">
-                        <input
-                            matSliderThumb
-                            [value]="progress()"
-                            (valueChange)="changeProgress($event)"
-                            (dragEnd)="stopStartSpeaking()" />
-                    </mat-slider> -->
-                }
+        @if (spritzState.isSpritz) {
+            <div class="header__speed">
+                <button mat-mini-fab (click)="changeSpeed('-')">
+                    <mat-icon>remove</mat-icon>
+                </button>
+                <span> {{ readingDetails.speed }} </span>
+                <button mat-mini-fab (click)="changeSpeed('+')">
+                    <mat-icon>add</mat-icon>
+                </button>
             </div>
+        }
+    </div>
+
+    @if (spritzState.isSpritz) {
+        <ion-content (pinchout)="increaseFontSize()" (pinchin)="decreaseFontSize()">
+            <div
+                class="spritz-cont"
+                [style.fontSize]="spritzState.fontSize"
+                [style.lineHeight]="spritzState.fontSize"
+                [style.height]="spritzState.contHeight">
+                <ion-row>
+                    <ion-col size="2"></ion-col>
+                    <ion-col size="10">
+                        <ion-label class="red" style="float: left">|</ion-label>
+                    </ion-col>
+                </ion-row>
+
+                <ion-row [style.height]="spritzState.fontSize">
+                    <ion-col class="col" size="2">
+                        <ion-label class="right">{{ spritzState.preText }}</ion-label>
+                    </ion-col>
+
+                    <ion-col class="col flexed" size="10">
+                        <div>
+                            <ion-label class="red">{{ spritzState.redText }}</ion-label>
+                            <ion-label>{{ spritzState.postTextWhite }}</ion-label>
+                        </div>
+                        <ion-label class="overflowed">{{ spritzState.postTextGray }}</ion-label>
+                    </ion-col>
+                </ion-row>
+
+                <ion-row>
+                    <ion-col size="2"></ion-col>
+                    <ion-col size="10">
+                        <ion-label class="red" style="float: left">|</ion-label>
+                    </ion-col>
+                </ion-row>
+            </div>
+
+            <div class="mrgt" [style.fontSize]="spritzState.fontSize" [style.lineHeight]="spritzState.fontSize">
+                {{ spritzState.sentence }}
+            </div>
+        </ion-content>
+    }
+    <div>
+        @if (speechForm && !spritzState.isSpritz) {
+            <form [formGroup]="speechForm">
+                <div class="flexed {{ isPortrait ? 'vert' : 'horiz' }}">
+                    <div class="ranges">
+                        <mat-chip-listbox>
+                            <mat-chip-option (click)="onChangeAudioFocus()" [selected]="audioFocus">
+                                Audio focus
+                            </mat-chip-option>
+                        </mat-chip-listbox>
+
+                        <div class="slider-cont">
+                            <mat-icon>speed</mat-icon>
+                            <mat-slider [max]="4" [min]="0.5" [step]="0.1" [discrete]="true" [showTickMarks]="true">
+                                <input
+                                    matSliderThumb
+                                    [value]="speakParams.rate"
+                                    (dragEnd)="onRateChange($event.value)" />
+                            </mat-slider>
+                        </div>
+
+                        <div class="slider-cont">
+                            <mat-icon>volume_up</mat-icon>
+                            <mat-slider [max]="1" [min]="0" [step]="0.1" [discrete]="true" [showTickMarks]="true">
+                                <input
+                                    matSliderThumb
+                                    [value]="speakParams.volume"
+                                    (dragEnd)="onVolumeChange($event.value)" />
+                            </mat-slider>
+                        </div>
+                    </div>
+
+                    <div class="fields">
+                        @if (speechState.engines) {
+                            <mat-chip class="primary-bg">
+                                <mat-select
+                                    [formControl]="speechForm.controls.engine"
+                                    class="hidden-arrow"
+                                    panelWidth="">
+                                    @for (it of speechState.engines; track it.name) {
+                                        <mat-option [value]="it.name">{{ it.label }}</mat-option>
+                                    }
+                                </mat-select>
+                            </mat-chip>
+                        }
+
+                        @if (speechState.language) {
+                            <mat-chip class="primary-bg">
+                                <mat-select
+                                    [formControl]="speechForm.controls.language"
+                                    class="hidden-arrow"
+                                    panelWidth="">
+                                    @for (it of speechState.languages; track it) {
+                                        <mat-option [value]="it">{{ it }}</mat-option>
+                                    }
+                                </mat-select>
+                            </mat-chip>
+                        }
+
+                        @if (
+                            speechState.voices &&
+                            speechState.language &&
+                            speechState.voices[speechState.language]?.length
+                        ) {
+                            <mat-chip class="primary-bg">
+                                <mat-select
+                                    [formControl]="speechForm.controls.voice"
+                                    class="hidden-arrow"
+                                    panelWidth="">
+                                    @for (it of speechState.voices[speechState.language] || []; track it.voiceURI) {
+                                        <mat-option [value]="it.voiceURI">{{ it.voiceURI }}</mat-option>
+                                    }
+                                </mat-select>
+                            </mat-chip>
+                        }
+                    </div>
+                </div>
+            </form>
+        }
+
+        @if (speechError) {
+            <p role="alert">{{ speechError }}</p>
+        }
+        <div class="flexed {{ isPortrait ? 'vert' : 'horiz' }}">
+            <div class="progress-cont">
+                <ion-label class="white">{{ progress() || 0 | number: "1.0-0" : "cs" }}</ion-label>
+
+                <div class="bb">
+                    <button mat-mini-fab (pointerdown)="onStartRewinding(0)" (pointerup)="onStopRewinding(0)">
+                        <mat-icon>keyboard_double_arrow_left</mat-icon>
+                    </button>
+
+                    <button
+                        mat-mini-fab
+                        [disabled]="!initialized || (!spritzState.isSpritz && !speechReady)"
+                        (click)="onOff()">
+                        <mat-icon>{{ speechState.isSpeaking ? "pause" : "play_arrow" }}</mat-icon>
+                    </button>
+
+                    <button mat-mini-fab (pointerdown)="onStartRewinding(1)" (pointerup)="onStopRewinding(1)">
+                        <mat-icon>keyboard_double_arrow_right</mat-icon>
+                    </button>
+                </div>
+
+                <ion-label class="white"> {{ (texts?.length || 1) - 1 | number: "1.0-0" : "cs" }} </ion-label>
+            </div>
+
+            @if (texts?.length) {
+                <ion-item class="progress">
+                    <ion-range
+                        [value]="progress()"
+                        min="0"
+                        [max]="texts.length - 1"
+                        step="1"
+                        color="primary"
+                        style="height: 0px"
+                        (ionChange)="changeProgress($any($event).detail.value)"
+                        (touchend)="stopStartSpeaking()">
+                    </ion-range>
+                </ion-item>
+            }
         </div>
     </div>
-<!-- } -->
+</div>

@@ -37,6 +37,7 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     this.platform.ready().then(() => {
+      // Request notification permission only; TTS manages its own playback service.
       ForegroundService.requestPermissions().then(a => {
         console.log(a);
       }).catch(e => {

@@ -33,10 +33,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
-        <receiver android:name="io.capawesome.capacitorjs.plugins.foregroundservice.NotificationActionBroadcastReceiver" />
-        <service android:name="io.capawesome.capacitorjs.plugins.foregroundservice.AndroidForegroundService" android:foregroundServiceType="mediaPlayback" android:enabled="true" android:exported="false">
-            <!-- <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"  android:value="text_to_speech"/> -->
-        </service>
 
     </application>
 
