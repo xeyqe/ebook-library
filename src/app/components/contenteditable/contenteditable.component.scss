@@ -1,31 +1,19 @@
-.cont {
-    display: flex;
-    flex-direction: column;
-
-    .tools {
-        display: flex;
-        justify-content: flex-end;
-
-        button:hover {
-            cursor: pointer;
-        }
-    }
-
-    label {
-        // display: flex;
-        height: fit-content;
-        white-space: pre-wrap;
-        width: fit-content;
-        outline: none;
-        max-width: 100%;
-    }
+:host {
+  display: block;
 }
 
-span {
-    opacity: 0;
-    transition: opacity 200ms;
+.editor {
+  height: fit-content;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 1ch;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  outline: none;
 }
 
-:host.floating span {
-    opacity: 1;
+.editor.empty::before {
+  content: attr(data-placeholder);
+  opacity: 0.6;
+  pointer-events: none;
 }

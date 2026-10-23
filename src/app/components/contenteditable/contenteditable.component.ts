@@ -1,273 +1,221 @@
-import { Component, DoCheck, ElementRef, EventEmitter, HostBinding, Input, OnDestroy, OnInit, Optional, Output, Self, ViewChild, ChangeDetectionStrategy } from '@angular/core';
-import { ControlValueAccessor, FormControl, FormGroupDirective, NgControl, NgForm, ReactiveFormsModule } from '@angular/forms';
-
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldControl, MatFormFieldModule } from '@angular/material/form-field';
-import { MatAutocompleteModule } from '@angular/material/autocomplete';
-
-// import { ColorPickerDirective } from 'ngx-color-picker';
-
+import { DOCUMENT } from '@angular/common';
 import { Subject } from 'rxjs';
-import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
-import { DialogComponent } from 'src/app/material/dialog/dialog.component';
-import { MatDialog } from '@angular/material/dialog';
-
+import {
+  AfterViewInit,
+  booleanAttribute,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DoCheck,
+  OnDestroy,
+  ElementRef,
+  inject,
+  input,
+  Input,
+  output,
+  SecurityContext,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { ControlValueAccessor, FormControl, FormGroupDirective, NgControl, NgForm } from '@angular/forms';
+import { DomSanitizer } from '@angular/platform-browser';
+import { ErrorStateMatcher } from '@angular/material/core';
+import { MatFormField, MatFormFieldControl } from '@angular/material/form-field';
 
 @Component({
   selector: 'app-contenteditable',
-  imports: [
-    // ColorPickerDirective,
-    MatAutocompleteModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatIconModule,
-    MatInputModule,
-    ReactiveFormsModule,
-  ],
-  providers: [{ provide: MatFormFieldControl, useExisting: ContenteditableComponent }],
   templateUrl: './contenteditable.component.html',
+  styleUrl: './contenteditable.component.scss',
   changeDetection: ChangeDetectionStrategy.Eager,
-  styleUrl: './contenteditable.component.scss'
+  providers: [{ provide: MatFormFieldControl, useExisting: ContenteditableComponent }],
+  host: {
+    '[id]': 'id',
+    '[class.floating]': 'shouldLabelFloat()',
+    '[class.disabled]': 'disabled()',
+  },
 })
-export class ContenteditableComponent implements ControlValueAccessor, MatFormFieldControl<string>, OnInit, OnDestroy, DoCheck {
-  @ViewChild('contenteditableEl', { static: true }) contenteditableEl: ElementRef;
+export class ContenteditableComponent
+  implements ControlValueAccessor, MatFormFieldControl<string>, AfterViewInit, DoCheck, OnDestroy
+{
+  private static nextId = 0;
+  readonly id = `content-editable-${ContenteditableComponent.nextId++}`;
+  readonly controlType = 'contenteditable';
+  readonly disableAutomaticLabeling = true;
+  readonly placeholder = input('');
+  readonly required = input(false, { transform: booleanAttribute });
+  // eslint-disable-next-line @angular-eslint/no-input-rename -- Keep the disabled API while combining input and form state.
+  readonly disabledInput = input(false, { alias: 'disabled', transform: booleanAttribute });
+  readonly ariaLabel = input('', { alias: 'aria-label' });
+  // eslint-disable-next-line @angular-eslint/no-input-rename -- Material requires this property name for the standard ARIA input.
+  readonly userAriaDescribedBy = input('', { alias: 'aria-describedby' });
+  readonly errorStateMatcher = input<ErrorStateMatcher>();
+  readonly _onFocus = output<void>();
+  readonly _onBlur = output<void>();
+  // Material 22 still uses this stream to synchronize focus styling and error description IDs.
+  readonly stateChanges = new Subject<void>();
+  readonly focused = signal(false);
+  readonly errorState = signal(false);
+  readonly disabled = computed(() => this.disabledInput() || this.formDisabled());
+  readonly empty = computed(() => !this.textContent());
+  readonly shouldLabelFloat = computed(() => this.focused() || !this.empty());
+  protected readonly describedBy = computed(() =>
+    [...new Set([...this.userAriaDescribedBy().split(/\s+/).filter(Boolean), ...this.describedIds()])].join(' '),
+  );
+  readonly ngControl = inject(NgControl, { optional: true, self: true });
+  protected readonly formField = inject(MatFormField, { optional: true });
+  private readonly parentForm = inject(NgForm, { optional: true });
+  private readonly parentFormGroup = inject(FormGroupDirective, { optional: true });
+  private readonly defaultErrorStateMatcher = inject(ErrorStateMatcher);
+  private readonly document = inject(DOCUMENT);
+  private readonly sanitizer = inject(DomSanitizer);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly editor = viewChild<ElementRef<HTMLElement>>('editor');
+  private readonly currentValue = signal<string | null>(null);
+  private readonly textContent = signal('');
+  private readonly formDisabled = signal(false);
+  private readonly describedIds = signal<string[]>([]);
+  private composing = false;
+  private onChange: (value: string | null) => void = () => {};
+  private onTouched: () => void = () => {};
 
-  @Output() _onFocus: EventEmitter<void> = new EventEmitter();
-  @Output() _onBlur: EventEmitter<void> = new EventEmitter();
-  @Input() value: string;
-
-  protected readonly tools = [
-    { id: 'bold', icon: 'format_bold' },
-    { id: 'italic', icon: 'format_italic' },
-    { id: 'underline', icon: 'format_underlined' },
-    { id: 'removeFormat', icon: 'remove' },
-    { id: 'unlink', icon: 'link_off' },
-    { id: 'createlink', icon: 'link' },
-    { id: 'foreColor', icon: 'format_color_text' },
-    // { id: 'decreaseFontSize', icon: 'exposure_neg_1' },
-    // { id: 'increaseFontSize', icon: 'exposure_plus_1' },
-  ];
-  protected hyperLinkFc: FormControl<string>;
-  protected colorFc: FormControl<string>;
-
-  protected color: string;
-  private interval: ReturnType<typeof setTimeout>;
-
-  private onTouched: () => void = () => { };
-  private onChange: (innerText: string) => void;
-  private oldValue: string;
-  stateChanges = new Subject<void>();
-
-  constructor(
-    private dialog: MatDialog,
-    @Optional() @Self() public ngControl: NgControl,
-    @Optional() private _parentForm: NgForm,
-    @Optional() private _parentFormGroup: FormGroupDirective
-  ) {
-    if (!ngControl) return;
-    ngControl.valueAccessor = this;
-    this.oldValue = ngControl.value;
+  constructor() {
+    if (this.ngControl) this.ngControl.valueAccessor = this;
   }
 
-  ngOnInit(): void {
-    if (!this.value) return;
-    this.writeValue(this.value)
-    this.stateChanges.next();
-  }
-
-  touched: boolean;
-  errorState: boolean;
-  autofilled?: boolean;
-  userAriaDescribedBy?: string;
-
-  static nextId = 0;
-
-  @HostBinding() id = `content-editable-${ContenteditableComponent.nextId++}`;
   @Input()
-  get placeholder() {
-    return this._placeholder;
+  get value(): string | null {
+    return this.currentValue();
   }
-  set placeholder(plh) {
-    this._placeholder = plh;
+  set value(value: string | number | null) {
+    this.writeValue(value);
+  }
+
+  ngAfterViewInit(): void {
+    this.renderValue();
+  }
+
+  ngDoCheck(): void {
+    const matcher = this.errorStateMatcher() ?? this.defaultErrorStateMatcher;
+    const error = matcher.isErrorState(this.ngControl?.control as FormControl, this.parentFormGroup || this.parentForm);
+    if (this.errorState() !== error) {
+      this.errorState.set(error);
+      this.stateChanges.next();
+    }
+  }
+
+  writeValue(value: string | number | null): void {
+    const html = this.sanitizer.sanitize(SecurityContext.HTML, value == null ? '' : String(value)) || '';
+    const content = this.document.createElement('div');
+    content.innerHTML = html;
+    this.currentValue.set(content.innerHTML || null);
+    this.textContent.set(content.textContent || '');
+    this.renderValue();
+  }
+
+  registerOnChange(callback: (value: string | null) => void): void {
+    this.onChange = callback;
+  }
+
+  registerOnTouched(callback: () => void): void {
+    this.onTouched = callback;
+  }
+
+  setDisabledState(disabled: boolean): void {
+    this.formDisabled.set(disabled);
     this.stateChanges.next();
   }
-  private _placeholder: string;
-  focused = false;
 
-  onFocusIn(event: FocusEvent) {
-    console.log(event);
-    if (!this.focused) {
-      this.focused = true;
-      this.stateChanges.next();
-      this._onFocus.emit();
-    }
+  setDescribedByIds(ids: string[]): void {
+    this.describedIds.set(ids);
   }
 
-  onFocusOut(event: FocusEvent) {
-    if (!this.contenteditableEl.nativeElement.contains(event.relatedTarget as Element)) {
-      this.touched = true;
-      this.focused = false;
-      this.onTouched();
-      this.stateChanges.next();
-      this._onBlur.emit();
-    }
+  private renderValue(): void {
+    const editor = this.editor()?.nativeElement;
+    const html = this.currentValue() || '';
+    if (editor && editor.innerHTML !== html) editor.innerHTML = html;
   }
 
-  public focus() {
-    if (this.disabled) return;
-    const el = this.contenteditableEl.nativeElement;
-    if (document.activeElement === el) return;
-    const lastChild = el.childNodes?.[el.childNodes.length - 1];
-    if (!lastChild) {
-      el.focus();
+  protected onInput(event: InputEvent): void {
+    if (!this.composing && !event.isComposing) this.commitValue();
+  }
+
+  protected onCompositionStart(): void {
+    this.composing = true;
+  }
+
+  protected onCompositionEnd(): void {
+    this.composing = false;
+    this.commitValue();
+  }
+
+  private commitValue(): void {
+    const editor = this.editor()?.nativeElement;
+    if (!editor) return;
+    if (this.disabled()) {
+      this.renderValue();
       return;
     }
-    const range = document.createRange()
-    const sel = window.getSelection()
-
-    range.setStart(lastChild, lastChild.textContent.length)
-    range.collapse(true)
-
-    sel.removeAllRanges()
-    sel.addRange(range)
+    const previous = this.value;
+    this.writeValue(editor.textContent ? editor.innerHTML : null);
+    if (this.value !== previous) this.onChange(this.value);
   }
 
-  get empty() {
-    const el = this.contenteditableEl.nativeElement
-    return !el?.textContent;
-  }
-
-  @HostBinding('class.floating')
-  get shouldLabelFloat() {
-    return this.focused || !this.empty;
-  }
-
-  @Input()
-  get required() {
-    return this._required;
-  }
-  set required(req: boolean) {
-    this._required = coerceBooleanProperty(req);
+  protected onFocusIn(): void {
+    if (this.disabled() || this.focused()) return;
+    this.focused.set(true);
     this.stateChanges.next();
+    this._onFocus.emit();
   }
-  private _required = false;
 
-  @Input()
-  get disabled(): boolean { return this._disabled; }
-  set disabled(value: BooleanInput) {
-    this._disabled = coerceBooleanProperty(value);
+  protected onFocusOut(event: FocusEvent): void {
+    if (!this.focused() || this.host.nativeElement.contains(event.relatedTarget as Node)) return;
+    this.focused.set(false);
     this.stateChanges.next();
-  }
-  protected _disabled = false;
-
-  ngDoCheck() {
-    if (this.ngControl) {
-      this.updateErrorState();
-    }
-  }
-
-  private updateErrorState() {
-    const parent = this._parentFormGroup || this._parentForm;
-
-    const oldState = this.errorState;
-    const newState = (this.ngControl?.invalid) && ((this.touched || this.ngControl?.control?.touched) || parent?.submitted);
-
-    if (oldState !== newState) {
-      this.errorState = newState;
-      this.stateChanges.next();
-    }
-  }
-
-  controlType = 'example-content-editable';
-
-  setDescribedByIds(ids: string[]) {
-    // const controlElement = this.contenteditableEl.nativeElement
-    //   .querySelector('.example-tel-input-container')!;
-    // controlElement.setAttribute('aria-describedby', ids.join(' '));
-  }
-
-  onContainerClick(event: MouseEvent) {
-    if (this.disabled) return;
-    if ((event.target as Element).tagName.toLowerCase() != 'input') { // TODO
-      this.contenteditableEl.nativeElement.focus();
-    }
-  }
-
-  writeValue(obj: string): void {
-    this.contenteditableEl.nativeElement.innerHTML = obj || '';
-  }
-  registerOnChange(fn: () => void): void {
-    this.onChange = fn;
-  }
-  registerOnTouched(fn: () => void): void {
-    this.onTouched = fn;
-  }
-  setDisabledState?(isDisabled: boolean): void {
-    this._disabled = isDisabled;
-  }
-
-  protected onBlur() {
-    if (!this.onTouched) return;
     this.onTouched();
+    this._onBlur.emit();
   }
 
-  protected onTool(tool: string, event: Event) {
-    event.preventDefault();
-    const simple = ['bold', 'italic', 'unlink', 'underline', 'removeFormat', 'increaseFontSize'];
-    if (simple.includes(tool)) {
-      document.execCommand(tool);
-      return;
-    }
-
-    if (tool === 'createlink') {
-      const link = prompt('Enter a link', 'https://');
-      const reg = /(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_+.~#?&=]*)/;
-      if (reg.test(link)) {
-        document.execCommand('createlink', false, link);
-      } else {
-        this.dialog.open(
-          DialogComponent,
-          {
-            data: {
-              header: 'Warning',
-              message: 'Wrong link',
-              selects: ['Ok']
-            }
-          }
-        );
-      }
-    }
-    this.change();
+  focus(): void {
+    const editor = this.editor()?.nativeElement;
+    if (!editor || this.disabled() || this.document.activeElement === editor) return;
+    editor.focus();
+    const range = this.document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+    const selection = this.document.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
   }
 
-  protected setColor(color: Event | string) {
-    clearInterval(this.interval);
-    this.interval = setTimeout(() => {
-      if (typeof color !== 'string') return;
-      document.execCommand('foreColor', null, color);
-      this.change();
-    }, 300);
-  }
-
-  protected change() {
-    const el = this.contenteditableEl.nativeElement;
-    const newVal = el.textContent ? el.innerHTML : null;
-    if (this.oldValue !== newVal) {
-      this.oldValue = newVal;
-      if (!this.onChange) return;
-      this.onChange(newVal);
-    }
+  onContainerClick(event: MouseEvent): void {
+    if (!this.editor()?.nativeElement.contains(event.target as Node)) this.focus();
   }
 
   protected onPaste(event: ClipboardEvent): void {
     event.preventDefault();
-
-    let text = event.clipboardData?.getData('text/plain') || '';
-    text = text.replace(/ /g, '\u00A0');
-
-    document.execCommand('insertHTML', false, text);
+    if (this.disabled()) return;
+    const text = event.clipboardData?.getData('text/plain');
+    const editor = this.editor()?.nativeElement;
+    if (!text || !editor) return;
+    editor.focus();
+    const selection = this.document.getSelection();
+    const selectedRange = selection?.rangeCount ? selection.getRangeAt(0) : null;
+    const range =
+      selectedRange && editor.contains(selectedRange.commonAncestorContainer)
+        ? selectedRange
+        : this.document.createRange();
+    if (range !== selectedRange) {
+      range.selectNodeContents(editor);
+      range.collapse(false);
+    }
+    range.deleteContents();
+    const node = this.document.createTextNode(text);
+    range.insertNode(node);
+    range.setStartAfter(node);
+    range.collapse(true);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    this.commitValue();
   }
 
   ngOnDestroy(): void {

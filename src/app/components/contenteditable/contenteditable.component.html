@@ -1,35 +1,23 @@
-<div class="cont">
-    <!-- @if (!_disabled) {
-        <div class="tools">
-            @for (tool of tools; track $index) {
-                @if (tool.id === "foreColor") {
-                    <button
-                        #colorEl
-                        mat-raided-button
-                        (click)="onTool(tool.id, $event)"
-                        [colorPicker]="color"
-                        (colorPickerChange)="setColor($event)">
-                        <mat-icon>{{ tool.icon }}</mat-icon>
-                    </button>
-                } @else {
-                    <button mat-raided-button (click)="onTool(tool.id, $event)">
-                        <mat-icon>{{ tool.icon }}</mat-icon>
-                    </button>
-                }
-            }
-        </div>
-    } -->
-    
-    <label
-        role="group"
-        (focusin)="onFocusIn($event)"
-        (focusout)="onFocusOut($event)"
-        [attr.contenteditable]="!_disabled"
-        #contenteditableEl
-        for=""
-        (blur)="onBlur()"
-        (keyup)="change()"
-        (paste)="onPaste($event)"
-        tabindex="0">
-    </label>
-</div>
+<div
+    #editor
+    class="editor"
+    role="textbox"
+    [id]="id + '-input'"
+    [attr.contenteditable]="!disabled()"
+    [attr.tabindex]="disabled() ? -1 : 0"
+    aria-multiline="true"
+    [attr.aria-label]="ariaLabel() || null"
+    [attr.aria-labelledby]="formField?.getLabelId() || null"
+    [attr.aria-describedby]="describedBy() || null"
+    [attr.aria-placeholder]="placeholder() || null"
+    [attr.aria-required]="required()"
+    [attr.aria-disabled]="disabled()"
+    [attr.aria-invalid]="errorState()"
+    [attr.data-placeholder]="placeholder()"
+    [class.empty]="empty()"
+    (input)="onInput($event)"
+    (compositionstart)="onCompositionStart()"
+    (compositionend)="onCompositionEnd()"
+    (focusin)="onFocusIn()"
+    (focusout)="onFocusOut($event)"
+    (paste)="onPaste($event)"></div>

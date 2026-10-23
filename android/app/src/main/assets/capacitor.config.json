@@ -2,7 +2,6 @@
 	"appId": "io.ionic.starter",
 	"appName": "ebook-library",
 	"webDir": "www",
-	"bundledWebRuntime": false,
 	"plugins": {
 		"SplashScreen": {
 			"launchShowDuration": 3000,
