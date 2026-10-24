@@ -63,7 +63,7 @@ export class BookBrowserService {
                     translator: document.querySelector('[itemprop=translator]')?.innerText,
                     ISBN: category('ISBN'),
                     serie: document.querySelector('.book_detail_serie_info .inline a')?.textContent?.trim(),
-                    serieOrder: document.querySelector('.book_detail_serie_info .nowrap')?.firstElementChild?.textContent?.split('.')?.[0],
+                    serieOrder:  document.querySelector('.book_detail_serie_info .nowrap span')?.textContent?.split('.')?.[0],
                   };
                   webkit.messageHandlers.cordova_iab.postMessage(JSON.stringify(book));
                 }, 1000);
