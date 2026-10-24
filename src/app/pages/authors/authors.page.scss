@@ -1,93 +1,99 @@
 ion-searchbar,
 ion-segment-button {
-    color: white;
+  color: white;
 }
 
 ion-avatar {
-    margin-right: 1rem;
-    width: 4rem;
-    height: 4rem;
+  margin-right: 1rem;
+  width: 4rem;
+  height: 4rem;
 }
 
 h2 {
-    margin-bottom: 0px;
+  margin-bottom: 0px;
 }
 
 .bb {
-    display: flex;
-    position: fixed;
-    bottom: 0;
-    justify-content: space-between;
-    width: 100%;
+  display: flex;
+  position: fixed;
+  bottom: 0;
+  justify-content: space-between;
+  width: 100%;
 }
 
 ion-header {
-    overflow: hidden;
+  overflow: hidden;
 }
 
 .chars {
-    display: flex;
-    gap: .5rem;
-    width: 100%;
-    overflow: auto;
-    margin: .5rem;
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  overflow: auto;
+  margin: 0.5rem;
 
-    &>div {
-        padding: .5rem;
-    }
+  & > div {
+    padding: 0.5rem;
+  }
 
-    .selected-char {
-        font-weight: 500;
-        background-color: var(--mat-sys-secondary-container);
-        border-radius: .5rem;
-    }
+  .selected-char {
+    font-weight: 500;
+    background-color: var(--mat-sys-secondary-container);
+    border-radius: 0.5rem;
+  }
 }
 
 .row {
-    display: flex;
-    align-items: center;
-    gap: .5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 
-    mat-form-field {
-        width: 100%;
-    }
+  mat-form-field {
+    width: 100%;
+  }
 }
 
 .boxes {
-    display: flex;
-    flex-direction: column;
-    gap: .3rem;
-    padding: .5rem;
-    background-color: var(--mat-sys-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.5rem 0.5rem 5rem;
+  background-color: var(--mat-sys-surface);
+}
+
+.status {
+  padding: 0.5rem 1rem;
 }
 
 .box {
+  color: inherit;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background-color: var(--mat-sys-on-secondary-fixed);
+  border-radius: 2rem;
+  padding: 0.5rem;
+
+  .width {
+    width: 70%;
+  }
+
+  .column {
     display: flex;
-    align-items: center;
-    width: 100%;
-    background-color: var(--mat-sys-on-secondary-fixed);
-    border-radius: 2rem;
-    padding: .5rem;
+    flex-direction: column;
 
-    .width {
-        width: 70%;
+    .weighted {
+      font-size: 1.2rem;
+      font-weight: 500;
     }
 
-    .column {
-        display: flex;
-        flex-direction: column;
-
-        .weighted {
-            font-size: 1.2rem;
-            font-weight: 500;
-        }
-
-        .grayed {
-            color: #9e9e9e
-        }
+    .grayed {
+      color: #9e9e9e;
     }
+  }
 }
 
 .overflowed {
-    overflow: hidden;
+  overflow: hidden;
 }

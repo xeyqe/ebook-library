@@ -1,23 +1,31 @@
 <div [@expandCollapse]="state" class="overflowed">
     <div class="row">
         <mat-form-field subscriptSizing="dynamic">
-            <button mat-icon-button matPrefix (click)="onSearchClicked(input, $event)">
-                <mat-icon>{{ hideCharacters ? "arrow_back" : "search" }}</mat-icon>
+            <button
+                mat-icon-button
+                matPrefix
+                [attr.aria-label]="hideCharacters ? 'Clear search' : 'Focus search'"
+                (click)="onSearchClicked(input, $event)">
+                <mat-icon>{{ hideCharacters ? 'arrow_back' : 'search' }}</mat-icon>
             </button>
             <mat-label>Search</mat-label>
             <input
                 matInput
+                [value]="searchQuery"
                 (input)="onSearch($event)"
                 (focusin)="onToggleCharVisibility(true)"
                 (focusout)="onToggleCharVisibility(false)"
                 #input />
         </mat-form-field>
-        <button mat-mini-fab (click)="where2SearchFn()">
+        <button
+            mat-mini-fab
+            [attr.aria-label]="where2Search === 'A' ? 'Show books' : 'Show authors'"
+            (click)="where2SearchFn()">
             {{ where2Search }}
         </button>
     </div>
     @if (!hideCharacters) {
-        @if (where2Search === "A") {
+        @if (where2Search === 'A') {
             <div class="chars">
                 @for (char of alphabet; track $index) {
                     <button
@@ -28,11 +36,12 @@
                     </button>
                 }
             </div>
-        } @else if (where2Search === "B") {
+        } @else if (where2Search === 'B') {
             <div class="chars">
-                @for (char of ["liked", "started", "finished"]; track $index) {
+                @for (char of bookFilters; track $index) {
                     <button
-                        mat-fab extended
+                        mat-fab
+                        extended
                         [disabled]="bookSearchBy === char"
                         (click)="changeSelectedChar(char, 'books')">
                         <span>{{ char }}</span>
@@ -43,20 +52,37 @@
     }
 </div>
 
-<ion-content [scrollEvents]="true" (ionScrollStart)="onScrollStart($event)" (ionScrollEnd)="onScrollEnd($event)">
+<ion-content [scrollEvents]="true" (ionScroll)="onScroll($any($event))">
+    @if (loading) {
+        <ion-progress-bar type="indeterminate" aria-label="Loading library"></ion-progress-bar>
+    }
+    @if (loadError) {
+        <div class="status" role="alert">
+            <p>{{ loadError }}</p>
+            <button mat-button (click)="ionViewWillEnter()">Retry</button>
+        </div>
+    } @else if (!loading && !(where2Search === 'A' ? visibleAuthors.length : visibleBooks.length)) {
+        <p class="status" role="status">{{ where2Search === 'A' ? 'No authors found.' : 'No books found.' }}</p>
+    }
+    @if (actionError) {
+        <p class="status" role="alert">{{ actionError }}</p>
+    }
     <div class="boxes">
-        @if (where2Search === "A") {
-            @for (author of _authors; track author) {
-                <div [routerLink]="['/author', author.id]" class="box">
+        @if (where2Search === 'A') {
+            @for (author of visibleAuthors; track author.id) {
+                <a [routerLink]="['/author', author.id]" class="box">
                     <ion-avatar>
-                        <img [src]="onGetImgSrc(author.img)" alt="img" />
+                        <img
+                            [src]="onGetImgSrc(author.img)"
+                            [alt]="author.surname || author.pseudonym || author.name"
+                            loading="lazy" />
                     </ion-avatar>
 
                     <div class="width">
                         @if (author.surname || author.name) {
                             <div class="column">
-                                <span class="weighted">{{ author.surname || "" }}</span>
-                                <span class="grayed">{{ author.name || "" }}</span>
+                                <span class="weighted">{{ author.surname || '' }}</span>
+                                <span class="grayed">{{ author.name || '' }}</span>
                             </div>
                         } @else {
                             <span class="weighted">{{ author.pseudonym }}</span>
@@ -65,46 +91,47 @@
                             <mat-progress-bar mode="determinate" [value]="author.progress * 100"> </mat-progress-bar>
                         }
                     </div>
-                </div>
+                </a>
             }
-            <ion-infinite-scroll (ionInfinite)="onAuthorsIonInfinite($any($event))">
+            <ion-infinite-scroll
+                [disabled]="loading || !hasMoreAuthors"
+                (ionInfinite)="onAuthorsIonInfinite($any($event))">
                 <ion-infinite-scroll-content></ion-infinite-scroll-content>
             </ion-infinite-scroll>
-        } @else if (where2Search === "B") {
-            @for (book of _books; track book) {
-                <div [routerLink]="['/book', book.id]" class="box">
+        } @else if (where2Search === 'B') {
+            @for (book of visibleBooks; track book.id) {
+                <a [routerLink]="['/book', book.id]" class="box">
                     <ion-avatar>
-                        <img [src]="onGetImgSrc(book.img)" alt="img" />
+                        <img [src]="onGetImgSrc(book.img)" [alt]="book.title" loading="lazy" />
                     </ion-avatar>
 
                     <div class="width">
                         <div class="column">
-                            <span class="weighted">{{ book.title || "" }}</span>
-                            <span class="grayed">{{ book.authors || "" }}</span>
+                            <span class="weighted">{{ book.title || '' }}</span>
+                            <span class="grayed">{{ book.authors || '' }}</span>
                         </div>
                         @if (book.progress) {
-                            <mat-progress-bar mode="determinate" [value]="book.progress | percent2: book.progress"> </mat-progress-bar>
+                            <mat-progress-bar mode="determinate" [value]="book.progress | percent2: book.progress">
+                            </mat-progress-bar>
                         }
                     </div>
-                </div>
+                </a>
             }
-            <ion-infinite-scroll (ionInfinite)="onBooksIonInfinite($any($event))">
+            <ion-infinite-scroll [disabled]="loading || !hasMoreBooks" (ionInfinite)="onBooksIonInfinite($any($event))">
                 <ion-infinite-scroll-content></ion-infinite-scroll-content>
             </ion-infinite-scroll>
         }
     </div>
 
     <div class="bb">
-        @if (lastListened) {
-            <button mat-mini-fab (click)="onShowDialog()">
-                <mat-icon>upload</mat-icon>
-            </button>
-        }
-        <button mat-mini-fab (click)="onAddAuthor()">
+        <button mat-mini-fab aria-label="Export or import database" (click)="onShowDialog()">
+            <mat-icon>upload</mat-icon>
+        </button>
+        <button mat-mini-fab aria-label="Add author" (click)="onAddAuthor()">
             <mat-icon>add_circle</mat-icon>
         </button>
         @if (lastListened) {
-            <button mat-mini-fab (click)="onGo2Last()">
+            <button mat-mini-fab aria-label="Open last read book" (click)="onGo2Last()">
                 <mat-icon>play_arrow</mat-icon>
             </button>
         }

@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, OnInit, OnDestroy, AfterViewInit, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, AfterViewInit, DestroyRef, inject } from '@angular/core';
 import { animate, state, style, transition, trigger } from '@angular/animations';
-import { InfiniteScrollCustomEvent, IonicModule } from '@ionic/angular/lazy';
+import { InfiniteScrollCustomEvent, IonicModule, ScrollCustomEvent } from '@ionic/angular/lazy';
 import { Router, RouterModule } from '@angular/router';
 
 import { MatDialog } from '@angular/material/dialog';
@@ -9,26 +9,27 @@ import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { Encoding, Filesystem } from '@capacitor/filesystem';
 
-import { Subscription } from 'rxjs';
-import { first } from 'rxjs/operators';
+import { filter, firstValueFrom } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { BusyService } from 'src/app/services/busy.service';
-import { DatabaseService } from './../../services/database.service';
+import { DatabaseService } from 'src/app/services/database.service';
 import { DirectoryService } from 'src/app/services/directory.service';
-import { FileReaderService } from './../../services/file-reader.service';
+import { FileReaderService } from 'src/app/services/file-reader.service';
 
 import { DialogComponent } from 'src/app/material/dialog/dialog.component';
 import { InputDialogComponent } from 'src/app/material/input-dialog/input-dialog.component';
 
 import { BOOKSIMPLIFIED, AUTHORSIMPLIFIED } from 'src/app/services/interfaces';
-import { MatInput, MatInputModule } from '@angular/material/input';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { PercentPipe } from 'src/app/pipes/percent2.pipe';
 
+type BookFilter = 'liked' | 'started' | 'finished';
+type LastListened = { id: number; type: 'speech' | 'spritz' };
 
 @Component({
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -37,332 +38,350 @@ import { PercentPipe } from 'src/app/pipes/percent2.pipe';
   styleUrls: ['./authors.page.scss'],
   animations: [
     trigger('expandCollapse', [
-      state('animated', style({
-        'transform-origin': 'top', height: '0px'
-      })),
+      state(
+        'animated',
+        style({
+          'transform-origin': 'top',
+          height: '0px',
+        }),
+      ),
       state('default', style({ height: '*' })),
       transition('animated => default', animate('200ms ease-out')),
-      transition('default => animated', animate('200ms ease-in'))
-    ])
+      transition('default => animated', animate('200ms ease-in')),
+    ]),
   ],
   imports: [
-    FormsModule,
     IonicModule,
     MatButtonModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
     MatProgressBarModule,
-    ReactiveFormsModule,
     RouterModule,
     PercentPipe,
   ],
 })
-export class AuthorsComponent implements OnInit, AfterViewInit, OnDestroy {
-  @ViewChild('input') input: MatInput;
-  private subs: Subscription[] = [];
+export class AuthorsComponent implements AfterViewInit, OnDestroy {
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly pageSize = 10;
   private authors: AUTHORSIMPLIFIED[] = [];
-  protected _authors: AUTHORSIMPLIFIED[] = [];
+  protected visibleAuthors: AUTHORSIMPLIFIED[] = [];
   private books: BOOKSIMPLIFIED[] = [];
-  protected _books: BOOKSIMPLIFIED[] = [];
-  protected author: AUTHORSIMPLIFIED;
-  protected lastListened: { id: number, type: 'speech' | 'spritz' };
+  protected visibleBooks: BOOKSIMPLIFIED[] = [];
+  protected lastListened?: LastListened;
   protected hideCharacters = false;
-  protected where2Search: string;
-  protected selectedCharacter: string;
-  protected selectedView = 'TODO';
-  protected imgPreLink: string;
-  protected bookSearchBy: 'liked' | 'started' | 'finished';
-  protected alphabet = [
-    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
-    'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#',
-  ];
-  private scrollTop = 0;
+  protected where2Search: 'A' | 'B' = 'A';
+  protected selectedCharacter = 'A';
+  protected imgPreLink = '';
+  protected bookSearchBy: BookFilter = 'started';
+  protected readonly bookFilters: BookFilter[] = ['liked', 'started', 'finished'];
+  protected readonly alphabet = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', '#'];
+  protected searchQuery = '';
+  protected loading = true;
+  protected loadError = '';
+  protected actionError = '';
   protected state: 'default' | 'animated' = 'default';
-  private searchInterval: ReturnType<typeof setTimeout>;
+  private scrollTop = 0;
+  private requestId = 0;
+  private entryId = 0;
+  private initialization?: Promise<void>;
+  private searchTimer?: ReturnType<typeof setTimeout>;
+  private visibilityTimer?: ReturnType<typeof setTimeout>;
 
-  constructor(
-    private db: DatabaseService,
-    private dialog: MatDialog,
-    private dir: DirectoryService,
-    private fr: FileReaderService,
-    private router: Router,
-    private workingServ: BusyService,
-  ) { }
+  private readonly db = inject(DatabaseService);
+  private readonly dialog = inject(MatDialog);
+  private readonly dir = inject(DirectoryService);
+  private readonly fr = inject(FileReaderService);
+  private readonly router = inject(Router);
+  private readonly workingServ = inject(BusyService);
 
-  ngOnInit() {
-    this.initialize();
+  protected get hasMoreAuthors(): boolean {
+    return this.visibleAuthors.length < this.authors.length;
   }
 
-  private async initialize() {
-    if (!await this.dbIsReady()) return;
-    this.imgPreLink = this.dir.imgPreLink;
-    this.fr.downloadUnknownImg();
-  }
-
-  private dbIsReady(): Promise<boolean> {
-    return new Promise((resolve) => {
-      this.subs.push(this.db.getDatabaseState().subscribe({
-        next: (ready) => {
-          resolve(ready);
-        },
-        error: (error) => {
-          console.error(error);
-          resolve(false);
-        }
-      }));
-    });
+  protected get hasMoreBooks(): boolean {
+    return this.visibleBooks.length < this.books.length;
   }
 
   ngAfterViewInit(): void {
-    SplashScreen.hide();
-    this.ionViewWillEnter();
+    if (Capacitor.isNativePlatform()) void SplashScreen.hide().catch((error) => console.error(error));
   }
 
-  protected async ionViewWillEnter() {
-    const as = await this.db.getValue('as');
-    if (!as) {
-      this.lastListened = { id: 1, type: 'speech' };
-    } else if (/^[\d]+$/.test(as)) {
-      this.lastListened = { id: as.slice(0, -1), type: +as.slice(-1) ? 'spritz' : 'speech' }
-      this.db.saveValue('as', JSON.stringify(this.lastListened));
-    } else {
-      this.lastListened = JSON.parse(as);
+  private async initialize(): Promise<void> {
+    await firstValueFrom(this.db.getDatabaseState().pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef)));
+    if (this.destroyRef.destroyed) return;
+    this.imgPreLink = this.dir.imgPreLink;
+    void this.fr.downloadUnknownImg().catch((error) => console.error('Unable to load the placeholder image', error));
+  }
+
+  private prepare(): Promise<void> {
+    return (this.initialization ??= this.initialize().catch((error) => {
+      this.initialization = undefined;
+      throw error;
+    }));
+  }
+
+  protected async ionViewWillEnter(): Promise<void> {
+    const entry = ++this.entryId;
+    this.loading = true;
+    this.loadError = '';
+    try {
+      await this.prepare();
+      if (this.destroyRef.destroyed || entry !== this.entryId) return;
+      const [lastListened, mode, character, bookFilter] = await Promise.all([
+        this.db.getValue('as'),
+        this.db.getValue('where2Search'),
+        this.db.getValue('character'),
+        this.db.getValue('bookSearchBy'),
+      ]);
+      if (this.destroyRef.destroyed || entry !== this.entryId) return;
+      this.lastListened = this.parseLastListened(lastListened);
+      this.where2Search = mode === 'B' ? 'B' : 'A';
+      this.selectedCharacter = this.alphabet.includes(character) ? character : 'A';
+      this.bookSearchBy = this.bookFilters.includes(bookFilter) ? bookFilter : 'started';
+      await this.load();
+    } catch (error) {
+      if (!this.destroyRef.destroyed && entry === this.entryId) {
+        this.loading = false;
+        this.loadError = 'Unable to load the library. Please try again.';
+        console.error(error);
+      }
     }
-
-    const where2Search = await this.db.getValue('where2Search');
-    this.where2Search = where2Search || 'A';
-
-    this.selectedCharacter = await this.db.getValue('character');
-    this.bookSearchBy = await this.db.getValue('bookSearchBy') as any;
-
-    const searchVal = this.input?.value; // TODO
-    if (searchVal) this.search(searchVal);
-    else this.load();
-
-    setTimeout(() => {
-      const el = document.querySelector('ion-list')?.firstElementChild;
-      this.scrollTop = el?.getBoundingClientRect()?.y || 0;
-    });
   }
 
-  private async load() {
-    if (this.where2Search === 'A') {
-      this.authors = await this.db.loadAuthors(this.selectedCharacter || 'W');
-      this._authors = this.authors.slice(0, 10);
-    } else {
-      this.books = await this.db.loadBooks((this.bookSearchBy as any) || 'started');
-      this._books = this.books.slice(0, 10);
+  private parseLastListened(value: unknown): LastListened | undefined {
+    try {
+      const result =
+        typeof value === 'string' && /^\d{2,}$/.test(value)
+          ? { id: Number(value.slice(0, -1)), type: Number(value.slice(-1)) ? 'spritz' : 'speech' }
+          : typeof value === 'string'
+            ? JSON.parse(value)
+            : value;
+      if (
+        result &&
+        Number.isInteger(Number(result.id)) &&
+        Number(result.id) > 0 &&
+        (result.type === 'speech' || result.type === 'spritz')
+      ) {
+        return { id: Number(result.id), type: result.type };
+      }
+    } catch {
+      /* Ignore invalid saved playback preferences. */
+    }
+    return undefined;
+  }
+
+  private async load(): Promise<void> {
+    clearTimeout(this.searchTimer);
+    const request = ++this.requestId;
+    const mode = this.where2Search;
+    const query = this.searchQuery.trim();
+    this.loading = true;
+    this.loadError = '';
+    try {
+      await this.prepare();
+      if (this.destroyRef.destroyed || request !== this.requestId) return;
+      if (mode === 'A') {
+        const authors = await (query.length >= 3
+          ? this.db.findAuthors(query)
+          : this.db.loadAuthors(this.selectedCharacter));
+        if (this.destroyRef.destroyed || request !== this.requestId) return;
+        this.authors = authors;
+        this.visibleAuthors = authors.slice(0, this.pageSize);
+      } else {
+        const books = await (query.length >= 3 ? this.db.findBooks(query) : this.db.loadBooks(this.bookSearchBy));
+        if (this.destroyRef.destroyed || request !== this.requestId) return;
+        this.books = books;
+        this.visibleBooks = books.slice(0, this.pageSize);
+      }
+    } catch (error) {
+      if (!this.destroyRef.destroyed && request === this.requestId) {
+        this.loadError = 'Unable to load the library. Please try again.';
+        console.error(error);
+      }
+    } finally {
+      if (!this.destroyRef.destroyed && request === this.requestId) this.loading = false;
     }
   }
 
-  protected async changeSelectedChar(value: string, whichOne: 'authors' | 'books') {
-    if (whichOne === 'authors') {
-      this.db.saveValue('character', value);
+  protected async changeSelectedChar(value: string, whichOne: 'authors' | 'books'): Promise<void> {
+    if (whichOne === 'authors' && this.alphabet.includes(value)) {
       this.selectedCharacter = value;
-      this.authors = await this.db.loadAuthors(value);
-      this._authors = this.authors.slice(0, 10);
-    } else if (whichOne === 'books') {
-      this.db.saveValue('bookSearchBy', value);
-      this.bookSearchBy = value as any;
-      this.books = await this.db.loadBooks(value as any);
-      this._books = this.books.slice(0, 10);
+      void this.savePreference('character', value);
+    } else if (whichOne === 'books' && this.bookFilters.includes(value as BookFilter)) {
+      this.bookSearchBy = value as BookFilter;
+      void this.savePreference('bookSearchBy', value);
+    } else return;
+    this.searchQuery = '';
+    await this.load();
+  }
+
+  protected async where2SearchFn(): Promise<void> {
+    this.where2Search = this.where2Search === 'A' ? 'B' : 'A';
+    void this.savePreference('where2Search', this.where2Search);
+    await this.load();
+  }
+
+  private async savePreference(key: string, value: string): Promise<void> {
+    try {
+      await this.db.saveValue(key, value);
+    } catch (error) {
+      console.error('Unable to save library preferences', error);
     }
   }
 
-  protected async where2SearchFn() {
-    if (this.where2Search === 'A') {
-      this.where2Search = 'B';
-      this.bookSearchBy = this.bookSearchBy || 'liked';
-      if (!this._books.length) {
-        this.books = await this.db.loadBooks(this.bookSearchBy as any);
-        this._books = this.books.slice(0, 10);
-      }
-    } else {
-      this.where2Search = 'A';
-      this.selectedCharacter = this.selectedCharacter || 'A';
-      if (!this._authors.length) {
-        this.authors = await this.db.loadAuthors(this.selectedCharacter as any);
-        this._authors = this.authors.slice(0, 10);
-      }
-    }
-    this.db.saveValue('character', this.selectedCharacter || 'A');
-    this.db.saveValue('bookSearchBy', this.bookSearchBy || 'liked');
-    this.db.saveValue('where2Search', this.where2Search);
-  }
-
-  protected onShowDialog() {
-    const dialogRef = this.dialog.open(
-      DialogComponent,
-      {
-        data: {
-          message: 'Choose export/import database.',
-          selects: ['EXPORT', 'IMPORT'],
-        }
-      }
-    );
-    dialogRef.afterClosed().pipe(first()).subscribe((selected) => {
-      if (selected === 0) {
-        this.exportDB().finally(() => this.workingServ.done());
-      } else if (selected === 1) {
-        this.selectWhat2Import();
-      }
-    });
-  }
-
-  private async selectWhat2Import() {
-    const files = await this.fr.getDBJsons();
-    const dialogRef = this.dialog.open(
-      DialogComponent,
-      {
-        data: {
-          message: 'Choose a file to import.',
-          selects: files.map(fl => fl.name),
-        }
-      }
-    );
-    dialogRef.afterClosed().pipe(first()).subscribe((selected) => {
-      console.log(selected)
-      if (selected === undefined) return;
-      this.importJson2DB(`/ebook-library/` + files[selected].name);
-    });
-  }
-
-  private async exportDB() {
-    this.workingServ.busy();
-    const json = await this.db.exportDB();
-    const version = await this.db.getVersion();
-    await this.fr.write2File(JSON.stringify(json), version).catch(e => {
-      console.error('write2File failed!');
-      throw e;
-    });
-  }
-
-  private async importJson2DB(path: string) {
-    this.workingServ.busy();
-    const json = await Filesystem.readFile({
-      directory: this.dir.dir,
-      path,
-      encoding: Encoding.UTF8
-    });
-    await this.exportDB();
-    await this.db.importDB(json.data as string);
-    this.onSearchClear();
-    this.workingServ.done();
-  }
-
-  protected onImgIsLocal(path: string) {
-    return path.startsWith('/');
-  }
-
-  protected onGetImgSrc(img: string) {
-    if (!img) img = '/ebook-library/unknown.jpg';
-    return img?.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink + img) : img;
-  }
-
-  protected async onSearchClear() {
-    if (this.where2Search === 'A') {
-      this.authors = await this.db.loadAuthors(this.selectedCharacter);
-      this._authors = this.authors.slice(0, 10);
-    } else {
-      this.books = await this.db.loadBooks(this.bookSearchBy as any);
-      this._books = this.books.slice(0, 10);
-    }
-  }
-
-  protected onGo2Last() {
-    this.router.navigate(['/tts', this.lastListened.id, { type: this.lastListened.type }]);
-  }
-
-  protected async onSearch(event: Event) {
-    clearInterval(this.searchInterval);
-    this.searchInterval = setTimeout(() => {
-      console.log(event)
-      const val = event.target['value'];
-      if (!val) {
-        this.onSearchClear();
-        return;
-      }
-      if (val.length < 3) return;
-      this.search(val);
+  protected onSearch(event: Event): void {
+    this.searchQuery = (event.target as HTMLInputElement).value;
+    clearTimeout(this.searchTimer);
+    ++this.requestId;
+    this.searchTimer = setTimeout(() => {
+      void this.load();
     }, 500);
   }
 
-  private async search(val: string) {
-    if (this.where2Search === 'A') {
-      this.authors = await this.db.findAuthors(val);
-      this._authors = this.authors.slice(0, 10);
-    } else {
-      this.books = await this.db.findBooks(val);
-      this._books = this.books.slice(0, 10);
-    }
+  protected async onSearchClear(): Promise<void> {
+    this.searchQuery = '';
+    await this.load();
   }
 
-  protected onAuthorsIonInfinite(event: InfiniteScrollCustomEvent) {
-    if (this._authors.length < this.authors.length)
-      this._authors = this.authors.slice(0, this._authors.length + 10);
-    event.target.complete();
+  protected onAuthorsIonInfinite(event: InfiniteScrollCustomEvent): void {
+    this.visibleAuthors = this.authors.slice(0, this.visibleAuthors.length + this.pageSize);
+    void event.target.complete();
   }
 
-  protected onBooksIonInfinite(event: InfiniteScrollCustomEvent) {
-    if (this._books.length < this.books.length)
-      this._books = this.books.slice(0, this._books.length + 10);
-    event.target.complete();
+  protected onBooksIonInfinite(event: InfiniteScrollCustomEvent): void {
+    this.visibleBooks = this.books.slice(0, this.visibleBooks.length + this.pageSize);
+    void event.target.complete();
   }
 
-  protected onScrollStart(event: Event) {
-    if (this.scrollTop > event.target[`firstElementChild`].firstElementChild.getBoundingClientRect().y)
-      this.state = 'animated';
-    else
-      this.state = 'default';
+  protected onScroll(event: ScrollCustomEvent): void {
+    const top = Math.max(0, event.detail.scrollTop);
+    if (top === 0 || top < this.scrollTop - 2) this.state = 'default';
+    else if (top > this.scrollTop + 2) this.state = 'animated';
+    this.scrollTop = top;
   }
 
-  protected onScrollEnd(event: Event) {
-    this.scrollTop = event.target[`firstElementChild`].firstElementChild.getBoundingClientRect().y;
+  protected onGetImgSrc(img: string): string {
+    const source = img || '/ebook-library/unknown.jpg';
+    return source.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink + source) : source;
   }
 
-  protected onAddAuthor() {
-    this.dialog.open(
-      InputDialogComponent,
-      {
-        data: {
-          header: 'Add new author',
-        }
-      }
-    ).afterClosed().subscribe(async response => {
-      if (!response) return;
-      const path = await this.fr.getUniquePath(`/ebook-library/${response.surname}, ${response.name}/`);
-      await Filesystem.mkdir({
-        directory: this.dir.dir,
-        path,
-        recursive: true
-      });
-      this.db.addAuthor({
-        ...response,
-        path
-      }).then(authorId => {
-        this.router.navigate(['/author', authorId]);
-      });
-    });
+  protected onGo2Last(): void {
+    if (this.lastListened) void this.router.navigate(['/tts', this.lastListened.id, { type: this.lastListened.type }]);
   }
 
   protected onSearchClicked(input: HTMLInputElement, event: Event): void {
-    if (!this.hideCharacters) return;
+    if (!this.hideCharacters) {
+      input.focus();
+      return;
+    }
     input.blur();
-    input.value = null;
-    this.onSearchClear();
+    input.value = '';
+    void this.onSearchClear();
     event.stopPropagation();
   }
 
   protected onToggleCharVisibility(hide: boolean): void {
-    setTimeout(() => {
+    clearTimeout(this.visibilityTimer);
+    this.visibilityTimer = setTimeout(() => {
       this.hideCharacters = hide;
-    })
+    });
   }
 
-  ngOnDestroy() {
-    this.subs?.forEach(sub => sub?.unsubscribe());
+  protected ionViewWillLeave(): void {
+    ++this.requestId;
+    ++this.entryId;
+    clearTimeout(this.searchTimer);
+    clearTimeout(this.visibilityTimer);
+    this.hideCharacters = false;
+  }
+
+  private async choose(data: { header?: string; message?: string; selects: string[] }): Promise<number | undefined> {
+    if (this.destroyRef.destroyed) return undefined;
+    return firstValueFrom(
+      this.dialog
+        .open<DialogComponent, typeof data, number>(DialogComponent, { data })
+        .afterClosed()
+        .pipe(takeUntilDestroyed(this.destroyRef)),
+      { defaultValue: undefined },
+    );
+  }
+
+  private async runOperation(operation: () => Promise<void>): Promise<void> {
+    if (this.destroyRef.destroyed) return;
+    this.actionError = '';
+    this.workingServ.busy();
+    try {
+      await operation();
+    } catch (error) {
+      if (!this.destroyRef.destroyed) this.actionError = 'The operation failed. Please try again.';
+      console.error(error);
+    } finally {
+      this.workingServ.done();
+    }
+  }
+
+  protected async onShowDialog(): Promise<void> {
+    const selected = await this.choose({ message: 'Choose export/import database.', selects: ['EXPORT', 'IMPORT'] });
+    if (selected === 0) await this.runOperation(() => this.exportDB());
+    else if (selected === 1) await this.runOperation(() => this.selectWhat2Import());
+  }
+
+  private async exportDB(): Promise<void> {
+    const json = await this.db.exportDB();
+    const version = await this.db.getVersion();
+    await this.fr.write2File(JSON.stringify(json), version);
+  }
+
+  private async selectWhat2Import(): Promise<void> {
+    const files = await this.fr.getDBJsons();
+    if (!files.length) {
+      this.actionError = 'No database backups found.';
+      return;
+    }
+    // Release the busy overlay while the user chooses a backup.
+    this.workingServ.done();
+    const selected = await this.choose({
+      message: 'Choose a file to import.',
+      selects: files.map((file) => file.name),
+    });
+    if (selected === undefined || !files[selected] || this.destroyRef.destroyed) return;
+    this.workingServ.busy();
+    const json = await Filesystem.readFile({
+      directory: this.dir.dir,
+      path: `/ebook-library/${files[selected].name}`,
+      encoding: Encoding.UTF8,
+    });
+    await this.exportDB();
+    if (this.destroyRef.destroyed) return;
+    await this.db.importDB(json.data as string);
+    await this.onSearchClear();
+  }
+
+  protected async onAddAuthor(): Promise<void> {
+    const response = await firstValueFrom(
+      this.dialog
+        .open<InputDialogComponent, { header: string }, { name?: string; surname: string }>(InputDialogComponent, {
+          data: { header: 'Add new author' },
+        })
+        .afterClosed()
+        .pipe(takeUntilDestroyed(this.destroyRef)),
+      { defaultValue: undefined },
+    );
+    if (!response?.surname?.trim() || this.destroyRef.destroyed) return;
+    await this.runOperation(async () => {
+      const path = await this.fr.getUniquePath(
+        `/ebook-library/${response.surname.trim()}, ${(response.name || '').trim()}/`,
+      );
+      if (this.destroyRef.destroyed) return;
+      await Filesystem.mkdir({ directory: this.dir.dir, path, recursive: true });
+      const authorId = await this.db.addAuthor({ ...response, path });
+      if (!this.destroyRef.destroyed) await this.router.navigate(['/author', authorId]);
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.ionViewWillLeave();
     this.workingServ.done();
   }
-
 }
