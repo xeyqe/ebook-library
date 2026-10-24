@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable, InjectionToken } from '@angular/core';
 
 import { Filesystem, Encoding, FileInfo, ReaddirResult } from '@capacitor/filesystem';
 
@@ -9,19 +9,21 @@ import { DatabaseService } from 'src/app/services/database.service';
 
 import { AUTHOR, BOOK } from 'src/app/services/interfaces';
 
+export const FILE_READER_FILESYSTEM = new InjectionToken<Pick<typeof Filesystem, 'readdir'>>('File reader filesystem', {
+  providedIn: 'root',
+  factory: () => Filesystem,
+});
 
 @Injectable({
   providedIn: 'root',
 })
 export class FileReaderService {
+  private readonly filesystem = inject(FILE_READER_FILESYSTEM);
+  private readonly db = inject(DatabaseService);
+  private readonly dir = inject(DirectoryService);
+  private readonly webView = inject(WebView);
   ready2addBooks = true;
   ready2addAuthors = true;
-
-  constructor(
-    private db: DatabaseService,
-    private dir: DirectoryService,
-    private webView: WebView,
-  ) { }
 
   public async createEbookLibraryFolder() {
     console.log('createEbookLibraryFolder')
@@ -325,21 +327,26 @@ export class FileReaderService {
     });
   }
 
-  public async getUniquePath(filePath: string, index?: number): Promise<string> {
-    const suffix = index ? index : '';
-    const path = filePath.substring(0, filePath.lastIndexOf('/'));
-    const isFile = filePath.substring(filePath.lastIndexOf('/') + 1).includes('.');
-    const fileName = isFile ? filePath.substring(filePath.lastIndexOf('/') + 1, filePath.lastIndexOf('.')) + suffix : '';
-    const extension = isFile ? ('.' + filePath.substring(filePath.lastIndexOf('.') + 1)) : '';
-    try {
-      await Filesystem.stat({
-        path: `${path}/${fileName}${extension}`,
-        directory: this.dir.dir
-      });
-      return await this.getUniquePath(filePath, suffix ? suffix + 1 : 1);
-    } catch (e) {
-      return `${path}/${fileName}${extension}`;
+  public async getUniquePath(filePath: string): Promise<string> {
+    const isDirectory = filePath.endsWith('/');
+    const normalizedPath = filePath.replace(/\/+$/, '');
+    const separator = normalizedPath.lastIndexOf('/');
+    const parentPath = separator < 0 ? '' : normalizedPath.slice(0, separator + 1);
+    const name = normalizedPath.slice(separator + 1);
+    const extensionIndex = isDirectory ? -1 : name.lastIndexOf('.');
+    const stem = extensionIndex > 0 ? name.slice(0, extensionIndex) : name;
+    const extension = extensionIndex > 0 ? name.slice(extensionIndex) : '';
+    const { files } = await this.filesystem.readdir({
+      directory: this.dir.dir,
+      path: parentPath || '',
+    });
+    const existingNames = new Set(files.map(file => file.name));
+    let candidate = name;
+    let suffix = 0;
+    while (existingNames.has(candidate)) {
+      candidate = `${stem}${++suffix}${extension}`;
     }
+    return `${parentPath}${candidate}${isDirectory ? '/' : ''}`;
   }
 
 }

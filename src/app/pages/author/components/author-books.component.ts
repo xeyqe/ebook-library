@@ -55,7 +55,7 @@ export class AuthorBooksComponent {
       if (this.destroyRef.destroyed) return;
       for (const file of files) {
         const title = file.name.substring(0, file.name.lastIndexOf('.'));
-        const path = await this.fs.getUniquePath(this.author().path + file.name);
+        const path = await this.fs.getUniquePath(`${this.author().path.replace(/\/+$/, '')}/${file.name}`);
 
         const destUri = (
           await Filesystem.getUri({

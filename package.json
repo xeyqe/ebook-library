@@ -53,7 +53,7 @@
     "@xeyqe/capacitor-tts": "^0.0.8",
     "capacitor-all-files-access-permission": "0.0.5",
     "capacitor-plugin-safe-area": "5.0.1",
-    "capacitor-zip4j": "0.0.5",
+    "capacitor-zip4j": "0.0.6",
     "cordova-androidx-build": "^1.0.4",
     "cordova-plugin-device": "^3.0.0",
     "cordova-plugin-inappbrowser": "^7.0.0",
