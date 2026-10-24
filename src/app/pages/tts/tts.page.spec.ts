@@ -300,4 +300,13 @@ describe('TTS playback integration', () => {
     expect(reader.stop).not.toHaveBeenCalled();
     expect(page.isSpeaking()).toBe(true);
   });
+  it('saves progress and releases audio focus even when a listener fails to detach', async () => {
+    await page.onOff();
+    removeProgress.mockRejectedValue(new Error('Listener removal failed'));
+    await expect(page.playback.stop()).rejects.toThrow('Unable to stop speech playback cleanly');
+    expect(removeFocus).toHaveBeenCalledTimes(1);
+    expect(reader.abandonFocus).toHaveBeenCalledTimes(1);
+    expect(database.updateBookProgress).toHaveBeenCalledWith(42, '0/2');
+    expect(page.working.isSpeaking()).toBe(false);
+  });
 });

@@ -109,7 +109,10 @@ export class AuthorComponent implements OnInit, OnDestroy {
     await this.updateOldImgs(author.img);
     if (this.destroyRef.destroyed) return;
     this.initializeForm(this.author());
-    this.fs.addBooksOfAuthor(author.id, author.path);
+    await this.fs.addBooksOfAuthor(author.id, author.path);
+    const refreshed = await this.db.getAuthor(author.id);
+    if (!this.destroyRef.destroyed && refreshed)
+      this.author.update((current) => ({ ...current, booksIds: refreshed.booksIds }));
   }
 
   private async updateOldImgs(img: string): Promise<void> {

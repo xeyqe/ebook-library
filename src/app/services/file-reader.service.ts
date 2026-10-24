@@ -1,330 +1,218 @@
 import { inject, Injectable, InjectionToken } from '@angular/core';
-
-import { Filesystem, Encoding, FileInfo, ReaddirResult } from '@capacitor/filesystem';
-
-import { WebView } from '@awesome-cordova-plugins/ionic-webview/ngx';
-
+import { Filesystem, Encoding, FileInfo } from '@capacitor/filesystem';
 import { DirectoryService } from './directory.service';
-import { DatabaseService } from 'src/app/services/database.service';
+import { DatabaseService } from './database.service';
+import { AUTHOR, BOOK } from './interfaces';
 
-import { AUTHOR, BOOK } from 'src/app/services/interfaces';
-
-export const FILE_READER_FILESYSTEM = new InjectionToken<Pick<typeof Filesystem, 'readdir'>>('File reader filesystem', {
+export const FILE_READER_FILESYSTEM = new InjectionToken<
+  Pick<typeof Filesystem, 'readdir' | 'mkdir' | 'downloadFile' | 'readFile' | 'writeFile' | 'deleteFile'>
+>('File reader filesystem', {
   providedIn: 'root',
-  factory: () => ({ readdir: options => Filesystem.readdir(options) }),
+  factory: () => ({
+    readdir: (options) => Filesystem.readdir(options),
+    mkdir: (options) => Filesystem.mkdir(options),
+    downloadFile: (options) => Filesystem.downloadFile(options),
+    readFile: (options) => Filesystem.readFile(options),
+    writeFile: (options) => Filesystem.writeFile(options),
+    deleteFile: (options) => Filesystem.deleteFile(options),
+  }),
 });
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class FileReaderService {
   private readonly filesystem = inject(FILE_READER_FILESYSTEM);
   private readonly db = inject(DatabaseService);
   private readonly dir = inject(DirectoryService);
-  private readonly webView = inject(WebView);
-  ready2addBooks = true;
-  ready2addAuthors = true;
+  private authorScan?: Promise<void>;
+  private readonly bookScans = new Map<number, Promise<void>>();
 
-  public async createEbookLibraryFolder() {
-    console.log('createEbookLibraryFolder')
-    return new Promise<void>((resolve) => {
-      Filesystem.readdir({
-        directory: this.dir.dir,
-        path: ''
-      }).then(item => {
-        if (item.files.some(it => it.name === 'ebook-library')) resolve();
-        else {
-          Filesystem.mkdir({
-            directory: this.dir.dir,
-            path: 'ebook-library'
-          }).then(() => {
-            resolve();
-          });
-        }
-      });
+  get ready2addAuthors(): boolean {
+    return !this.authorScan;
+  }
+  get ready2addBooks(): boolean {
+    return this.bookScans.size === 0;
+  }
+
+  async createEbookLibraryFolder(): Promise<void> {
+    const { files } = await this.filesystem.readdir({ directory: this.dir.dir, path: '' });
+    if (!files.some((file) => file.name === 'ebook-library' && file.type === 'directory')) {
+      await this.filesystem.mkdir({ directory: this.dir.dir, path: 'ebook-library', recursive: true });
+    }
+  }
+
+  async createApplicationFolder(): Promise<void> {
+    const { files } = await this.filesystem.readdir({ directory: this.dir.dir, path: '' });
+    if (files.some((file) => file.name === 'ebook-library' && file.type === 'directory')) return;
+    await this.filesystem.mkdir({ directory: this.dir.dir, path: 'ebook-library/Wilde, Oscar', recursive: true });
+    await this.downloadDorian();
+  }
+
+  async downloadDorian(): Promise<void> {
+    const { files } = await this.filesystem.readdir({ directory: this.dir.dir, path: 'ebook-library' });
+    if (!files.some((file) => file.name === 'Wilde, Oscar' && file.type === 'directory')) {
+      await this.filesystem.mkdir({ directory: this.dir.dir, path: 'ebook-library/Wilde, Oscar', recursive: true });
+    }
+    await this.ensureDownload(
+      'ebook-library/Wilde, Oscar/The Picture of Dorian Gray.epub',
+      'https://www.gutenberg.org/ebooks/174.epub',
+    );
+  }
+
+  private async ensureDownload(path: string, url: string): Promise<void> {
+    const parent = path.slice(0, path.lastIndexOf('/'));
+    const name = path.slice(path.lastIndexOf('/') + 1);
+    // Listing distinguishes a missing file from permission and storage failures.
+    const { files } = await this.filesystem.readdir({ directory: this.dir.dir, path: parent });
+    if (files.some((file) => file.type === 'file' && file.name === name)) return;
+    await this.filesystem.downloadFile({ directory: this.dir.dir, path, url });
+  }
+
+  listOfAuthors(): Promise<void> {
+    if (this.authorScan) return this.authorScan;
+    this.authorScan = this.scanAuthors().finally(() => {
+      this.authorScan = undefined;
     });
+    return this.authorScan;
   }
 
-
-  public async createApplicationFolder() {
-    console.log('createApplicationFolder')
-    return new Promise<void>((resolve) => {
-      Filesystem.readdir({
-        directory: this.dir.dir,
-        path: ''
-      }).then(async item => {
-        if (item.files.some(it => it.name === 'ebook-library')) resolve();
-        else {
-          await Filesystem.mkdir({
-            directory: this.dir.dir,
-            path: 'ebook-library'
-          });
-          await Filesystem.mkdir({
-            directory: this.dir.dir,
-            path: 'ebook-library/Wilde, Oscar'
-          });
-          return await this.downloadDorian();
-        }
-      });
-    });
-  }
-
-  public async downloadDorian(): Promise<any> {
-    try {
-      return await Filesystem.downloadFile({
-        directory: this.dir.dir,
-        path: 'ebook-library/Wilde, Oscar/The Picture of Dorian Gray.epub',
-        url: 'https://www.gutenberg.org/ebooks/174.epub'
-      });
-    } catch (e) {
-      console.error('downloadDorian failed!');
-      console.error(e);
+  private async scanAuthors(): Promise<void> {
+    const paths = await this.db.allAuthorsPaths();
+    const { files } = await this.filesystem.readdir({ directory: this.dir.dir, path: 'ebook-library' });
+    for (const folder of files) {
+      if (folder.type === 'directory' && folder.name !== 'epub') await this.addAuthor(paths, folder);
     }
   }
 
-  public async listOfAuthors() {
-    if (!this.ready2addAuthors) return;
-    this.ready2addAuthors = false;
-    let allAuthorsPaths: string[];
-    try {
-      allAuthorsPaths = await this.db.allAuthorsPaths();
-    } catch (e) {
-      console.error('this.db.allAuthorsPaths failed')
-      console.error(e)
-    }
-
-    let foldersFiles: ReaddirResult;
-    try {
-      foldersFiles = await Filesystem.readdir({
-        directory: this.dir.dir,
-        path: 'ebook-library'
-      });
-    } catch (e) {
-      console.error('Filesystem.readdir failed')
-      console.error(e)
-    }
-    const folders: FileInfo[] = [];
-    for (const item of foldersFiles.files) {
-      if (item.type === 'directory' && item.name !== 'epub') folders.push(item);
-    }
-    for (const authorFolder of folders) {
-      this.addAuthor(allAuthorsPaths, authorFolder);
-    }
-    this.ready2addAuthors = true;
+  private async addAuthor(paths: string[], folder: FileInfo): Promise<void> {
+    const path = `/ebook-library/${folder.name}`;
+    if (paths.some((existing) => existing?.replace(/\/+$/, '') === path)) return;
+    const [surname, ...names] = folder.name.split(',');
+    const authorId = await this.db.addAuthor(
+      this.createAuthor({ surname: surname.trim(), forename: names.join(',').trim(), path }),
+    );
+    await this.addBooksOfAuthor(authorId, path);
   }
 
-  private async addAuthor(allAuthorsPaths: string[], authorFolder: FileInfo) {
-    const folder = `/ebook-library/${authorFolder.name}`;
-    if (allAuthorsPaths.includes(folder) || allAuthorsPaths.includes(`${folder}/`)) return;
-    const name = authorFolder.name.substring(authorFolder.name.lastIndexOf('/') + 1).split(',');
-    const surname = name[0].trim();
-    let forename = '';
-    if (name[1]) forename = name[1].trim();
-    let authorId: number;
-
-    try {
-      const author = this.createAuthor({ forename, surname, path: folder });
-      authorId = await this.db.addAuthor(author);
-    } catch (e) {
-      console.error('authorId = await this.db.addAuthor failed')
-      console.error(e)
-    }
-
-    this.db.authorsBooksPaths(authorId).then((paths) => {
-      try {
-        this._booksOfAuthor(`/ebook-library/${authorFolder.name}/`, authorId, paths);
-      } catch (e) {
-        console.error(`_booksOfAuthor`)
-        console.error(e)
-      }
-    }).catch(e => {
-      console.error(e)
-    })
-  }
-
-  private createAuthor(dt: { forename: string, surname: string, path: string }): AUTHOR {
+  private createAuthor(dt: { forename: string; surname: string; path: string }): AUTHOR {
     return {
-      id: null, name: dt.forename, surname: dt.surname, pseudonym: null, nationality: null,
-      birth: null, death: null, biography: null, img: null, rating: null, path: dt.path,
-      idInJson: null, dtbkId: null, lgId: null, cbdbId: null, booksIds: null,
+      id: null,
+      name: dt.forename,
+      surname: dt.surname,
+      pseudonym: null,
+      nationality: null,
+      birth: null,
+      death: null,
+      biography: null,
+      img: null,
+      rating: null,
+      path: dt.path,
+      idInJson: null,
+      dtbkId: null,
+      lgId: null,
+      cbdbId: null,
+      booksIds: null,
     };
   }
 
-  public addBooksOfAuthor(authorId: number, path: string) {
-    console.log('addBooksOfAuthor');
-    console.log(authorId, path);
-    if (this.ready2addBooks) {
-      this.ready2addBooks = false;
-      this.db.authorsBooksPaths(authorId).then((paths) => {
-        this._booksOfAuthor(path, authorId, paths);
-      });
-    }
+  addBooksOfAuthor(authorId: number, path: string): Promise<void> {
+    if (!path) return Promise.resolve();
+    const existing = this.bookScans.get(authorId);
+    if (existing) return existing;
+    const scan = this.scanBooks(authorId, path).finally(() => {
+      this.bookScans.delete(authorId);
+    });
+    this.bookScans.set(authorId, scan);
+    return scan;
   }
 
-  public async getNonBookFilesOfFolder(path: string): Promise<string[]> {
-    console.log('getNonBookFilesOfFolder')
-    console.log(path);
-    const item = await Filesystem.readdir({
-      directory: this.dir.dir,
-      path
-    }).catch(e => {
-      console.error('getNonBookFilesOfFolder readdir failed.');
-      throw e;
-    });
-    const foundFiles = [];
-    for (const file of item.files) {
-      if (file.type === 'file') {
-        const extension = file.name.substring(file.name.lastIndexOf('.') + 1);
-        if (!['txt', 'epub', 'pdf'].includes(extension)) {
-          if (path.endsWith('/')) path = path.substring(0, path.length - 1);
-          foundFiles.push(`${path}/${file.name}`);
-        }
+  private async scanBooks(authorId: number, path: string): Promise<void> {
+    const paths = new Set(await this.db.authorsBooksPaths(authorId));
+    await this.booksOfAuthor(path, authorId, paths);
+  }
+
+  private async booksOfAuthor(path: string, authorId: number, paths: Set<string>): Promise<void> {
+    const folder = path.replace(/\/+$/, '');
+    const { files } = await this.filesystem.readdir({ directory: this.dir.dir, path: folder });
+    for (const file of files) {
+      const fullPath = `${folder}/${file.name}`;
+      if (file.type === 'directory') await this.booksOfAuthor(fullPath, authorId, paths);
+      else if (file.type === 'file' && /\.(txt|epub|pdf)$/i.test(file.name) && !paths.has(fullPath)) {
+        const title = file.name.slice(0, file.name.lastIndexOf('.'));
+        await this.db.addBook(this.createBook({ title, creatorIds: [authorId], path: fullPath }));
+        paths.add(fullPath);
       }
     }
-    return foundFiles;
   }
 
-  private async _booksOfAuthor(folderPath: string, authorId: number, paths: string[]) {
-    console.log('_booksOfAuthor')
-    console.log(folderPath, authorId, paths);
-    if (folderPath.endsWith('/')) folderPath = folderPath.substring(0, folderPath.length - 1);
-    Filesystem.readdir({
-      directory: this.dir.dir,
-      path: folderPath
-    }).then(async item => {
-      console.log(item)
-      for (const file of item.files) {
-        if (file.type === 'file') {
-          await this.addBook({ file, paths, folderPath, authorId });
-        } else {
-          await this._booksOfAuthor(folderPath + '/' + file.name, authorId, paths);
-        }
-      }
-      this.ready2addBooks = true;
-    }).catch((e) => {
-      this.ready2addBooks = true;
-      console.error('listDir failed: ');
-      console.error(folderPath)
-      console.error(e);
-    });
+  async getNonBookFilesOfFolder(path: string): Promise<string[]> {
+    const { files } = await this.filesystem.readdir({ directory: this.dir.dir, path });
+    return files
+      .filter((file) => file.type === 'file' && !/\.(txt|epub|pdf)$/i.test(file.name))
+      .map((file) => `${path.replace(/\/+$/, '')}/${file.name}`);
   }
 
-  private async addBook(dt: { file: FileInfo, paths: string[], folderPath: string, authorId: number },) {
-    const extension = dt.file.name.substring(dt.file.name.lastIndexOf('.') + 1);
-    if (!['txt', 'epub', 'pdf'].includes(extension)) return;
-    if (dt.paths.includes(`${dt.folderPath}/${dt.file.name}`) || dt.paths.includes(`${dt.folderPath}${dt.file.name}`)) return;
-    const title = dt.file.name.substring(0, dt.file.name.lastIndexOf('.'));
-    const book = this.createBook({ title, creatorIds: [dt.authorId], path: `${dt.folderPath}/${dt.file.name}` });
-    console.log('added book')
-    console.log(book)
-    await this.db.addBook(book);
-  }
-
-  private createBook(dt: { title: string, creatorIds: number[], path: string }): BOOK {
+  private createBook(dt: { title: string; creatorIds: number[]; path: string }): BOOK {
     return {
-      id: null, title: dt.title, creatorIds: dt.creatorIds, originalTitle: null, annotation: null,
-      publisher: null, published: null, genre: null, length: null, language: 'cs-CZ', translator: null,
-      ISBN: null, path: dt.path, progress: null, rating: null, img: null, serie: null, serieOrder: null,
-      dtbkId: null, lgId: null, cbdbId: null, added: new Date(), lastRead: null, finished: null
+      id: null,
+      title: dt.title,
+      creatorIds: dt.creatorIds,
+      originalTitle: null,
+      annotation: null,
+      publisher: null,
+      published: null,
+      genre: null,
+      length: null,
+      language: 'cs-CZ',
+      translator: null,
+      ISBN: null,
+      path: dt.path,
+      progress: null,
+      rating: null,
+      img: null,
+      serie: null,
+      serieOrder: null,
+      dtbkId: null,
+      lgId: null,
+      cbdbId: null,
+      added: new Date(),
+      lastRead: null,
+      finished: null,
     };
   }
 
-  public async readTextFile(fullPath: string): Promise<string> {
-    console.log('readTextFile')
-    console.log(fullPath)
-    const resp = await Filesystem.readFile({
-      directory: this.dir.dir,
-      path: fullPath,
-      encoding: Encoding.UTF8
-    });
-    return resp.data as string;
+  async readTextFile(path: string): Promise<string> {
+    const { data } = await this.filesystem.readFile({ directory: this.dir.dir, path, encoding: Encoding.UTF8 });
+    if (typeof data !== 'string') throw new Error(`Unable to read text file: ${path}`);
+    return data;
   }
 
-  public async downloadPicture(Uri: string, path: string, fileName: string): Promise<string> {
-    console.log('downloadPicture');
-    console.log(Uri, path, fileName);
-
-    if (path[0] === '/') {
-      path = path.substring(1);
-    }
-
-    const uri = await Filesystem.getUri({
-      directory: this.dir.dir,
-      path: ''
-    });
-
-    if (path.endsWith('/')) path = path.substring(0, path.length - 1);
-
-    const src = this.webView.convertFileSrc(`${uri.uri}/${path}/${fileName}`);
-
-    return new Promise((resolve) => {
-      const pth = `/${path}/${fileName}`;
-      Filesystem.stat({
-        directory: this.dir.dir,
-        path: pth
-      }).then(() => {
-        resolve(src);
-      }).catch(() => {
-        const filePath = pth.slice(0, pth.lastIndexOf('/')) + '/' + pth.slice(pth.lastIndexOf('/') + 1).replace(/[,:\s/]/g, '_');
-        Filesystem.downloadFile({
-          directory: this.dir.dir,
-          path: filePath,
-          url: Uri
-        }).then(() => {
-          resolve(filePath);
-        }).catch(e => {
-          console.error(e);
-        });
-      });
-    });
+  async downloadPicture(url: string, path: string, fileName: string): Promise<string> {
+    const name = fileName.replace(/[,:\s/\\]/g, '_');
+    if (!name || name === '.' || name === '..') throw new Error('Invalid picture filename.');
+    const filePath = `/${path.replace(/^\/+|\/+$/g, '')}/${name}`;
+    await this.ensureDownload(filePath, url);
+    return filePath;
   }
 
-  public removeFile(path: string) {
-    console.log('removeFile');
-    console.log(path);
-    return Filesystem.deleteFile({
-      directory: this.dir.dir,
-      path
-    }).catch(e => {
-      console.error(`removeFile on ${path} failed!`);
-      throw e;
-    });
+  async removeFile(path: string): Promise<void> {
+    await this.filesystem.deleteFile({ directory: this.dir.dir, path });
   }
 
-  public async write2File(text: string, dbVersion: number) {
-    console.log('write2File');
-    console.log(text, dbVersion);
+  async write2File(text: string, dbVersion: number): Promise<void> {
     const path = `/ebook-library/db${dbVersion}_${new Date().toJSON().replace(/[,:\s/]/g, '_')}.json`;
-    await Filesystem.writeFile({
-      directory: this.dir.dir,
-      path,
-      data: text,
-      encoding: Encoding.UTF8,
-    }).then(a => console.log(a)).catch(e => console.error(e));
+    await this.filesystem.writeFile({ directory: this.dir.dir, path, data: text, encoding: Encoding.UTF8 });
   }
 
-  public async getDBJsons(): Promise<FileInfo[]> {
-    console.log('getDBJsons')
-    const data = await Filesystem.readdir({
-      directory: this.dir.dir,
-      path: 'ebook-library'
-    });
-    const files = data.files.filter(fl => /db.*\.json/.test(fl.name));
-    return files;
+  async getDBJsons(): Promise<FileInfo[]> {
+    const { files } = await this.filesystem.readdir({ directory: this.dir.dir, path: 'ebook-library' });
+    return files.filter((file) => file.type === 'file' && /^db.*\.json$/i.test(file.name));
   }
 
-  public async downloadUnknownImg() {
-    console.log('downloadUnknownImg')
-    await Filesystem.stat({
-      directory: this.dir.dir,
-      path: '/ebook-library/unknown.jpg'
-    }).catch(async () => {
-      return Filesystem.downloadFile({
-        directory: this.dir.dir,
-        path: 'ebook-library/unknown.jpg',
-        url: 'https://p1.hiclipart.com/preview/584/221/301/sword-art-online-vector-icons-help-unknown-png-icon-thumbnail.jpg'
-      });
-    });
+  async downloadUnknownImg(): Promise<void> {
+    await this.ensureDownload(
+      'ebook-library/unknown.jpg',
+      'https://p1.hiclipart.com/preview/584/221/301/sword-art-online-vector-icons-help-unknown-png-icon-thumbnail.jpg',
+    );
   }
 
   public async getUniquePath(filePath: string): Promise<string> {
@@ -340,7 +228,7 @@ export class FileReaderService {
       directory: this.dir.dir,
       path: parentPath || '',
     });
-    const existingNames = new Set(files.map(file => file.name));
+    const existingNames = new Set(files.map((file) => file.name));
     let candidate = name;
     let suffix = 0;
     while (existingNames.has(candidate)) {
@@ -348,5 +236,4 @@ export class FileReaderService {
     }
     return `${parentPath}${candidate}${isDirectory ? '/' : ''}`;
   }
-
 }

@@ -35,7 +35,8 @@ export class SpeechPlaybackService {
       }
       await this.stopSession();
       this.bookId.set(options.bookId);
-      this.texts = options.texts;
+      if (!options.texts.length) throw new Error('There is no text to read.');
+      this.texts = [...options.texts];
       this.progress.set(options.progress);
       this.completed = false;
       this.error.set('');
@@ -48,7 +49,7 @@ export class SpeechPlaybackService {
           this.progress.set(Math.max(0, Math.min(event.progress + 1, this.texts.length - 1)));
         });
         this.focusListener = await this.tts.addListener('audioFocusChangeEvent', (event) => {
-          if (event.type?.startsWith('AUDIOFOCUS_LOSS')) {
+          if (session === this.session && event.type?.startsWith('AUDIOFOCUS_LOSS')) {
             void this.stop().catch((error) => this.reportError(error));
           }
         });
@@ -105,28 +106,29 @@ export class SpeechPlaybackService {
     ++this.session;
     this.isSpeaking.set(false);
     this.working.isSpeaking.set(false);
-    try {
-      if (stopNative && wasSpeaking) await this.tts.stop();
-      if (restoreProgress && wasSpeaking && !this.completed) await this.restoreProgress();
-    } finally {
-      const progressListener = this.progressListener;
-      const focusListener = this.focusListener;
-      this.progressListener = undefined;
-      this.focusListener = undefined;
+    const errors: unknown[] = [];
+    const attempt = async (operation: () => Promise<unknown>) => {
       try {
-        await progressListener?.remove();
-      } finally {
-        try {
-          await focusListener?.remove();
-        } finally {
-          if (this.hasAudioFocus) {
-            this.hasAudioFocus = false;
-            await this.tts.abandonFocus();
-          }
-        }
+        await operation();
+      } catch (error) {
+        errors.push(error);
       }
-      if (wasSpeaking) await this.saveProgress();
+    };
+    if (stopNative && wasSpeaking) await attempt(() => this.tts.stop());
+    if (restoreProgress && wasSpeaking && !this.completed) await attempt(() => this.restoreProgress());
+    const progressListener = this.progressListener;
+    const focusListener = this.focusListener;
+    this.progressListener = undefined;
+    this.focusListener = undefined;
+    if (progressListener) await attempt(() => progressListener.remove());
+    if (focusListener) await attempt(() => focusListener.remove());
+    if (this.hasAudioFocus) {
+      this.hasAudioFocus = false;
+      await attempt(() => this.tts.abandonFocus());
     }
+    // Persist the checkpoint even if native cleanup fails.
+    if (wasSpeaking) await attempt(() => this.saveProgress());
+    if (errors.length) throw new AggregateError(errors, 'Unable to stop speech playback cleanly.');
   }
 
   async restoreProgress(): Promise<void> {

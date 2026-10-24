@@ -1,28 +1,37 @@
-import { Injectable, signal } from '@angular/core';
+import { inject, Injectable, InjectionToken, signal } from '@angular/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { WebView } from '@awesome-cordova-plugins/ionic-webview/ngx';
 
-@Injectable({
+export const DIRECTORY_FILESYSTEM = new InjectionToken<Pick<typeof Filesystem, 'getUri'>>('Directory filesystem', {
   providedIn: 'root',
-})
+  factory: () => ({ getUri: (options) => Filesystem.getUri(options) }),
+});
+
+@Injectable({ providedIn: 'root' })
 export class DirectoryService {
-  private _dir: Directory;
+  readonly dir = Directory.ExternalStorage;
   readonly imgPreLink = signal('');
+  readonly error = signal('');
+  private readonly webView = inject(WebView);
+  private readonly filesystem = inject(DIRECTORY_FILESYSTEM);
+  private initialization?: Promise<void>;
 
-  constructor(private webView: WebView) {
-    this._dir = Directory.ExternalStorage;
-    this.setImgPreLink();
+  constructor() {
+    void this.initialize().catch((error) => console.error('Unable to resolve the library directory', error));
   }
 
-  public get dir(): Directory {
-    return this._dir;
-  }
-
-  private async setImgPreLink() {
-    const uri = await Filesystem.getUri({
-      directory: this._dir,
-      path: '',
+  initialize(): Promise<void> {
+    this.initialization ??= this.resolveDirectory().catch((error) => {
+      this.initialization = undefined;
+      this.error.set(error instanceof Error ? error.message : String(error));
+      throw error;
     });
-    this.imgPreLink.set(this.webView.convertFileSrc(uri.uri));
+    return this.initialization;
+  }
+
+  private async resolveDirectory(): Promise<void> {
+    const { uri } = await this.filesystem.getUri({ directory: this.dir, path: '' });
+    this.imgPreLink.set(this.webView.convertFileSrc(uri));
+    this.error.set('');
   }
 }
