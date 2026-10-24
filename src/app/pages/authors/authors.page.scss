@@ -1,3 +1,5 @@
+@use '../../../theme/collapse';
+
 ion-searchbar,
 ion-segment-button {
   color: white;
@@ -95,5 +97,6 @@ ion-header {
 }
 
 .overflowed {
-  overflow: hidden;
+  @include collapse.collapse($duration: 200ms, $expand-easing: ease-out, $collapse-easing: ease-in);
+  flex-shrink: 0;
 }

@@ -1,3 +1,5 @@
+@use '../../../../theme/collapse';
+
 :host {
   display: block;
 }
@@ -9,10 +11,13 @@
   border-bottom: thin double gray;
   border-top: thin double gray;
 
+  &__collapse {
+    @include collapse.collapse($hide-collapsed: true);
+  }
+
   &__books {
     display: flex;
     flex-direction: column;
-    overflow-x: hidden;
 
     & > div {
       display: flex;
@@ -30,11 +35,20 @@
   }
 
   &__name {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
     text-align: center;
     margin: 1rem auto;
     font-size: 1.5rem;
   }
 }
+
 .book-cont {
   display: flex;
   margin: 0.5rem;

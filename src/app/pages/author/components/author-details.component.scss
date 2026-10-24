@@ -1,3 +1,5 @@
+@use '../../../../theme/collapse';
+
 :host {
   display: block;
 }
@@ -21,7 +23,7 @@
   }
 }
 .collapsable {
-  overflow: hidden;
+  @include collapse.collapse($minimum-height: 10rem);
 }
 .marged {
   margin: 0.5rem;

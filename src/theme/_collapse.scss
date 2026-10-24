@@ -1,0 +1,36 @@
+@mixin collapse(
+  $duration: 500ms,
+  $minimum-height: 0,
+  $hide-collapsed: false,
+  $expand-easing: ease-in,
+  $collapse-easing: ease-out
+) {
+  display: grid;
+  grid-template-rows: minmax($minimum-height, 0fr);
+  transition: grid-template-rows $duration $collapse-easing;
+
+  @if $hide-collapsed {
+    visibility: hidden;
+    transition:
+      grid-template-rows $duration $collapse-easing,
+      visibility $duration;
+  }
+
+  &.is-expanded {
+    grid-template-rows: minmax($minimum-height, 1fr);
+    transition-timing-function: $expand-easing;
+
+    @if $hide-collapsed {
+      visibility: visible;
+    }
+  }
+
+  > * {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}

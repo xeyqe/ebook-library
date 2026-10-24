@@ -1,24 +1,32 @@
 @for (serie of series(); track serie.name) {
     <div class="serie-cont">
-        <div class="serie-cont__name" (click)="serie.open = !serie.open">{{ serie.name }}</div>
-        <div class="serie-cont__books" [@collapse]="serie.open">
-            @for (book of serie.books; track book.id) {
-                <div [routerLink]="['/book', book.id]" [style.order]="book.serieOrder">
-                    <span>{{ book.serieOrder }}</span>
-                    <ion-avatar>
-                        <img [src]="onGetImgSrc(book.img)" alt="img" />
-                    </ion-avatar>
-                    <mat-label class="book-title">
-                        <div class="ion-text-wrap">
-                            <h2>{{ book.title }}</h2>
-                        </div>
-                        @if (book.progress) {
-                            <mat-progress-bar mode="determinate" [value]="book.progress | percent2: book.progress">
-                            </mat-progress-bar>
-                        }
-                    </mat-label>
-                </div>
-            }
+        <button
+            type="button"
+            class="serie-cont__name"
+            [attr.aria-expanded]="serie.open"
+            (click)="serie.open = !serie.open">
+            {{ serie.name }}
+        </button>
+        <div class="serie-cont__collapse" [class.is-expanded]="serie.open" [inert]="!serie.open">
+            <div class="serie-cont__books">
+                @for (book of serie.books; track book.id) {
+                    <div [routerLink]="['/book', book.id]" [style.order]="book.serieOrder">
+                        <span>{{ book.serieOrder }}</span>
+                        <ion-avatar>
+                            <img [src]="onGetImgSrc(book.img)" alt="img" />
+                        </ion-avatar>
+                        <mat-label class="book-title">
+                            <div class="ion-text-wrap">
+                                <h2>{{ book.title }}</h2>
+                            </div>
+                            @if (book.progress) {
+                                <mat-progress-bar mode="determinate" [value]="book.progress | percent2: book.progress">
+                                </mat-progress-bar>
+                            }
+                        </mat-label>
+                    </div>
+                }
+            </div>
         </div>
     </div>
 }

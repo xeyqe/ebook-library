@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, input, output } from '@angular/core';
-import { animate, AUTO_STYLE, state, style, transition, trigger } from '@angular/animations';
 import { RouterLink } from '@angular/router';
 import { IonicModule } from '@ionic/angular/lazy';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -26,14 +25,6 @@ export interface AuthorSeries {
   templateUrl: './author-books.component.html',
   styleUrl: './author-books.component.scss',
   imports: [RouterLink, IonicModule, MatProgressBarModule, MatFormFieldModule, PercentPipe],
-  animations: [
-    trigger('collapse', [
-      state('true', style({ height: AUTO_STYLE, visibility: AUTO_STYLE })),
-      state('false', style({ height: '0', visibility: 'hidden' })),
-      transition('false => true', animate('500ms ease-in')),
-      transition('true => false', animate('500ms ease-out')),
-    ]),
-  ],
 })
 export class AuthorBooksComponent {
   readonly author = input.required<AUTHOR>();

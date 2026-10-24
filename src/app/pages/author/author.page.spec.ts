@@ -1,5 +1,4 @@
 import { By } from '@angular/platform-browser';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, provideRouter, convertToParamMap } from '@angular/router';
@@ -73,7 +72,6 @@ describe('AuthorComponent', () => {
         { provide: DirectoryService, useValue: { imgPreLink: 'file://' } },
         provideRouter([]),
         { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: '42' })) } },
-        provideNoopAnimations(),
         { provide: MatDialog, useValue: { open: vi.fn() } },
         BusyService,
         NonusedPicsService,
@@ -188,6 +186,31 @@ describe('AuthorComponent', () => {
     await (fixture.componentInstance as any).onDownloadAuthorInfoCBDB('new-id');
     expect(page.authorForm.controls.cbdbId.value).toBe('new-id');
     expect(page.suggestions.cbdbId).toEqual(['new-id']);
+  });
+
+  it('expands and collapses a series using its button without legacy animation providers', () => {
+    const fixture = TestBed.createComponent(AuthorBooksComponent);
+    const series = [{ name: 'Example series', open: false, books: [] }];
+    fixture.componentRef.setInput('author', author);
+    fixture.componentRef.setInput('books', []);
+    fixture.componentRef.setInput('series', series);
+    fixture.componentRef.setInput('imagePrefix', 'file://');
+    fixture.detectChanges();
+    const button: HTMLButtonElement = fixture.nativeElement.querySelector('button');
+    const content: HTMLElement = fixture.nativeElement.querySelector('.serie-cont__collapse');
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    expect(content.inert).toBe(true);
+
+    button.click();
+    fixture.detectChanges();
+    expect(series[0].open).toBe(true);
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+    expect(content.inert).toBe(false);
+
+    button.click();
+    fixture.detectChanges();
+    expect(series[0].open).toBe(false);
+    expect(content.inert).toBe(true);
   });
 
   it('connects the extracted editors, online results and books to the page state', async () => {

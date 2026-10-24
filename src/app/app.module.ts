@@ -2,7 +2,6 @@ import { NgModule } from '@angular/core';
 import { RouteReuseStrategy } from '@angular/router';
 import { HttpClientModule } from '@angular/common/http';
 import { BrowserModule, EVENT_MANAGER_PLUGINS } from '@angular/platform-browser';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 import { IonicStorageModule } from '@ionic/storage-angular';
 import { IonicModule, IonicRouteStrategy } from '@ionic/angular/lazy';
@@ -27,29 +26,21 @@ import { registerLocaleData } from '@angular/common';
 import localeCs from '@angular/common/locales/cs';
 registerLocaleData(localeCs);
 
-
 @NgModule({
-    declarations: [AppComponent],
-    imports: [
-        BrowserModule,
-        IonicModule.forRoot(),
-        AppRoutingModule,
-        BrowserAnimationsModule,
-        IonicStorageModule.forRoot(),
-        HttpClientModule,
-    ],
-    providers: [
-        { provide: EVENT_MANAGER_PLUGINS, useClass: PinchEventPlugin, multi: true },
-        { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
-        DatabaseService,
-        DirectoryService,
-        EpubService,
-        FileReaderService,
-        SQLite,
-        SQLitePorter,
-        WebScraperService,
-        WebView,
-    ],
-    bootstrap: [AppComponent]
+  declarations: [AppComponent],
+  imports: [BrowserModule, IonicModule.forRoot(), AppRoutingModule, IonicStorageModule.forRoot(), HttpClientModule],
+  providers: [
+    { provide: EVENT_MANAGER_PLUGINS, useClass: PinchEventPlugin, multi: true },
+    { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
+    DatabaseService,
+    DirectoryService,
+    EpubService,
+    FileReaderService,
+    SQLite,
+    SQLitePorter,
+    WebScraperService,
+    WebView,
+  ],
+  bootstrap: [AppComponent],
 })
-export class AppModule { }
+export class AppModule {}

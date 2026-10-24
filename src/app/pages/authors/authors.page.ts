@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, AfterViewInit, DestroyRef, inject } from '@angular/core';
-import { animate, state, style, transition, trigger } from '@angular/animations';
 import { InfiniteScrollCustomEvent, IonicModule, ScrollCustomEvent } from '@ionic/angular/lazy';
 import { Router, RouterModule } from '@angular/router';
 
@@ -36,20 +35,7 @@ type LastListened = { id: number; type: 'speech' | 'spritz' };
   selector: 'app-authors',
   templateUrl: './authors.page.html',
   styleUrls: ['./authors.page.scss'],
-  animations: [
-    trigger('expandCollapse', [
-      state(
-        'animated',
-        style({
-          'transform-origin': 'top',
-          height: '0px',
-        }),
-      ),
-      state('default', style({ height: '*' })),
-      transition('animated => default', animate('200ms ease-out')),
-      transition('default => animated', animate('200ms ease-in')),
-    ]),
-  ],
+
   imports: [
     IonicModule,
     MatButtonModule,

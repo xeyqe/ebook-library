@@ -13,7 +13,6 @@ import {
   Renderer2,
 } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
-import { animate, AUTO_STYLE, state, style, transition, trigger } from '@angular/animations';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
@@ -33,14 +32,6 @@ import { AuthorField, AuthorForm, AuthorSuggestions, AuthorValues } from '../aut
     MatInputModule,
     NgsContenteditableModule,
     ContenteditableComponent,
-  ],
-  animations: [
-    trigger('collapse2', [
-      state('true', style({ height: AUTO_STYLE })),
-      state('false', style({ height: '10rem' })),
-      transition('false => true', animate('500ms ease-in')),
-      transition('true => false', animate('500ms ease-out')),
-    ]),
   ],
 })
 export class AuthorDetailsComponent implements OnDestroy, OnChanges {

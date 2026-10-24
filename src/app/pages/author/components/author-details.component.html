@@ -31,15 +31,17 @@
 </div>
 
 @if (form().controls.biography.value || editing()) {
-    <div class="marged collapsable" [@collapse2]="form().controls.biography.disabled && !biographyReduced">
-        <mat-label class="red">Biography</mat-label>
-        <div (click)="onReduceHeight()">
-            <p
-                class="contenteditable"
-                [editable]="editing()"
-                [formControl]="form().controls.biography"
-                matInput
-                [class]="textColor()"></p>
+    <div class="marged collapsable" [class.is-expanded]="form().controls.biography.disabled && !biographyReduced">
+        <div class="biography-content">
+            <mat-label class="red">Biography</mat-label>
+            <div (click)="onReduceHeight()">
+                <p
+                    class="contenteditable"
+                    [editable]="editing()"
+                    [formControl]="form().controls.biography"
+                    matInput
+                    [class]="textColor()"></p>
+            </div>
         </div>
     </div>
 }

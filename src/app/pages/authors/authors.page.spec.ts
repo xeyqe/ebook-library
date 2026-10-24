@@ -1,5 +1,4 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { BehaviorSubject, of } from 'rxjs';
@@ -60,7 +59,6 @@ describe('AuthorsComponent', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        provideNoopAnimations(),
         BusyService,
         { provide: DatabaseService, useValue: database },
         { provide: FileReaderService, useValue: files },
