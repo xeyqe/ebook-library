@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Keep the book inside the central safe area of the Android splash icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="288dp"
+    android:height="288dp"
+    android:viewportWidth="288"
+    android:viewportHeight="288">
+    <path
+        android:fillColor="#BA2929"
+        android:fillType="evenOdd"
+        android:pathData="M76,76 L144,88 L212,76 Q224,74 224,88 L224,196 Q224,208 212,210 L144,222 L76,210 Q64,208 64,196 L64,88 Q64,74 76,76 Z M80,93 L80,194 L136,204 L136,104 Z M152,104 L152,204 L208,194 L208,93 Z" />
+</vector>

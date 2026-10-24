@@ -6,14 +6,13 @@
 		"SplashScreen": {
 			"launchShowDuration": 3000,
 			"launchAutoHide": true,
-			"backgroundColor": "#ffffff",
+			"launchFadeOutDuration": 200,
+			"backgroundColor": "#000000",
 			"androidSplashResourceName": "splash",
 			"androidScaleType": "CENTER_CROP",
-			"androidSpinnerStyle": "large",
-			"showSpinner": true,
+			"showSpinner": false,
 			"splashFullScreen": true,
 			"splashImmersive": false,
-			"layoutName": "splash_screen",
 			"useDialog": false
 		}
 	}
