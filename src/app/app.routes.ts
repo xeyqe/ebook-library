@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { ttsEntryGuard } from './pages/tts/tts-entry.guard';
 
 
 export const routes: Routes = [
@@ -17,6 +18,7 @@ export const routes: Routes = [
     },
     {
         path: 'tts/:id',
+        canActivate: [ttsEntryGuard],
         loadComponent: () => import('./pages/tts/tts.page').then((m) => m.TtsComponent)
     }
 ];

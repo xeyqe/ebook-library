@@ -284,4 +284,20 @@ describe('TTS playback integration', () => {
     expect(reader.read).toHaveBeenLastCalledWith(expect.objectContaining({ bookId: 7 }));
     expect(page.isSpeaking).toBe(true);
   });
+
+  it('pauses another book before entry and saves its progress', async () => {
+    await page.onOff();
+    listeners['progressArrayEvent']({ progress: 0 });
+    await page.playback.pauseForBook(7);
+    expect(reader.stop).toHaveBeenCalledTimes(1);
+    expect(database.updateBookProgress).toHaveBeenCalledWith(42, '1/2');
+    expect(page.working.isSpeaking).toBe(false);
+  });
+
+  it('preserves playback when entering the same book', async () => {
+    await page.onOff();
+    await page.playback.pauseForBook(42);
+    expect(reader.stop).not.toHaveBeenCalled();
+    expect(page.isSpeaking).toBe(true);
+  });
 });

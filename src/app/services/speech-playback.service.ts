@@ -72,6 +72,12 @@ export class SpeechPlaybackService {
     return this.queue(() => this.stopSession(true, restoreProgress));
   }
 
+  pauseForBook(bookId: number): Promise<void> {
+    return this.queue(async () => {
+      if (this.isSpeaking() && this.bookId !== bookId) await this.stopSession();
+    });
+  }
+
   switchEngine(engineName: string): Promise<void> {
     return this.queue(async () => {
       await this.stopSession();

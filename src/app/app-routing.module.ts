@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
+import { ttsEntryGuard } from './pages/tts/tts-entry.guard';
 
 const routes: Routes = [
   { path: '', redirectTo: 'authors', pathMatch: 'full' },
@@ -17,6 +18,7 @@ const routes: Routes = [
   },
   {
     path: 'tts/:id',
+    canActivate: [ttsEntryGuard],
     loadComponent: () => import('./pages/tts/tts.page').then((m) => m.TtsComponent)
   }
 ];
