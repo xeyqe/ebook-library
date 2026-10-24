@@ -154,7 +154,7 @@
                         mat-mini-fab
                         [disabled]="!initialized || (!spritzState.isSpritz && !speechReady)"
                         (click)="onOff()">
-                        <mat-icon>{{ speechState.isSpeaking ? "pause" : "play_arrow" }}</mat-icon>
+                        <mat-icon>{{ isSpeaking ? "pause" : "play_arrow" }}</mat-icon>
                     </button>
 
                     <button mat-mini-fab (pointerdown)="onStartRewinding(1)" (pointerup)="onStopRewinding(1)">

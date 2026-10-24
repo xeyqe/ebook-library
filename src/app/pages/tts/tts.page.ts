@@ -1,7 +1,7 @@
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ChangeDetectionStrategy, Component, OnInit, OnDestroy, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Capacitor, PluginListenerHandle } from '@capacitor/core';
+import { Capacitor } from '@capacitor/core';
 import { ActivatedRoute } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 
@@ -19,6 +19,7 @@ import { MatSliderModule } from '@angular/material/slider';
 import { filter, firstValueFrom } from 'rxjs';
 
 import { BusyService } from 'src/app/services/busy.service';
+import { SpeechPlaybackService } from 'src/app/services/speech-playback.service';
 import { EpubService } from 'src/app/services/epub.service';
 import { DatabaseService } from 'src/app/services/database.service';
 import { DirectoryService } from 'src/app/services/directory.service';
@@ -49,7 +50,6 @@ interface SpeechState {
   voices: Record<string, { voiceURI: string; name: string }[]>;
   voice: string;
   engines: { name: string; label: string; icon: number }[];
-  isSpeaking: boolean;
 }
 
 @Component({
@@ -75,7 +75,20 @@ export class TtsComponent implements OnInit, OnDestroy {
   protected isPortrait = window.screen.orientation.type.startsWith('portrait');
   protected id: number;
   protected texts: string[] = [];
-  protected readonly progress = signal(0);
+  private readonly playback = inject(SpeechPlaybackService);
+  private readonly viewProgress = signal(0);
+  private spritzSpeaking = false;
+
+  protected get progress() {
+    return !this.spritzState.isSpritz && this.playback.bookId === this.id ? this.playback.progress : this.viewProgress;
+  }
+
+  protected get isSpeaking(): boolean {
+    return this.spritzState.isSpritz
+      ? this.spritzSpeaking
+      : this.playback.bookId === this.id && this.playback.isSpeaking();
+  }
+
   protected readonly readingDetails: ReadingDetails = { speed: 30, title: '', authorName: '' };
   protected readonly spritzState: SpritzState = {
     isSpritz: false,
@@ -93,7 +106,6 @@ export class TtsComponent implements OnInit, OnDestroy {
     voices: {},
     voice: '',
     engines: [],
-    isSpeaking: false,
   };
 
   private path: string;
@@ -114,15 +126,12 @@ export class TtsComponent implements OnInit, OnDestroy {
 
   private lastReadSet: boolean;
   private readonly tts = inject(TTS_PLUGIN);
-  private progressPluginListener?: PluginListenerHandle;
-  private audioFocusPluginListener?: PluginListenerHandle;
-  private speechOperation: Promise<void> = Promise.resolve();
-  private speechSession = 0;
-  private hasAudioFocus = false;
   private destroyed = false;
-  private readingCompleted = false;
   protected speechReady = false;
-  protected speechError = '';
+  private initializationError = '';
+  protected get speechError(): string {
+    return this.initializationError || (this.playback.bookId === this.id ? this.playback.error() : '');
+  }
   protected readonly speakParams: Pick<ReadOptions, 'rate' | 'pitch' | 'volume' | 'pan'> = {
     rate: 3,
     pitch: 1,
@@ -148,7 +157,7 @@ export class TtsComponent implements OnInit, OnDestroy {
       await this.loadBook();
       if (!this.spritzState.isSpritz && !this.destroyed) await this.initSpeechOptions();
     } catch (error) {
-      this.speechError = 'Unable to initialize reading. Please try opening this book again.';
+      this.initializationError = 'Unable to initialize reading. Please try opening this book again.';
       console.error(error);
     } finally {
       this.working.done();
@@ -161,8 +170,8 @@ export class TtsComponent implements OnInit, OnDestroy {
 
   private watchAppResume() {
     this.platform.resume.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-      if (this.speechState.isSpeaking && !this.spritzState.isSpritz) {
-        void this.restoreNativeProgress().catch(error => console.error(error));
+      if (this.isSpeaking && !this.spritzState.isSpritz) {
+        void this.restoreNativeProgress().catch((error) => console.error(error));
       }
       setTimeout(() => {
         if (!this.destroyed) this.onOrientationChange();
@@ -179,7 +188,6 @@ export class TtsComponent implements OnInit, OnDestroy {
     try {
       const params = await this.getRouteParams();
       this.id = +params.id;
-      const lastListened = await this.db.getValue('as');
       this.db.saveValue('as', JSON.stringify({ id: this.id, type: params.type }));
 
       this.spritzState.isSpritz = params.type === 'spritz';
@@ -192,10 +200,6 @@ export class TtsComponent implements OnInit, OnDestroy {
         }
       } else {
         this.speakParams.rate = (await this.strg.get('speed')) || 3;
-      }
-
-      if (!lastListened || JSON.parse(lastListened).id !== this.id) {
-        this.stopSpeaking();
       }
     } catch (e) {
       console.error(`loadReadingPreferences failed`);
@@ -216,10 +220,11 @@ export class TtsComponent implements OnInit, OnDestroy {
     this.readingDetails.title = book.title;
 
     const progressArray = book.progress?.split('/') || ['0', '0'];
-    this.progress.set(+progressArray[0]);
+    const existingSession = !this.spritzState.isSpritz && this.playback.bookId === this.id;
+    if (!existingSession) this.progress.set(+progressArray[0]);
 
     this.texts = await this.getTexts();
-    if (this.progress() && +progressArray[1] !== this.texts.length - 1) {
+    if (!existingSession && this.progress() && +progressArray[1] !== this.texts.length - 1) {
       const percents = this.progress() / +progressArray[1];
       this.progress.set(Math.floor((this.texts.length - 1) * percents));
     }
@@ -228,7 +233,7 @@ export class TtsComponent implements OnInit, OnDestroy {
     this.working.done();
 
     const author = await this.db.getAuthor(book.creatorIds[0]);
-    this.readingDetails.authorName = [author.name, author.surname].filter(it => !!it).join(' ') || author.pseudonym;
+    this.readingDetails.authorName = [author.name, author.surname].filter((it) => !!it).join(' ') || author.pseudonym;
     this.initialized = true;
   }
 
@@ -254,17 +259,17 @@ export class TtsComponent implements OnInit, OnDestroy {
       console.error('Unable to load speech settings', error);
     }
     this.speechState.engines = (await this.tts.getSupportedEngines()).engines;
-    const engine = this.speechState.engines.some(item => item.name === settings.engine)
+    const engine = this.speechState.engines.some((item) => item.name === settings.engine)
       ? settings.engine
       : defaults.engine;
-    if (engine && engine !== defaults.engine) await this.tts.switchEngine({ engineName: engine });
+    if (engine && engine !== defaults.engine) await this.playback.switchEngine(engine);
     await this.loadLanguagesAndVoices();
     const language = this.speechState.languages.includes(settings.language || defaults.language)
       ? settings.language || defaults.language
       : this.speechState.languages[0];
     const voices = this.speechState.voices[language] || [];
     const voice =
-      voices.find(item => item.voiceURI === (settings.voice || defaults.voiceURI))?.voiceURI ||
+      voices.find((item) => item.voiceURI === (settings.voice || defaults.voiceURI))?.voiceURI ||
       voices[0]?.voiceURI ||
       '';
     this.speechState.language = language;
@@ -274,20 +279,7 @@ export class TtsComponent implements OnInit, OnDestroy {
       language: new FormControl(language, { nonNullable: true }),
       voice: new FormControl(voice, { nonNullable: true }),
     });
-    this.audioFocusPluginListener = await this.tts.addListener('audioFocusChangeEvent', event => {
-      if (
-        event.type === 'AUDIOFOCUS_LOSS' ||
-        event.type === 'AUDIOFOCUS_LOSS_TRANSIENT' ||
-        event.type === 'AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK'
-      ) {
-        void this.stopSpeaking();
-      }
-    });
-    if (this.destroyed) {
-      await this.audioFocusPluginListener?.remove();
-      this.audioFocusPluginListener = undefined;
-      return;
-    }
+    if (this.destroyed) return;
     this.watchSpeechSettings();
     this.speechReady = true;
   }
@@ -297,36 +289,35 @@ export class TtsComponent implements OnInit, OnDestroy {
       void this.db.saveValue('tts', JSON.stringify(this.speechForm.getRawValue()));
       void this.stopSpeaking();
     });
-    this.speechForm.controls.voice.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(value => {
+    this.speechForm.controls.voice.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => {
       this.speechState.voice = value;
     });
-    this.speechForm.controls.language.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(value => {
+    this.speechForm.controls.language.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => {
       this.speechState.language = value;
       this.speechForm.controls.voice.setValue(this.speechState.voices[value]?.[0]?.voiceURI || '');
     });
-    this.speechForm.controls.engine.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(engineName => {
+    this.speechForm.controls.engine.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((engineName) => {
       this.switchSpeechEngine(engineName);
     });
   }
 
   private switchSpeechEngine(engineName: string): void {
     this.speechReady = false;
-    void this.queueSpeechOperation(async () => {
-      await this.stopSpeechSession();
+    void (async () => {
       this.working.busy();
       try {
-        await this.tts.switchEngine({ engineName });
+        await this.playback.switchEngine(engineName);
         await this.loadLanguagesAndVoices();
         const language = this.speechState.languages.includes(this.speechForm.controls.language.value)
           ? this.speechForm.controls.language.value
           : this.speechState.languages[0];
         this.speechForm.controls.language.setValue(language);
-        this.speechError = '';
+        this.initializationError = '';
         this.speechReady = !this.destroyed;
       } finally {
         this.working.done();
       }
-    }).catch(error => this.showSpeechError(error));
+    })().catch((error) => this.showSpeechError(error));
   }
 
   private async loadLanguagesAndVoices() {
@@ -378,7 +369,7 @@ export class TtsComponent implements OnInit, OnDestroy {
       for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
         const page = await pdf.getPage(pageNumber);
         const { items } = await page.getTextContent();
-        const text = items.map(item => ('str' in item ? item.str : '')).join('\n');
+        const text = items.map((item) => ('str' in item ? item.str : '')).join('\n');
         this.appendSentences(text, sentences);
       }
       return sentences;
@@ -387,160 +378,61 @@ export class TtsComponent implements OnInit, OnDestroy {
     }
   }
 
-  private queueSpeechOperation(operation: () => Promise<void>): Promise<void> {
-    const pending = this.speechOperation.then(operation);
-    this.speechOperation = pending.catch(() => {});
-    return pending;
-  }
-
   protected async onOff() {
     if (!this.initialized || this.destroyed) return;
-    if (!this.lastReadSet && !this.speechState.isSpeaking) {
+    if (!this.lastReadSet && !this.isSpeaking) {
       this.lastReadSet = true;
       void this.db.updateBookLastRead(this.id, new Date());
     }
     if (this.spritzState.isSpritz) {
-      this.speechState.isSpeaking = !this.speechState.isSpeaking;
-      if (this.speechState.isSpeaking) void this.spritz();
+      if (!this.isSpeaking) await this.playback.stop();
+      this.spritzSpeaking = !this.isSpeaking;
+      if (this.isSpeaking) void this.spritz();
       return;
     }
-    try {
-      await this.queueSpeechOperation(async () => {
-        if (this.speechState.isSpeaking) {
-          await this.stopSpeechSession();
-          return;
-        }
-        await this.startSpeechSession();
-      });
-    } catch (error) {
-      this.showSpeechError(error);
-    }
-  }
-
-  private async startSpeechSession(): Promise<void> {
-    if (!this.speechReady || this.destroyed || !this.texts?.length) return;
-    this.speechError = '';
-    this.readingCompleted = false;
+    if (!this.speechReady || !this.texts.length) return;
+    this.initializationError = '';
     clearTimeout(this.progressSaveTimer);
-    const session = ++this.speechSession;
-    this.speechState.isSpeaking = true;
-    this.working.isSpeaking = true;
     try {
-      this.progressPluginListener = await this.tts.addListener('progressArrayEvent', event => {
-        if (session !== this.speechSession || !Number.isInteger(event.progress)) return;
-        this.progress.set(Math.max(0, Math.min(event.progress + 1, this.texts.length - 1)));
-      });
-      if (this.audioFocus) {
-        await this.requestAudioFocus();
-      }
-      if (this.destroyed) {
-        await this.stopSpeechSession();
-        return;
-      }
-      // read() owns the Android foreground service and resolves when reading ends.
-      void this.tts
-        .read({
+      await this.playback.toggle(
+        {
           texts: this.texts,
           progress: this.progress(),
           ...this.speakParams,
           bookId: this.bookId,
           ...(this.speechState.voice ? { voiceURI: this.speechState.voice } : {}),
-        })
-        .then(
-          () => this.finishSpeech(session),
-          error => this.finishSpeech(session, error),
-        )
-        .catch(error => this.showSpeechError(error));
+        },
+        this.audioFocus,
+      );
     } catch (error) {
-      await this.stopSpeechSession();
-      throw error;
+      this.showSpeechError(error);
     }
-  }
-
-  private finishSpeech(session: number, error?: unknown): Promise<void> {
-    return this.queueSpeechOperation(async () => {
-      if (session !== this.speechSession) return;
-      this.readingCompleted = !error;
-      if (!error) this.progress.set(this.texts.length - 1);
-      await this.stopSpeechSession(false);
-      if (error && !String((error as Error)?.message || error).startsWith('Canceled:')) {
-        this.showSpeechError(error);
-      }
-    });
   }
 
   private showSpeechError(error: unknown): void {
-    this.speechError = (error as Error)?.message || String(error);
+    this.initializationError = (error as Error)?.message || String(error);
     console.error('Text to speech failed', error);
   }
 
-  private async stopSpeechSession(stopNative = true, restoreProgress = true): Promise<void> {
-    const wasSpeaking = this.speechState.isSpeaking;
-    ++this.speechSession;
-    this.speechState.isSpeaking = false;
-    this.working.isSpeaking = false;
-    try {
-      if (stopNative && wasSpeaking) await this.tts.stop();
-      if (restoreProgress && wasSpeaking && !this.readingCompleted) await this.restoreNativeProgress();
-    } finally {
-      const listener = this.progressPluginListener;
-      this.progressPluginListener = undefined;
-      try {
-        await listener?.remove();
-      } finally {
-        if (this.hasAudioFocus) {
-          this.hasAudioFocus = false;
-          await this.tts.abandonFocus();
-        }
-      }
-      this.scheduleProgressSave();
-    }
-  }
-
-  private async restoreNativeProgress(): Promise<void> {
-    if (!this.texts?.length || this.spritzState.isSpritz) return;
-    const book = await this.db.getBook(this.id);
-    const saved = Number(book?.progress?.split('/')[0]);
-    if (Number.isInteger(saved) && saved >= 0) {
-      this.progress.set(Math.max(this.progress(), Math.min(saved, this.texts.length - 1)));
-    }
-  }
-
-  private async requestAudioFocus(): Promise<void> {
-    this.hasAudioFocus = true;
-    let timeout: ReturnType<typeof setTimeout>;
-    try {
-      await Promise.race([
-        this.tts.requestFocus(),
-        new Promise<never>((_resolve, reject) => {
-          timeout = setTimeout(() => reject(new Error('Audio focus was not granted. Please try again.')), 5000);
-        }),
-      ]);
-    } finally {
-      clearTimeout(timeout);
-    }
+  private restoreNativeProgress(): Promise<void> {
+    return this.playback.restoreProgress();
   }
 
   protected onChangeAudioFocus() {
     this.audioFocus = !this.audioFocus;
-    void this.queueSpeechOperation(async () => {
-      if (this.audioFocus && this.speechState.isSpeaking && !this.hasAudioFocus) {
-        await this.requestAudioFocus();
-      } else if (!this.audioFocus && this.hasAudioFocus) {
-        this.hasAudioFocus = false;
-        await this.tts.abandonFocus();
-      }
-    }).catch(error => this.showSpeechError(error));
+    if (this.playback.bookId === this.id) {
+      void this.playback.setAudioFocus(this.audioFocus).catch((error) => this.showSpeechError(error));
+    }
   }
 
   private async wait(milliseconds: number): Promise<void> {
-    return new Promise<void>(resolve => {
+    return new Promise<void>((resolve) => {
       setTimeout(() => resolve(), milliseconds);
     });
   }
 
   protected onStartRewinding(n: 0 | 1) {
-    if (this.spritzState.isSpritz) this.speechState.isSpeaking = false;
+    if (this.spritzState.isSpritz) this.spritzSpeaking = false;
     else void this.stopSpeaking(false);
     if (this.isRewinding) {
       this.stopRewind = true;
@@ -591,13 +483,14 @@ export class TtsComponent implements OnInit, OnDestroy {
   }
 
   private scheduleProgressSave() {
-    if (!this.texts?.length) return;
+    if (!this.texts?.length || (!this.spritzState.isSpritz && this.playback.bookId === this.id && this.isSpeaking))
+      return;
     clearTimeout(this.progressSaveTimer);
+    const progress2DB = (this.progress() || 0) + '/' + (this.texts.length - 1);
     this.progressSaveTimer = setTimeout(() => {
-      const progress2DB = (this.progress() || 0) + '/' + (this.texts.length - 1);
-
+      if (!this.spritzState.isSpritz && this.playback.bookId === this.id && this.isSpeaking) return;
       this.db.updateBookProgress(this.id, progress2DB).then(() => {
-        if (this.readingCompleted || (this.spritzState.isSpritz && this.progress() === this.texts.length - 1))
+        if (this.spritzState.isSpritz && this.progress() === this.texts.length - 1)
           this.db.updateBookFinished(this.id, new Date());
       });
     }, 200);
@@ -606,10 +499,10 @@ export class TtsComponent implements OnInit, OnDestroy {
   protected stopStartSpeaking() {
     this.scheduleProgressSave();
     if (!this.spritzState.isSpritz) {
-      if (this.speechState.isSpeaking) void this.stopSpeaking(false);
+      if (this.isSpeaking) void this.stopSpeaking(false);
     } else {
-      if (this.speechState.isSpeaking) {
-        this.speechState.isSpeaking = false;
+      if (this.isSpeaking) {
+        this.spritzSpeaking = false;
       }
       this.spritzState.sentence = this.texts[this.progress()];
       this.spritz();
@@ -617,9 +510,8 @@ export class TtsComponent implements OnInit, OnDestroy {
   }
 
   private stopSpeaking(restoreProgress = true): Promise<void> {
-    return this.queueSpeechOperation(() => this.stopSpeechSession(true, restoreProgress)).catch(error =>
-      this.showSpeechError(error),
-    );
+    if (this.playback.bookId !== this.id) return Promise.resolve();
+    return this.playback.stop(restoreProgress).catch((error) => this.showSpeechError(error));
   }
 
   private getRecognitionPositions(length: number): number[] {
@@ -644,7 +536,7 @@ export class TtsComponent implements OnInit, OnDestroy {
         if (!/[A-Za-z0-9]+/.test(wordTrimmed)) continue;
         for (const index of this.getRecognitionPositions(wordTrimmed.length)) {
           this.printWord(wordTrimmed, index, words.slice(i + 1).join(' '));
-          if (!this.speechState.isSpeaking) break;
+          if (!this.isSpeaking) break;
           const timeout = Math.floor(60000 / this.readingDetails.speed);
           await this.wait(timeout);
 
@@ -652,9 +544,9 @@ export class TtsComponent implements OnInit, OnDestroy {
           this.printWord(' ', 1, '');
           await this.wait(Math.floor(timeout / 2));
         }
-        if (!this.speechState.isSpeaking) break;
+        if (!this.isSpeaking) break;
       }
-      if (this.speechState.isSpeaking) this.progress.update(progress => progress + 1);
+      if (this.isSpeaking) this.progress.update((progress) => progress + 1);
       else break;
     }
   }
@@ -680,7 +572,7 @@ export class TtsComponent implements OnInit, OnDestroy {
   }
 
   protected changeSpeed(direction: '+' | '-'): void {
-    if (!this.spritzState.isSpritz && this.speechState.isSpeaking) void this.stopSpeaking();
+    if (!this.spritzState.isSpritz && this.isSpeaking) void this.stopSpeaking();
     const speed = this.readingDetails.speed;
     const isSpritz = this.spritzState.isSpritz;
     const step = isSpritz ? 10 : 1;
@@ -691,12 +583,12 @@ export class TtsComponent implements OnInit, OnDestroy {
 
   protected onRateChange(value: number): void {
     this.speakParams.rate = value;
-    if (this.speechState.isSpeaking) this.stopSpeaking();
+    if (this.isSpeaking) this.stopSpeaking();
   }
 
   protected onVolumeChange(value: number): void {
     this.speakParams.volume = value;
-    if (this.speechState.isSpeaking) this.stopSpeaking();
+    if (this.isSpeaking) this.stopSpeaking();
   }
 
   ngOnDestroy() {
@@ -705,11 +597,9 @@ export class TtsComponent implements OnInit, OnDestroy {
     clearTimeout(this.rewindTimer);
     clearTimeout(this.progressSaveTimer);
     this.stopRewind = true;
-    void this.stopSpeaking();
-    void this.audioFocusPluginListener?.remove();
-    this.audioFocusPluginListener = undefined;
+    this.spritzSpeaking = false;
     this.strg.set('speed', this.speakParams.rate);
     this.working.done();
-    if (this.spritzState.isSpritz) this.scheduleProgressSave();
+    this.scheduleProgressSave();
   }
 }
