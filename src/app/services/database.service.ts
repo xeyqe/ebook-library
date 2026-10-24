@@ -681,14 +681,12 @@ export class DatabaseService {
   }
 
   private async getAutorsStr(ids: number[]): Promise<string> {
-    if (!ids?.length) return;
-    let data;
-    try {
-      data = await this.database.executeSql(`SELECT name, surname, pseudonym FROM authors WHERE id IN (${ids.join(', ')})`);
-    } catch (e) {
-      if (e?.rows?.length) data = e;
-      else throw e;
-    }
+    if (!ids?.length) return '';
+    const placeholders = ids.map(() => '?').join(', ');
+    const data = await this.database.executeSql(
+      `SELECT name, surname, pseudonym FROM authors WHERE id IN (${placeholders})`,
+      ids,
+    );
     const output = [];
     for (let i = 0; i < data.rows.length; i++) {
       const dt = {

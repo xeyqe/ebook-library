@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { DatabaseService } from './database.service';
+import { SQLiteObject } from '@awesome-cordova-plugins/sqlite/ngx';
 
 function deferred<T>() {
   let resolve: (value: T) => void;
@@ -10,6 +11,24 @@ function deferred<T>() {
 }
 
 describe('Author progress loading', () => {
+  it.each(['started', 'liked', 'finished'] as const)(
+    'loads %s books with a missing author through the native SQLite wrapper',
+    async (filter) => {
+      const service = new DatabaseService({} as any, {} as any, {} as any, {} as any, {} as any, {} as any);
+      const book = { id: 7, title: 'Example', creatorIds: '42' };
+      const nativeDatabase = {
+        executeSql: (sql: string, _params: unknown[], success: (result: unknown) => void) => {
+          const records = sql.includes('FROM books') ? [book] : [];
+          success({ rows: { length: records.length, item: (index: number) => records[index] } });
+        },
+      };
+      (service as any).database = new SQLiteObject(nativeDatabase);
+      await expect(service.loadBooks(filter)).resolves.toEqual([
+        expect.objectContaining({ id: 7, title: 'Example', authors: '' }),
+      ]);
+    },
+  );
+
   it.each(['loadAuthors', 'findAuthors'] as const)(
     '%s waits for progress before publishing author records',
     async (method) => {
