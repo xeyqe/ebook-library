@@ -12,7 +12,7 @@ import { DatabaseService } from 'src/app/services/database.service';
 import { StatusBar } from '@capacitor/status-bar';
 import { SafeArea, SafeAreaInsets } from 'capacitor-plugin-safe-area';
 import { AllFilesAccess } from 'capacitor-all-files-access-permission';
-import { ForegroundService } from '@capawesome-team/capacitor-android-foreground-service';
+import { TTS_PLUGIN } from './services/tts-plugin';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -27,6 +27,7 @@ export class AppComponent implements OnInit {
   private subs: Subscription[] = [];
   protected readonly initialized = signal<boolean>(undefined);
 
+  private tts = inject(TTS_PLUGIN);
   private db = inject(DatabaseService);
   private fr = inject(FileReaderService);
   private navCtrl = inject(NavController);
@@ -39,22 +40,12 @@ export class AppComponent implements OnInit {
     this.platform
       .ready()
       .then(() => {
-        // Request notification permission only; TTS manages its own playback service.
-        ForegroundService.requestPermissions()
-          .then((a) => {
-            console.log(a);
-          })
-          .catch((e) => {
-            console.error(e);
+        if (this.platform.is('android')) {
+          // TTS manages playback and requests its foreground notification permission.
+          this.tts.requestForegroundPermissions().catch((e) => {
+            console.error('Requesting TTS foreground notification permission failed', e);
           });
-
-        ForegroundService.checkPermissions()
-          .then((a) => {
-            console.log(a);
-          })
-          .catch((e) => {
-            console.error(e);
-          });
+        }
         this.saveArea();
         AllFilesAccess.access().then(() => {
           this.initializeApp();

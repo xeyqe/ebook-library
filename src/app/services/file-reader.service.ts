@@ -1,26 +1,36 @@
 import { inject, Injectable, InjectionToken } from '@angular/core';
 import { Filesystem, Encoding, FileInfo } from '@capacitor/filesystem';
+import { FileTransfer } from '@capacitor/file-transfer';
 import { DirectoryService } from './directory.service';
 import { DatabaseService } from './database.service';
 import { AUTHOR, BOOK } from './interfaces';
 
 export const FILE_READER_FILESYSTEM = new InjectionToken<
-  Pick<typeof Filesystem, 'readdir' | 'mkdir' | 'downloadFile' | 'readFile' | 'writeFile' | 'deleteFile'>
+  Pick<typeof Filesystem, 'readdir' | 'mkdir' | 'getUri' | 'readFile' | 'writeFile' | 'deleteFile'>
 >('File reader filesystem', {
   providedIn: 'root',
   factory: () => ({
     readdir: (options) => Filesystem.readdir(options),
     mkdir: (options) => Filesystem.mkdir(options),
-    downloadFile: (options) => Filesystem.downloadFile(options),
+    getUri: (options) => Filesystem.getUri(options),
     readFile: (options) => Filesystem.readFile(options),
     writeFile: (options) => Filesystem.writeFile(options),
     deleteFile: (options) => Filesystem.deleteFile(options),
   }),
 });
 
+export const FILE_READER_TRANSFER = new InjectionToken<Pick<typeof FileTransfer, 'downloadFile'>>(
+  'File reader transfer',
+  {
+    providedIn: 'root',
+    factory: () => ({ downloadFile: (options) => FileTransfer.downloadFile(options) }),
+  },
+);
+
 @Injectable({ providedIn: 'root' })
 export class FileReaderService {
   private readonly filesystem = inject(FILE_READER_FILESYSTEM);
+  private readonly transfer = inject(FILE_READER_TRANSFER);
   private readonly db = inject(DatabaseService);
   private readonly dir = inject(DirectoryService);
   private authorScan?: Promise<void>;
@@ -64,7 +74,8 @@ export class FileReaderService {
     // Listing distinguishes a missing file from permission and storage failures.
     const { files } = await this.filesystem.readdir({ directory: this.dir.dir, path: parent });
     if (files.some((file) => file.type === 'file' && file.name === name)) return;
-    await this.filesystem.downloadFile({ directory: this.dir.dir, path, url });
+    const { uri } = await this.filesystem.getUri({ directory: this.dir.dir, path });
+    await this.transfer.downloadFile({ path: uri, url });
   }
 
   listOfAuthors(): Promise<void> {

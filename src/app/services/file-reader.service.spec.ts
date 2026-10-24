@@ -4,7 +4,7 @@ import { Directory } from '@capacitor/filesystem';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DatabaseService } from './database.service';
 import { DirectoryService } from './directory.service';
-import { FILE_READER_FILESYSTEM, FileReaderService } from './file-reader.service';
+import { FILE_READER_FILESYSTEM, FILE_READER_TRANSFER, FileReaderService } from './file-reader.service';
 
 describe('FileReaderService unique paths', () => {
   const readdir = vi.fn();
@@ -59,17 +59,22 @@ describe('FileReaderService unique paths', () => {
 });
 
 describe('FileReaderService operations', () => {
-  const fs = { readdir: vi.fn(), mkdir: vi.fn(), downloadFile: vi.fn(), writeFile: vi.fn() };
+  const fs = { readdir: vi.fn(), mkdir: vi.fn(), getUri: vi.fn(), writeFile: vi.fn() };
+  const transfer = { downloadFile: vi.fn() };
   const db = { authorsBooksPaths: vi.fn(), addBook: vi.fn(), allAuthorsPaths: vi.fn(), addAuthor: vi.fn() };
   let service: FileReaderService;
   beforeEach(() => {
     vi.resetAllMocks();
     fs.readdir.mockResolvedValue({ files: [] });
+    fs.getUri.mockImplementation(async ({ path }) => ({
+      uri: `file:///storage/emulated/0/${path.replace(/^\/+/, '')}`,
+    }));
     db.authorsBooksPaths.mockResolvedValue([]);
     db.allAuthorsPaths.mockResolvedValue([]);
     TestBed.configureTestingModule({
       providers: [
         { provide: FILE_READER_FILESYSTEM, useValue: fs },
+        { provide: FILE_READER_TRANSFER, useValue: transfer },
         { provide: DirectoryService, useValue: { dir: Directory.ExternalStorage } },
         { provide: DatabaseService, useValue: db },
       ],
@@ -80,9 +85,10 @@ describe('FileReaderService operations', () => {
   it('completes initial folder creation and sample download', async () => {
     await service.createApplicationFolder();
     expect(fs.mkdir).toHaveBeenCalledWith(expect.objectContaining({ recursive: true }));
-    expect(fs.downloadFile).toHaveBeenCalledWith(
-      expect.objectContaining({ path: 'ebook-library/Wilde, Oscar/The Picture of Dorian Gray.epub' }),
-    );
+    expect(transfer.downloadFile).toHaveBeenCalledWith({
+      path: 'file:///storage/emulated/0/ebook-library/Wilde, Oscar/The Picture of Dorian Gray.epub',
+      url: 'https://www.gutenberg.org/ebooks/174.epub',
+    });
   });
 
   it('waits for recursive imports and recognizes uppercase extensions', async () => {
@@ -120,13 +126,25 @@ describe('FileReaderService operations', () => {
     await expect(
       service.downloadPicture('https://example.test/cover', '/ebook-library/Author/', 'A, B.jpg'),
     ).resolves.toBe('/ebook-library/Author/A__B.jpg');
-    expect(fs.downloadFile).toHaveBeenCalledTimes(1);
+    expect(fs.getUri).toHaveBeenCalledExactlyOnceWith({
+      directory: Directory.ExternalStorage,
+      path: '/ebook-library/Author/A__B.jpg',
+    });
+    expect(transfer.downloadFile).toHaveBeenCalledExactlyOnceWith({
+      path: 'file:///storage/emulated/0/ebook-library/Author/A__B.jpg',
+      url: 'https://example.test/cover',
+    });
   });
 
   it('propagates download and backup errors', async () => {
-    fs.downloadFile.mockRejectedValue(new Error('Download failed'));
+    transfer.downloadFile.mockRejectedValue(new Error('Download failed'));
     await expect(service.downloadPicture('url', '/ebook-library', 'cover.jpg')).rejects.toThrow('Download failed');
     fs.writeFile.mockRejectedValue(new Error('Disk full'));
     await expect(service.write2File('{}', 10)).rejects.toThrow('Disk full');
+  });
+  it('does not start a transfer when the destination URI cannot be resolved', async () => {
+    fs.getUri.mockRejectedValue(new Error('Storage unavailable'));
+    await expect(service.downloadPicture('url', '/ebook-library', 'cover.jpg')).rejects.toThrow('Storage unavailable');
+    expect(transfer.downloadFile).not.toHaveBeenCalled();
   });
 });

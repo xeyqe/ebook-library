@@ -11,6 +11,7 @@ export type ReaderPlugin = Omit<TTSPlugin, 'read'> & {
 export const TTS_PLUGIN = new InjectionToken<ReaderPlugin>('TTS plugin', {
   providedIn: 'root',
   factory: () => ({
+    requestForegroundPermissions: () => TTS.requestForegroundPermissions(),
     read: (options) => (TTS as unknown as ReaderPlugin).read(options),
     speak: (options) => TTS.speak(options),
     stop: () => TTS.stop(),
