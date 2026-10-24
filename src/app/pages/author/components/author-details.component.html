@@ -1,6 +1,6 @@
 <div class="flexed">
     @for (key of editableFields; track key) {
-        @if (form().controls[key].value || editing()) {
+        @if (formValues()[key] || editing()) {
             <div class="clm">
                 <mat-form-field subscriptSizing="dynamic">
                     <mat-label class="red" position="floating">{{ key }}</mat-label>
@@ -11,10 +11,10 @@
                         (_onBlur)="onBlur()">
                     </app-contenteditable>
                 </mat-form-field>
-                @if (editing() && focusedField === key && suggestions()[key]?.length) {
+                @if (editing() && focusedField() === key && suggestions()[key]?.length) {
                     <div class="overflowed">
                         @for (val of suggestions()[key]; track $index) {
-                            @if (form().controls[key].value !== val) {
+                            @if (formValues()[key] !== val) {
                                 <mat-option
                                     class="autocomplete-option"
                                     [value]="val"
@@ -30,8 +30,8 @@
     }
 </div>
 
-@if (form().controls.biography.value || editing()) {
-    <div class="marged collapsable" [class.is-expanded]="form().controls.biography.disabled && !biographyReduced">
+@if (formValues().biography || editing()) {
+    <div class="marged collapsable" [class.is-expanded]="!editing() && !biographyReduced()">
         <div class="biography-content">
             <mat-label class="red">Biography</mat-label>
             <div (click)="onReduceHeight()">

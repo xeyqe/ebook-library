@@ -64,8 +64,7 @@
     "rxjs": "~7.8.2",
     "swiper": "^14.3.0",
     "tslib": "^2.8.1",
-    "uk.co.workingedge.cordova.plugin.sqliteporter": "^1.1.2",
-    "zone.js": "~0.16.3"
+    "uk.co.workingedge.cordova.plugin.sqliteporter": "^1.1.2"
   },
   "devDependencies": {
     "@angular-devkit/core": "^22.2.3",

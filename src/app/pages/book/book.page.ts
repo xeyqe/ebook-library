@@ -1,3 +1,4 @@
+import { controlValueSignal } from 'src/app/utils/control-value-signal';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -64,14 +65,15 @@ export class BookComponent implements OnInit, OnDestroy {
   private readonly content = viewChild<ElementRef<HTMLElement>>('content');
   protected readonly onlineSearch = viewChild(BookOnlineSearchComponent);
   protected readonly bookForm = createBookForm();
-  protected suggestions = createBookSuggestions();
-  protected book: BOOK = null;
-  protected bookChanged = false;
+  protected readonly formValues = controlValueSignal(this.bookForm);
+  protected readonly suggestions = signal(createBookSuggestions());
+  protected readonly book = signal<BOOK>(null);
+  protected readonly bookChanged = signal(false);
   protected readonly isEditing = signal(false);
   protected readonly showOnlineSearch = inject(WebScraperService).showAble;
 
   ngOnInit(): void {
-    this.bookForm.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => (this.bookChanged = true));
+    this.bookForm.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.bookChanged.set(true));
     for (const key of ['serie', 'title', 'originalTitle', 'genre'] as const) {
       this.bookForm.controls[key].valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => {
         const normalized = value?.replace(/\n/g, '');
@@ -95,45 +97,48 @@ export class BookComponent implements OnInit, OnDestroy {
         await this.db.updateBook(book);
       }
       if (this.destroyRef.destroyed) return;
-      this.book = book;
-      this.suggestions = createBookSuggestions();
+      this.book.set(book);
+      this.suggestions.set(createBookSuggestions());
       for (const key of BOOK_FIELDS) this.addSuggestion(key, book[key]);
-      this.suggestions.img = [...new Set([...this.suggestions.img, ...(this.picsServ.pics || [])])];
-      this.bookForm.reset(bookFormValues(book), { emitEvent: false });
-      this.bookForm.disable({ emitEvent: false });
+      this.suggestions.update((current) => ({
+        ...current,
+        img: [...new Set([...this.suggestions().img, ...(this.picsServ.pics || [])])],
+      }));
+      this.bookForm.reset(bookFormValues(book));
+      this.bookForm.disable();
       this.isEditing.set(false);
-      this.bookChanged = false;
+      this.bookChanged.set(false);
     } catch (error) {
       console.error('Unable to load book', error);
     }
   }
   protected async updateBook(): Promise<void> {
-    if (!this.book || !this.isEditing()) return;
+    if (!this.book() || !this.isEditing()) return;
     try {
       const picture = this.picture();
       const img = picture ? await picture.prepareImageForSave() : this.bookForm.controls.img.value;
       this.bookForm.controls.img.setValue(img);
       const values = this.bookForm.getRawValue();
-      const updated: BOOK = { ...this.book, ...values, progress: this.book.progress };
+      const updated: BOOK = { ...this.book(), ...values, progress: this.book().progress };
       await this.db.updateBook(updated);
       if (this.destroyRef.destroyed) return;
-      this.book = updated;
-      this.bookForm.disable({ emitEvent: false });
-      this.bookChanged = false;
+      this.book.set(updated);
+      this.bookForm.disable();
+      this.bookChanged.set(false);
       this.isEditing.set(false);
     } catch (error) {
       console.error('Unable to save book', error);
     }
   }
   protected editable(): void {
-    if (!this.book) return;
+    if (!this.book()) return;
     this.isEditing.update((editing) => !editing);
-    if (this.isEditing()) this.bookForm.enable({ emitEvent: false });
+    if (this.isEditing()) this.bookForm.enable();
     else {
-      this.bookForm.reset(bookFormValues(this.book), { emitEvent: false });
-      this.bookForm.disable({ emitEvent: false });
+      this.bookForm.reset(bookFormValues(this.book()));
+      this.bookForm.disable();
     }
-    this.bookChanged = false;
+    this.bookChanged.set(false);
   }
   protected onOnlineData(selection: BookDataSelection): void {
     const fields = selection.fields ?? BOOK_FIELDS;
@@ -145,19 +150,20 @@ export class BookComponent implements OnInit, OnDestroy {
     this.bookForm.patchValue(values);
     for (const key of fields) this.addSuggestion(key, values[key]);
     if (selection.images?.length) {
-      this.suggestions.img = selection.images;
+      this.suggestions.update((current) => ({ ...current, img: selection.images }));
       this.bookForm.controls.img.setValue(selection.images[0]);
     }
     this.scrollToContent();
   }
   private addSuggestion<Key extends BookField>(key: Key, value: BookValues[Key]): void {
-    if (value != null && value !== '' && !this.suggestions[key].includes(value)) this.suggestions[key].push(value);
+    if (value != null && value !== '' && !this.suggestions()[key].includes(value))
+      this.suggestions.update((current) => ({ ...current, [key]: [...current[key], value] }));
   }
   protected async getMetadataFromEpub(): Promise<void> {
-    if (!this.book) return;
+    if (!this.book()) return;
     this.workingServ.busy();
     try {
-      const metadata = await this.epub.getMetadataFromEpub(this.book.path);
+      const metadata = await this.epub.getMetadataFromEpub(this.book().path);
       if (!metadata || this.destroyRef.destroyed) return;
       this.onOnlineData({
         data: { ...metadata, annotation: metadata.annotation?.replace(/<[^>]*>/g, '') || null },
@@ -171,7 +177,7 @@ export class BookComponent implements OnInit, OnDestroy {
     }
   }
   protected async deleteBook(): Promise<void> {
-    if (!this.book) return;
+    if (!this.book()) return;
     const selected = await firstValueFrom(
       this.dialog
         .open(DialogComponent, {
@@ -184,16 +190,16 @@ export class BookComponent implements OnInit, OnDestroy {
     if (selected !== 0) return;
     try {
       await this.removeBookFile();
-      await this.db.deleteBook(this.book.id);
-      if (!this.destroyRef.destroyed) await this.router.navigate(['/author', this.book.creatorIds[0]]);
+      await this.db.deleteBook(this.book().id);
+      if (!this.destroyRef.destroyed) await this.router.navigate(['/author', this.book().creatorIds[0]]);
     } catch (error) {
       console.error('Unable to delete book', error);
     }
   }
   private async removeBookFile(): Promise<void> {
-    const path = this.book.path.replace(/.*ebook-library/, '/ebook-library');
+    const path = this.book().path.replace(/.*ebook-library/, '/ebook-library');
     try {
-      if (await this.db.isBookFileUsedInDifferentBook(path, this.book.id)) return;
+      if (await this.db.isBookFileUsedInDifferentBook(path, this.book().id)) return;
     } catch (error) {
       console.error('Unable to check book file usage', error);
       return;
@@ -209,7 +215,7 @@ export class BookComponent implements OnInit, OnDestroy {
     }
   }
   protected onGo2(mode: 'spritz' | 'speech'): void {
-    if (this.book) void this.router.navigate(['/tts', this.book.id, { type: mode }]);
+    if (this.book()) void this.router.navigate(['/tts', this.book().id, { type: mode }]);
   }
   protected scrollToContent(): void {
     if (!this.destroyRef.destroyed)

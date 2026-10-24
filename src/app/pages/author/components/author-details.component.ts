@@ -1,4 +1,6 @@
+import { controlValueSignal } from 'src/app/utils/control-value-signal';
 import {
+  signal,
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
@@ -36,12 +38,13 @@ import { AuthorField, AuthorForm, AuthorSuggestions, AuthorValues } from '../aut
 })
 export class AuthorDetailsComponent implements OnDestroy, OnChanges {
   readonly form = input.required<AuthorForm>();
+  protected readonly formValues = controlValueSignal(this.form);
   readonly suggestions = input.required<AuthorSuggestions>();
   readonly editing = input.required<boolean>();
   protected readonly editableFields = ['name', 'surname', 'pseudonym', 'nationality', 'birth', 'death'] as const;
   protected readonly textColor = computed(() => (this.editing() ? 'white' : 'gray'));
-  protected focusedField: AuthorField = null;
-  protected biographyReduced = true;
+  protected readonly focusedField = signal<AuthorField>(null);
+  protected readonly biographyReduced = signal(true);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly renderer = inject(Renderer2);
   private readonly destroyRef = inject(DestroyRef);
@@ -69,11 +72,11 @@ export class AuthorDetailsComponent implements OnDestroy, OnChanges {
   }
 
   protected onFocus(fcNm: AuthorField) {
-    this.defer(() => (this.focusedField = fcNm), 1);
+    this.defer(() => this.focusedField.set(fcNm), 1);
   }
 
   protected onBlur() {
-    this.defer(() => (this.focusedField = null));
+    this.defer(() => this.focusedField.set(null));
   }
 
   protected onInput<Key extends AuthorField>(field: Key, value: AuthorValues[Key]): void {
@@ -81,7 +84,7 @@ export class AuthorDetailsComponent implements OnDestroy, OnChanges {
   }
 
   protected onReduceHeight() {
-    if (this.form().controls.biography.disabled) this.biographyReduced = !this.biographyReduced;
+    if (this.form().controls.biography.disabled) this.biographyReduced.set(!this.biographyReduced());
   }
 
   ngOnDestroy(): void {

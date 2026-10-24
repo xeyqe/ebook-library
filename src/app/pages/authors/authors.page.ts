@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, AfterViewInit, DestroyRef, inject } from '@angular/core';
+import {
+  computed,
+  signal,
+  ChangeDetectionStrategy,
+  Component,
+  OnDestroy,
+  AfterViewInit,
+  DestroyRef,
+  inject,
+} from '@angular/core';
 import { InfiniteScrollCustomEvent, IonicModule, ScrollCustomEvent } from '@ionic/angular/lazy';
 import { Router, RouterModule } from '@angular/router';
 
@@ -50,23 +59,23 @@ type LastListened = { id: number; type: 'speech' | 'spritz' };
 export class AuthorsComponent implements AfterViewInit, OnDestroy {
   private readonly destroyRef = inject(DestroyRef);
   private readonly pageSize = 10;
-  private authors: AUTHORSIMPLIFIED[] = [];
-  protected visibleAuthors: AUTHORSIMPLIFIED[] = [];
-  private books: BOOKSIMPLIFIED[] = [];
-  protected visibleBooks: BOOKSIMPLIFIED[] = [];
-  protected lastListened?: LastListened;
-  protected hideCharacters = false;
-  protected where2Search: 'A' | 'B' = 'A';
-  protected selectedCharacter = 'A';
-  protected imgPreLink = '';
-  protected bookSearchBy: BookFilter = 'started';
+  private readonly authors = signal<AUTHORSIMPLIFIED[]>([]);
+  protected readonly visibleAuthors = signal<AUTHORSIMPLIFIED[]>([]);
+  private readonly books = signal<BOOKSIMPLIFIED[]>([]);
+  protected readonly visibleBooks = signal<BOOKSIMPLIFIED[]>([]);
+  protected readonly lastListened = signal<LastListened>(undefined);
+  protected readonly hideCharacters = signal(false);
+  protected readonly where2Search = signal<'A' | 'B'>('A');
+  protected readonly selectedCharacter = signal('A');
+  protected readonly imgPreLink = computed(() => this.dir.imgPreLink());
+  protected readonly bookSearchBy = signal<BookFilter>('started');
   protected readonly bookFilters: BookFilter[] = ['liked', 'started', 'finished'];
   protected readonly alphabet = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', '#'];
-  protected searchQuery = '';
-  protected loading = true;
-  protected loadError = '';
-  protected actionError = '';
-  protected state: 'default' | 'animated' = 'default';
+  protected readonly searchQuery = signal('');
+  protected readonly loading = signal(true);
+  protected readonly loadError = signal('');
+  protected readonly actionError = signal('');
+  protected readonly state = signal<'default' | 'animated'>('default');
   private scrollTop = 0;
   private requestId = 0;
   private entryId = 0;
@@ -81,13 +90,13 @@ export class AuthorsComponent implements AfterViewInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly workingServ = inject(BusyService);
 
-  protected get hasMoreAuthors(): boolean {
-    return this.visibleAuthors.length < this.authors.length;
-  }
+  protected readonly hasMoreAuthors = computed(() => {
+    return this.visibleAuthors().length < this.authors().length;
+  });
 
-  protected get hasMoreBooks(): boolean {
-    return this.visibleBooks.length < this.books.length;
-  }
+  protected readonly hasMoreBooks = computed(() => {
+    return this.visibleBooks().length < this.books().length;
+  });
 
   ngAfterViewInit(): void {
     if (Capacitor.isNativePlatform()) void SplashScreen.hide().catch((error) => console.error(error));
@@ -96,7 +105,6 @@ export class AuthorsComponent implements AfterViewInit, OnDestroy {
   private async initialize(): Promise<void> {
     await firstValueFrom(this.db.getDatabaseState().pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef)));
     if (this.destroyRef.destroyed) return;
-    this.imgPreLink = this.dir.imgPreLink;
     void this.fr.downloadUnknownImg().catch((error) => console.error('Unable to load the placeholder image', error));
   }
 
@@ -109,8 +117,8 @@ export class AuthorsComponent implements AfterViewInit, OnDestroy {
 
   protected async ionViewWillEnter(): Promise<void> {
     const entry = ++this.entryId;
-    this.loading = true;
-    this.loadError = '';
+    this.loading.set(true);
+    this.loadError.set('');
     try {
       await this.prepare();
       if (this.destroyRef.destroyed || entry !== this.entryId) return;
@@ -121,15 +129,15 @@ export class AuthorsComponent implements AfterViewInit, OnDestroy {
         this.db.getValue('bookSearchBy'),
       ]);
       if (this.destroyRef.destroyed || entry !== this.entryId) return;
-      this.lastListened = this.parseLastListened(lastListened);
-      this.where2Search = mode === 'B' ? 'B' : 'A';
-      this.selectedCharacter = this.alphabet.includes(character) ? character : 'A';
-      this.bookSearchBy = this.bookFilters.includes(bookFilter) ? bookFilter : 'started';
+      this.lastListened.set(this.parseLastListened(lastListened));
+      this.where2Search.set(mode === 'B' ? 'B' : 'A');
+      this.selectedCharacter.set(this.alphabet.includes(character) ? character : 'A');
+      this.bookSearchBy.set(this.bookFilters.includes(bookFilter) ? bookFilter : 'started');
       await this.load();
     } catch (error) {
       if (!this.destroyRef.destroyed && entry === this.entryId) {
-        this.loading = false;
-        this.loadError = 'Unable to load the library. Please try again.';
+        this.loading.set(false);
+        this.loadError.set('Unable to load the library. Please try again.');
         console.error(error);
       }
     }
@@ -160,51 +168,51 @@ export class AuthorsComponent implements AfterViewInit, OnDestroy {
   private async load(): Promise<void> {
     clearTimeout(this.searchTimer);
     const request = ++this.requestId;
-    const mode = this.where2Search;
-    const query = this.searchQuery.trim();
-    this.loading = true;
-    this.loadError = '';
+    const mode = this.where2Search();
+    const query = this.searchQuery().trim();
+    this.loading.set(true);
+    this.loadError.set('');
     try {
       await this.prepare();
       if (this.destroyRef.destroyed || request !== this.requestId) return;
       if (mode === 'A') {
         const authors = await (query.length >= 3
           ? this.db.findAuthors(query)
-          : this.db.loadAuthors(this.selectedCharacter));
+          : this.db.loadAuthors(this.selectedCharacter()));
         if (this.destroyRef.destroyed || request !== this.requestId) return;
-        this.authors = authors;
-        this.visibleAuthors = authors.slice(0, this.pageSize);
+        this.authors.set(authors);
+        this.visibleAuthors.set(authors.slice(0, this.pageSize));
       } else {
-        const books = await (query.length >= 3 ? this.db.findBooks(query) : this.db.loadBooks(this.bookSearchBy));
+        const books = await (query.length >= 3 ? this.db.findBooks(query) : this.db.loadBooks(this.bookSearchBy()));
         if (this.destroyRef.destroyed || request !== this.requestId) return;
-        this.books = books;
-        this.visibleBooks = books.slice(0, this.pageSize);
+        this.books.set(books);
+        this.visibleBooks.set(books.slice(0, this.pageSize));
       }
     } catch (error) {
       if (!this.destroyRef.destroyed && request === this.requestId) {
-        this.loadError = 'Unable to load the library. Please try again.';
+        this.loadError.set('Unable to load the library. Please try again.');
         console.error(error);
       }
     } finally {
-      if (!this.destroyRef.destroyed && request === this.requestId) this.loading = false;
+      if (!this.destroyRef.destroyed && request === this.requestId) this.loading.set(false);
     }
   }
 
   protected async changeSelectedChar(value: string, whichOne: 'authors' | 'books'): Promise<void> {
     if (whichOne === 'authors' && this.alphabet.includes(value)) {
-      this.selectedCharacter = value;
+      this.selectedCharacter.set(value);
       void this.savePreference('character', value);
     } else if (whichOne === 'books' && this.bookFilters.includes(value as BookFilter)) {
-      this.bookSearchBy = value as BookFilter;
+      this.bookSearchBy.set(value as BookFilter);
       void this.savePreference('bookSearchBy', value);
     } else return;
-    this.searchQuery = '';
+    this.searchQuery.set('');
     await this.load();
   }
 
   protected async where2SearchFn(): Promise<void> {
-    this.where2Search = this.where2Search === 'A' ? 'B' : 'A';
-    void this.savePreference('where2Search', this.where2Search);
+    this.where2Search.set(this.where2Search() === 'A' ? 'B' : 'A');
+    void this.savePreference('where2Search', this.where2Search());
     await this.load();
   }
 
@@ -217,7 +225,7 @@ export class AuthorsComponent implements AfterViewInit, OnDestroy {
   }
 
   protected onSearch(event: Event): void {
-    this.searchQuery = (event.target as HTMLInputElement).value;
+    this.searchQuery.set((event.target as HTMLInputElement).value);
     clearTimeout(this.searchTimer);
     ++this.requestId;
     this.searchTimer = setTimeout(() => {
@@ -226,38 +234,39 @@ export class AuthorsComponent implements AfterViewInit, OnDestroy {
   }
 
   protected async onSearchClear(): Promise<void> {
-    this.searchQuery = '';
+    this.searchQuery.set('');
     await this.load();
   }
 
   protected onAuthorsIonInfinite(event: InfiniteScrollCustomEvent): void {
-    this.visibleAuthors = this.authors.slice(0, this.visibleAuthors.length + this.pageSize);
+    this.visibleAuthors.set(this.authors().slice(0, this.visibleAuthors().length + this.pageSize));
     void event.target.complete();
   }
 
   protected onBooksIonInfinite(event: InfiniteScrollCustomEvent): void {
-    this.visibleBooks = this.books.slice(0, this.visibleBooks.length + this.pageSize);
+    this.visibleBooks.set(this.books().slice(0, this.visibleBooks().length + this.pageSize));
     void event.target.complete();
   }
 
   protected onScroll(event: ScrollCustomEvent): void {
     const top = Math.max(0, event.detail.scrollTop);
-    if (top === 0 || top < this.scrollTop - 2) this.state = 'default';
-    else if (top > this.scrollTop + 2) this.state = 'animated';
+    if (top === 0 || top < this.scrollTop - 2) this.state.set('default');
+    else if (top > this.scrollTop + 2) this.state.set('animated');
     this.scrollTop = top;
   }
 
   protected onGetImgSrc(img: string): string {
     const source = img || '/ebook-library/unknown.jpg';
-    return source.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink + source) : source;
+    return source.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink() + source) : source;
   }
 
   protected onGo2Last(): void {
-    if (this.lastListened) void this.router.navigate(['/tts', this.lastListened.id, { type: this.lastListened.type }]);
+    if (this.lastListened())
+      void this.router.navigate(['/tts', this.lastListened().id, { type: this.lastListened().type }]);
   }
 
   protected onSearchClicked(input: HTMLInputElement, event: Event): void {
-    if (!this.hideCharacters) {
+    if (!this.hideCharacters()) {
       input.focus();
       return;
     }
@@ -270,7 +279,7 @@ export class AuthorsComponent implements AfterViewInit, OnDestroy {
   protected onToggleCharVisibility(hide: boolean): void {
     clearTimeout(this.visibilityTimer);
     this.visibilityTimer = setTimeout(() => {
-      this.hideCharacters = hide;
+      this.hideCharacters.set(hide);
     });
   }
 
@@ -279,7 +288,7 @@ export class AuthorsComponent implements AfterViewInit, OnDestroy {
     ++this.entryId;
     clearTimeout(this.searchTimer);
     clearTimeout(this.visibilityTimer);
-    this.hideCharacters = false;
+    this.hideCharacters.set(false);
   }
 
   private async choose(data: { header?: string; message?: string; selects: string[] }): Promise<number | undefined> {
@@ -295,12 +304,12 @@ export class AuthorsComponent implements AfterViewInit, OnDestroy {
 
   private async runOperation(operation: () => Promise<void>): Promise<void> {
     if (this.destroyRef.destroyed) return;
-    this.actionError = '';
+    this.actionError.set('');
     this.workingServ.busy();
     try {
       await operation();
     } catch (error) {
-      if (!this.destroyRef.destroyed) this.actionError = 'The operation failed. Please try again.';
+      if (!this.destroyRef.destroyed) this.actionError.set('The operation failed. Please try again.');
       console.error(error);
     } finally {
       this.workingServ.done();
@@ -322,7 +331,7 @@ export class AuthorsComponent implements AfterViewInit, OnDestroy {
   private async selectWhat2Import(): Promise<void> {
     const files = await this.fr.getDBJsons();
     if (!files.length) {
-      this.actionError = 'No database backups found.';
+      this.actionError.set('No database backups found.');
       return;
     }
     // Release the busy overlay while the user chooses a backup.

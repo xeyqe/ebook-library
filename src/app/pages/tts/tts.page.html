@@ -1,15 +1,15 @@
 <div class="cont">
     <div class="header">
         <div class="header__name">
-            <span>{{ readingDetails.authorName }}</span>
-            <span>{{ readingDetails.title }}</span>
+            <span>{{ readingDetails().authorName }}</span>
+            <span>{{ readingDetails().title }}</span>
         </div>
-        @if (spritzState.isSpritz) {
+        @if (spritzState().isSpritz) {
             <div class="header__speed">
                 <button mat-mini-fab (click)="changeSpeed('-')">
                     <mat-icon>remove</mat-icon>
                 </button>
-                <span> {{ readingDetails.speed }} </span>
+                <span> {{ readingDetails().speed }} </span>
                 <button mat-mini-fab (click)="changeSpeed('+')">
                     <mat-icon>add</mat-icon>
                 </button>
@@ -17,13 +17,13 @@
         }
     </div>
 
-    @if (spritzState.isSpritz) {
+    @if (spritzState().isSpritz) {
         <ion-content (pinchout)="increaseFontSize()" (pinchin)="decreaseFontSize()">
             <div
                 class="spritz-cont"
-                [style.fontSize]="spritzState.fontSize"
-                [style.lineHeight]="spritzState.fontSize"
-                [style.height]="spritzState.contHeight">
+                [style.fontSize]="spritzState().fontSize"
+                [style.lineHeight]="spritzState().fontSize"
+                [style.height]="spritzState().contHeight">
                 <ion-row>
                     <ion-col size="2"></ion-col>
                     <ion-col size="10">
@@ -31,17 +31,17 @@
                     </ion-col>
                 </ion-row>
 
-                <ion-row [style.height]="spritzState.fontSize">
+                <ion-row [style.height]="spritzState().fontSize">
                     <ion-col class="col" size="2">
-                        <ion-label class="right">{{ spritzState.preText }}</ion-label>
+                        <ion-label class="right">{{ spritzState().preText }}</ion-label>
                     </ion-col>
 
                     <ion-col class="col flexed" size="10">
                         <div>
-                            <ion-label class="red">{{ spritzState.redText }}</ion-label>
-                            <ion-label>{{ spritzState.postTextWhite }}</ion-label>
+                            <ion-label class="red">{{ spritzState().redText }}</ion-label>
+                            <ion-label>{{ spritzState().postTextWhite }}</ion-label>
                         </div>
-                        <ion-label class="overflowed">{{ spritzState.postTextGray }}</ion-label>
+                        <ion-label class="overflowed">{{ spritzState().postTextGray }}</ion-label>
                     </ion-col>
                 </ion-row>
 
@@ -53,18 +53,18 @@
                 </ion-row>
             </div>
 
-            <div class="mrgt" [style.fontSize]="spritzState.fontSize" [style.lineHeight]="spritzState.fontSize">
-                {{ spritzState.sentence }}
+            <div class="mrgt" [style.fontSize]="spritzState().fontSize" [style.lineHeight]="spritzState().fontSize">
+                {{ spritzState().sentence }}
             </div>
         </ion-content>
     }
     <div>
-        @if (speechForm && !spritzState.isSpritz) {
-            <form [formGroup]="speechForm">
-                <div class="flexed {{ isPortrait ? 'vert' : 'horiz' }}">
+        @if (speechForm() && !spritzState().isSpritz) {
+            <form [formGroup]="speechForm()">
+                <div class="flexed {{ isPortrait() ? 'vert' : 'horiz' }}">
                     <div class="ranges">
                         <mat-chip-listbox>
-                            <mat-chip-option (click)="onChangeAudioFocus()" [selected]="audioFocus">
+                            <mat-chip-option (click)="onChangeAudioFocus()" [selected]="audioFocus()">
                                 Audio focus
                             </mat-chip-option>
                         </mat-chip-listbox>
@@ -74,7 +74,7 @@
                             <mat-slider [max]="4" [min]="0.5" [step]="0.1" [discrete]="true" [showTickMarks]="true">
                                 <input
                                     matSliderThumb
-                                    [value]="speakParams.rate"
+                                    [value]="speakParams().rate"
                                     (dragEnd)="onRateChange($event.value)" />
                             </mat-slider>
                         </div>
@@ -84,33 +84,33 @@
                             <mat-slider [max]="1" [min]="0" [step]="0.1" [discrete]="true" [showTickMarks]="true">
                                 <input
                                     matSliderThumb
-                                    [value]="speakParams.volume"
+                                    [value]="speakParams().volume"
                                     (dragEnd)="onVolumeChange($event.value)" />
                             </mat-slider>
                         </div>
                     </div>
 
                     <div class="fields">
-                        @if (speechState.engines) {
+                        @if (speechState().engines) {
                             <mat-chip class="primary-bg">
                                 <mat-select
-                                    [formControl]="speechForm.controls.engine"
+                                    [formControl]="speechForm().controls.engine"
                                     class="hidden-arrow"
                                     panelWidth="">
-                                    @for (it of speechState.engines; track it.name) {
+                                    @for (it of speechState().engines; track it.name) {
                                         <mat-option [value]="it.name">{{ it.label }}</mat-option>
                                     }
                                 </mat-select>
                             </mat-chip>
                         }
 
-                        @if (speechState.language) {
+                        @if (speechState().language) {
                             <mat-chip class="primary-bg">
                                 <mat-select
-                                    [formControl]="speechForm.controls.language"
+                                    [formControl]="speechForm().controls.language"
                                     class="hidden-arrow"
                                     panelWidth="">
-                                    @for (it of speechState.languages; track it) {
+                                    @for (it of speechState().languages; track it) {
                                         <mat-option [value]="it">{{ it }}</mat-option>
                                     }
                                 </mat-select>
@@ -118,16 +118,16 @@
                         }
 
                         @if (
-                            speechState.voices &&
-                            speechState.language &&
-                            speechState.voices[speechState.language]?.length
+                            speechState().voices &&
+                            speechState().language &&
+                            speechState().voices[speechState().language]?.length
                         ) {
                             <mat-chip class="primary-bg">
                                 <mat-select
-                                    [formControl]="speechForm.controls.voice"
+                                    [formControl]="speechForm().controls.voice"
                                     class="hidden-arrow"
                                     panelWidth="">
-                                    @for (it of speechState.voices[speechState.language] || []; track it.voiceURI) {
+                                    @for (it of speechState().voices[speechState().language] || []; track it.voiceURI) {
                                         <mat-option [value]="it.voiceURI">{{ it.voiceURI }}</mat-option>
                                     }
                                 </mat-select>
@@ -138,12 +138,12 @@
             </form>
         }
 
-        @if (speechError) {
-            <p role="alert">{{ speechError }}</p>
+        @if (speechError()) {
+            <p role="alert">{{ speechError() }}</p>
         }
-        <div class="flexed {{ isPortrait ? 'vert' : 'horiz' }}">
+        <div class="flexed {{ isPortrait() ? 'vert' : 'horiz' }}">
             <div class="progress-cont">
-                <ion-label class="white">{{ progress() || 0 | number: "1.0-0" : "cs" }}</ion-label>
+                <ion-label class="white">{{ progress() || 0 | number: '1.0-0' : 'cs' }}</ion-label>
 
                 <div class="bb">
                     <button mat-mini-fab (pointerdown)="onStartRewinding(0)" (pointerup)="onStopRewinding(0)">
@@ -152,9 +152,9 @@
 
                     <button
                         mat-mini-fab
-                        [disabled]="!initialized || (!spritzState.isSpritz && !speechReady)"
+                        [disabled]="!initialized() || (!spritzState().isSpritz && !speechReady())"
                         (click)="onOff()">
-                        <mat-icon>{{ isSpeaking ? "pause" : "play_arrow" }}</mat-icon>
+                        <mat-icon>{{ isSpeaking() ? 'pause' : 'play_arrow' }}</mat-icon>
                     </button>
 
                     <button mat-mini-fab (pointerdown)="onStartRewinding(1)" (pointerup)="onStopRewinding(1)">
@@ -162,15 +162,15 @@
                     </button>
                 </div>
 
-                <ion-label class="white"> {{ (texts?.length || 1) - 1 | number: "1.0-0" : "cs" }} </ion-label>
+                <ion-label class="white"> {{ (texts()?.length || 1) - 1 | number: '1.0-0' : 'cs' }} </ion-label>
             </div>
 
-            @if (texts?.length) {
+            @if (texts()?.length) {
                 <ion-item class="progress">
                     <ion-range
                         [value]="progress()"
                         min="0"
-                        [max]="texts.length - 1"
+                        [max]="texts().length - 1"
                         step="1"
                         color="primary"
                         style="height: 0px"

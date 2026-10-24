@@ -1,4 +1,5 @@
 import {
+  signal,
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
@@ -31,9 +32,9 @@ type OnlineAuthor = ONLINEAUTHORLINK & { surname?: string };
 export class AuthorOnlineSearchComponent {
   readonly form = input.required<AuthorForm>();
   readonly dataSelected = output<AuthorDataSelection>();
-  protected onlineAuthors: OnlineAuthor[] = [];
-  protected legieAuthors: OnlineAuthor[] = [];
-  protected cbdbAuthors: Awaited<ReturnType<WebScraperService['getAuthorsListCBDB']>> = [];
+  protected readonly onlineAuthors = signal<OnlineAuthor[]>([]);
+  protected readonly legieAuthors = signal<OnlineAuthor[]>([]);
+  protected readonly cbdbAuthors = signal<Awaited<ReturnType<WebScraperService['getAuthorsListCBDB']>>>([]);
   private readonly webScraper = inject(WebScraperService);
   private readonly workingServ = inject(BusyService);
   private readonly dialog = inject(MatDialog);
@@ -62,12 +63,12 @@ export class AuthorOnlineSearchComponent {
     await this.withBusy(async () => {
       switch (selected) {
         case 0:
-          this.onlineAuthors = (await this.webScraper.getAuthorsList(authorName)) || [];
+          this.onlineAuthors.set((await this.webScraper.getAuthorsList(authorName)) || []);
           break;
         case 1: {
           const data = await this.webScraper.getAuthorsListLegie(authorName);
           if (this.destroyRef.destroyed) return;
-          if (Array.isArray(data)) this.legieAuthors = data;
+          if (Array.isArray(data)) this.legieAuthors.set(data);
           else if (data)
             this.dataSelected.emit({
               data,
@@ -76,7 +77,7 @@ export class AuthorOnlineSearchComponent {
           break;
         }
         case 2:
-          this.cbdbAuthors = (await this.webScraper.getAuthorsListCBDB(authorName)) || [];
+          this.cbdbAuthors.set((await this.webScraper.getAuthorsListCBDB(authorName)) || []);
           break;
       }
       afterNextRender(

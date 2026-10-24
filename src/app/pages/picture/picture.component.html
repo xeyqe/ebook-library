@@ -4,7 +4,7 @@
     (swiperslidechange)="onResizeSwiper($event)"
     (init)="onResizeSwiper($event)"
     #swiperRef>
-    @for (img of images || []; track img) {
+    @for (img of images(); track img) {
         <swiper-slide>
             <img height="auto" width="auto" [src]="onGetImgSrc(img)" alt="img" />
         </swiper-slide>
@@ -18,6 +18,6 @@
             src="https://upload.wikimedia.org/wikipedia/commons/7/7c/User_font_awesome.svg" />
     </swiper-slide>
 </swiper-container>
-@if (images?.length) {
-    <span>{{ imgIndex + 1 + "/" + (images.length + 1) }}</span>
+@if (images().length) {
+    <span>{{ imgIndex() + 1 + '/' + (images().length + 1) }}</span>
 }

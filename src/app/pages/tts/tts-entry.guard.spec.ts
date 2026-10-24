@@ -7,7 +7,11 @@ import { SpeechPlaybackService } from 'src/app/services/speech-playback.service'
 import { ttsEntryGuard } from './tts-entry.guard';
 
 describe('TTS entry guard', () => {
-  let playback: { bookId: number; isSpeaking: ReturnType<typeof vi.fn>; pauseForBook: ReturnType<typeof vi.fn> };
+  let playback: {
+    bookId: ReturnType<typeof vi.fn>;
+    isSpeaking: ReturnType<typeof vi.fn>;
+    pauseForBook: ReturnType<typeof vi.fn>;
+  };
   let choices: Subject<number | undefined>;
   let dialog: { open: ReturnType<typeof vi.fn> };
   let close: ReturnType<typeof vi.fn>;
@@ -25,7 +29,7 @@ describe('TTS entry guard', () => {
     choices = new Subject();
     close = vi.fn();
     playback = {
-      bookId: 42,
+      bookId: vi.fn().mockReturnValue(42),
       isSpeaking: vi.fn().mockReturnValue(true),
       pauseForBook: vi.fn().mockResolvedValue(undefined),
     };

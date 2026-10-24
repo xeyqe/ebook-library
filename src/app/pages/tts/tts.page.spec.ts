@@ -89,13 +89,13 @@ describe('TTS playback integration', () => {
       ],
     });
     page = TestBed.runInInjectionContext(() => new TtsComponent());
-    page.initialized = true;
-    page.speechReady = true;
-    page.spritzState.isSpritz = false;
-    page.speechState.voice = 'selected-voice';
-    page.id = 42;
+    page.initialized.set(true);
+    page.speechReady.set(true);
+    page.spritzState.update((value) => ({ ...value, isSpritz: false }));
+    page.speechState.update((value) => ({ ...value, voice: 'selected-voice' }));
+    page.id.set(42);
     page.bookId = 42;
-    page.texts = ['First.', 'Second.', 'Third.'];
+    page.texts.set(['First.', 'Second.', 'Third.']);
   });
 
   afterEach(async () => {
@@ -108,8 +108,8 @@ describe('TTS playback integration', () => {
   });
 
   it('advances spritz progress after displaying a sentence', async () => {
-    page.spritzState.isSpritz = true;
-    page.spritzSpeaking = true;
+    page.spritzState.update((value) => ({ ...value, isSpritz: true }));
+    page.spritzSpeaking.set(true);
     vi.spyOn(page, 'wait').mockResolvedValue(undefined);
     await page.spritz();
     expect(page.progress()).toBe(2);
@@ -124,7 +124,7 @@ describe('TTS playback integration', () => {
         voiceURI: 'selected-voice',
         bookId: 42,
         progress: 0,
-        texts: page.texts,
+        texts: page.texts(),
       }),
     );
     listeners['progressArrayEvent']({ progress: 0 });
@@ -139,7 +139,7 @@ describe('TTS playback integration', () => {
     expect(reader.abandonFocus).toHaveBeenCalledTimes(1);
     expect(removeProgress).toHaveBeenCalledTimes(1);
     expect(page.progress()).toBe(2);
-    expect(page.isSpeaking).toBe(false);
+    expect(page.isSpeaking()).toBe(false);
     expect(page.playback.completed).toBe(false);
   });
 
@@ -151,8 +151,8 @@ describe('TTS playback integration', () => {
     await page.onOff();
     oldPlayback.resolve();
     await settle();
-    expect(page.isSpeaking).toBe(true);
-    expect(page.working.isSpeaking).toBe(true);
+    expect(page.isSpeaking()).toBe(true);
+    expect(page.working.isSpeaking()).toBe(true);
     expect(reader.abandonFocus).toHaveBeenCalledTimes(1);
   });
 
@@ -161,8 +161,8 @@ describe('TTS playback integration', () => {
     await page.onOff();
     playback.reject(new Error('Unable to start background reading'));
     await settle();
-    expect(page.speechError).toBe('Unable to start background reading');
-    expect(page.isSpeaking).toBe(false);
+    expect(page.speechError()).toBe('Unable to start background reading');
+    expect(page.isSpeaking()).toBe(false);
     expect(removeProgress).toHaveBeenCalled();
     expect(reader.abandonFocus).toHaveBeenCalled();
   });
@@ -177,8 +177,8 @@ describe('TTS playback integration', () => {
     );
     await page.initSpeechOptions();
     expect(reader.switchEngine).toHaveBeenCalledWith({ engineName: 'saved-engine' });
-    expect(page.speechForm.controls.voice.value).toBe('selected-voice');
-    expect(page.speechReady).toBe(true);
+    expect(page.speechForm().controls.voice.value).toBe('selected-voice');
+    expect(page.speechReady()).toBe(true);
     await page.onOff();
     listeners['audioFocusChangeEvent']({ type: 'AUDIOFOCUS_LOSS' });
     await settle();
@@ -207,7 +207,7 @@ describe('TTS playback integration', () => {
     await settle();
     expect(page.playback.completed).toBe(true);
     expect(page.progress()).toBe(2);
-    expect(page.isSpeaking).toBe(false);
+    expect(page.isSpeaking()).toBe(false);
     expect(removeProgress).toHaveBeenCalledTimes(1);
     expect(reader.abandonFocus).toHaveBeenCalledTimes(1);
   });
@@ -219,26 +219,26 @@ describe('TTS playback integration', () => {
     expect(reader.stop).not.toHaveBeenCalled();
     expect(reader.abandonFocus).not.toHaveBeenCalled();
     expect(removeProgress).not.toHaveBeenCalled();
-    expect(page.working.isSpeaking).toBe(true);
+    expect(page.working.isSpeaking()).toBe(true);
 
     listeners['progressArrayEvent']({ progress: 0 });
     page = TestBed.runInInjectionContext(() => new TtsComponent());
-    page.id = 42;
+    page.id.set(42);
     page.bookId = 42;
-    page.initialized = true;
-    page.speechReady = true;
+    page.initialized.set(true);
+    page.speechReady.set(true);
     database.getBook.mockResolvedValue({ id: 42, path: 'book.txt', progress: '0/2', creatorIds: [1] });
     database.getAuthor = vi.fn().mockResolvedValue({ name: 'Author' });
     database.getDatabaseState = vi.fn().mockReturnValue(of(true));
     vi.spyOn(page, 'getTexts').mockResolvedValue(['First.', 'Second.', 'Third.']);
     await page.loadBook();
-    expect(page.isSpeaking).toBe(true);
+    expect(page.isSpeaking()).toBe(true);
     expect(page.progress()).toBe(1);
     expect(reader.read).toHaveBeenCalledTimes(1);
 
     await page.onOff();
     expect(reader.stop).toHaveBeenCalledTimes(1);
-    expect(page.isSpeaking).toBe(false);
+    expect(page.isSpeaking()).toBe(false);
   });
 
   it('still handles focus loss and saves progress after leaving the reader', async () => {
@@ -259,7 +259,7 @@ describe('TTS playback integration', () => {
     await settle();
     expect(database.updateBookProgress).toHaveBeenCalledWith(42, '2/2');
     expect(database.updateBookFinished).toHaveBeenCalledWith(42, expect.any(Date));
-    expect(page.working.isSpeaking).toBe(false);
+    expect(page.working.isSpeaking()).toBe(false);
     expect(removeProgress).toHaveBeenCalledTimes(1);
     expect(removeFocus).toHaveBeenCalledTimes(1);
   });
@@ -269,12 +269,12 @@ describe('TTS playback integration', () => {
     const oldPlayback = playback;
     page.ngOnDestroy();
     page = TestBed.runInInjectionContext(() => new TtsComponent());
-    page.id = 7;
+    page.id.set(7);
     page.bookId = 7;
-    page.initialized = true;
-    page.speechReady = true;
-    page.texts = ['Another book.'];
-    expect(page.isSpeaking).toBe(false);
+    page.initialized.set(true);
+    page.speechReady.set(true);
+    page.texts.set(['Another book.']);
+    expect(page.isSpeaking()).toBe(false);
     expect(reader.stop).not.toHaveBeenCalled();
     playback = deferred();
     await page.onOff();
@@ -282,7 +282,7 @@ describe('TTS playback integration', () => {
     await settle();
     expect(reader.stop).toHaveBeenCalledTimes(1);
     expect(reader.read).toHaveBeenLastCalledWith(expect.objectContaining({ bookId: 7 }));
-    expect(page.isSpeaking).toBe(true);
+    expect(page.isSpeaking()).toBe(true);
   });
 
   it('pauses another book before entry and saves its progress', async () => {
@@ -291,13 +291,13 @@ describe('TTS playback integration', () => {
     await page.playback.pauseForBook(7);
     expect(reader.stop).toHaveBeenCalledTimes(1);
     expect(database.updateBookProgress).toHaveBeenCalledWith(42, '1/2');
-    expect(page.working.isSpeaking).toBe(false);
+    expect(page.working.isSpeaking()).toBe(false);
   });
 
   it('preserves playback when entering the same book', async () => {
     await page.onOff();
     await page.playback.pauseForBook(42);
     expect(reader.stop).not.toHaveBeenCalled();
-    expect(page.isSpeaking).toBe(true);
+    expect(page.isSpeaking()).toBe(true);
   });
 });

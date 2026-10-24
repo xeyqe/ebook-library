@@ -4,7 +4,7 @@
             type="button"
             class="serie-cont__name"
             [attr.aria-expanded]="serie.open"
-            (click)="serie.open = !serie.open">
+            (click)="toggleSeries(serie.name)">
             {{ serie.name }}
         </button>
         <div class="serie-cont__collapse" [class.is-expanded]="serie.open" [inert]="!serie.open">

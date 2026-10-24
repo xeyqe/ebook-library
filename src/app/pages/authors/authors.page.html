@@ -1,18 +1,18 @@
-<div class="overflowed" [class.is-expanded]="state === 'default'" [inert]="state === 'animated'">
+<div class="overflowed" [class.is-expanded]="state() === 'default'" [inert]="state() === 'animated'">
     <div class="header-content">
         <div class="row">
             <mat-form-field subscriptSizing="dynamic">
                 <button
                     mat-icon-button
                     matPrefix
-                    [attr.aria-label]="hideCharacters ? 'Clear search' : 'Focus search'"
+                    [attr.aria-label]="hideCharacters() ? 'Clear search' : 'Focus search'"
                     (click)="onSearchClicked(input, $event)">
-                    <mat-icon>{{ hideCharacters ? 'arrow_back' : 'search' }}</mat-icon>
+                    <mat-icon>{{ hideCharacters() ? 'arrow_back' : 'search' }}</mat-icon>
                 </button>
                 <mat-label>Search</mat-label>
                 <input
                     matInput
-                    [value]="searchQuery"
+                    [value]="searchQuery()"
                     (input)="onSearch($event)"
                     (focusin)="onToggleCharVisibility(true)"
                     (focusout)="onToggleCharVisibility(false)"
@@ -20,30 +20,30 @@
             </mat-form-field>
             <button
                 mat-mini-fab
-                [attr.aria-label]="where2Search === 'A' ? 'Show books' : 'Show authors'"
+                [attr.aria-label]="where2Search() === 'A' ? 'Show books' : 'Show authors'"
                 (click)="where2SearchFn()">
-                {{ where2Search }}
+                {{ where2Search() }}
             </button>
         </div>
-        @if (!hideCharacters) {
-            @if (where2Search === 'A') {
+        @if (!hideCharacters()) {
+            @if (where2Search() === 'A') {
                 <div class="chars">
                     @for (char of alphabet; track $index) {
                         <button
                             mat-mini-fab
-                            [disabled]="selectedCharacter === char"
+                            [disabled]="selectedCharacter() === char"
                             (click)="changeSelectedChar(char, 'authors')">
                             <span>{{ char }}</span>
                         </button>
                     }
                 </div>
-            } @else if (where2Search === 'B') {
+            } @else if (where2Search() === 'B') {
                 <div class="chars">
                     @for (char of bookFilters; track $index) {
                         <button
                             mat-fab
                             extended
-                            [disabled]="bookSearchBy === char"
+                            [disabled]="bookSearchBy() === char"
                             (click)="changeSelectedChar(char, 'books')">
                             <span>{{ char }}</span>
                         </button>
@@ -55,23 +55,23 @@
 </div>
 
 <ion-content [scrollEvents]="true" (ionScroll)="onScroll($any($event))">
-    @if (loading) {
+    @if (loading()) {
         <ion-progress-bar type="indeterminate" aria-label="Loading library"></ion-progress-bar>
     }
-    @if (loadError) {
+    @if (loadError()) {
         <div class="status" role="alert">
-            <p>{{ loadError }}</p>
+            <p>{{ loadError() }}</p>
             <button mat-button (click)="ionViewWillEnter()">Retry</button>
         </div>
-    } @else if (!loading && !(where2Search === 'A' ? visibleAuthors.length : visibleBooks.length)) {
-        <p class="status" role="status">{{ where2Search === 'A' ? 'No authors found.' : 'No books found.' }}</p>
+    } @else if (!loading() && !(where2Search() === 'A' ? visibleAuthors().length : visibleBooks().length)) {
+        <p class="status" role="status">{{ where2Search() === 'A' ? 'No authors found.' : 'No books found.' }}</p>
     }
-    @if (actionError) {
-        <p class="status" role="alert">{{ actionError }}</p>
+    @if (actionError()) {
+        <p class="status" role="alert">{{ actionError() }}</p>
     }
     <div class="boxes">
-        @if (where2Search === 'A') {
-            @for (author of visibleAuthors; track author.id) {
+        @if (where2Search() === 'A') {
+            @for (author of visibleAuthors(); track author.id) {
                 <a [routerLink]="['/author', author.id]" class="box">
                     <ion-avatar>
                         <img
@@ -96,12 +96,12 @@
                 </a>
             }
             <ion-infinite-scroll
-                [disabled]="loading || !hasMoreAuthors"
+                [disabled]="loading() || !hasMoreAuthors()"
                 (ionInfinite)="onAuthorsIonInfinite($any($event))">
                 <ion-infinite-scroll-content></ion-infinite-scroll-content>
             </ion-infinite-scroll>
-        } @else if (where2Search === 'B') {
-            @for (book of visibleBooks; track book.id) {
+        } @else if (where2Search() === 'B') {
+            @for (book of visibleBooks(); track book.id) {
                 <a [routerLink]="['/book', book.id]" class="box">
                     <ion-avatar>
                         <img [src]="onGetImgSrc(book.img)" [alt]="book.title" loading="lazy" />
@@ -119,7 +119,9 @@
                     </div>
                 </a>
             }
-            <ion-infinite-scroll [disabled]="loading || !hasMoreBooks" (ionInfinite)="onBooksIonInfinite($any($event))">
+            <ion-infinite-scroll
+                [disabled]="loading() || !hasMoreBooks()"
+                (ionInfinite)="onBooksIonInfinite($any($event))">
                 <ion-infinite-scroll-content></ion-infinite-scroll-content>
             </ion-infinite-scroll>
         }
@@ -132,7 +134,7 @@
         <button mat-mini-fab aria-label="Add author" (click)="onAddAuthor()">
             <mat-icon>add_circle</mat-icon>
         </button>
-        @if (lastListened) {
+        @if (lastListened()) {
             <button mat-mini-fab aria-label="Open last read book" (click)="onGo2Last()">
                 <mat-icon>play_arrow</mat-icon>
             </button>

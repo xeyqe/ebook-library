@@ -8,12 +8,12 @@
         <h2>author</h2>
     }
     <div class="col text-right">
-        @if (authorChanged && isEditing()) {
+        @if (authorChanged() && isEditing()) {
             <button type="button" mat-mini-fab (click)="onUpdateAuthor()">
                 <mat-icon>save</mat-icon>
             </button>
         }
-        <button type="button" mat-mini-fab [disabled]="!author" (click)="onEditable()">
+        <button type="button" mat-mini-fab [disabled]="!author()" (click)="onEditable()">
             <mat-icon>{{ isEditing() ? 'clear' : 'edit' }}</mat-icon>
         </button>
 
@@ -26,25 +26,25 @@
 </div>
 
 <div class="spaced" #content>
-    @if (author) {
+    @if (author()) {
         <div>
             <app-library-picture
                 [imageControl]="authorForm.controls.img"
                 [owner]="{
                     type: 'author',
-                    path: author.path,
-                    name: authorForm.controls.name.value,
-                    surname: authorForm.controls.surname.value,
+                    path: author().path,
+                    name: formValues().name,
+                    surname: formValues().surname,
                 }"
-                [images]="suggestions.img"
+                [images]="suggestions().img"
                 [editing]="isEditing()"
                 (operationFinished)="scrollToContent()" />
-            <app-author-details [form]="authorForm" [suggestions]="suggestions" [editing]="isEditing()" />
+            <app-author-details [form]="authorForm" [suggestions]="suggestions()" [editing]="isEditing()" />
             <app-author-books
-                [author]="author"
-                [books]="books"
-                [series]="series"
-                [imagePrefix]="imgPreLink"
+                [author]="author()"
+                [books]="books()"
+                [(series)]="series"
+                [imagePrefix]="imgPreLink()"
                 (bookAdded)="onBookAdded($event)" />
             <app-author-online-search
                 [hidden]="!isEditing()"
@@ -54,7 +54,7 @@
     }
     @if (!isEditing()) {
         <div class="ad-bu-cont">
-            <button type="button" mat-mini-fab [disabled]="!author" (click)="bookList()?.addBooks()">
+            <button type="button" mat-mini-fab [disabled]="!author()" (click)="bookList()?.addBooks()">
                 <mat-icon>add_circle</mat-icon>
             </button>
         </div>

@@ -69,7 +69,7 @@ describe('AuthorComponent', () => {
         { provide: DatabaseService, useValue: database },
         { provide: FileReaderService, useValue: files },
         { provide: WebScraperService, useValue: scraper },
-        { provide: DirectoryService, useValue: { imgPreLink: 'file://' } },
+        { provide: DirectoryService, useValue: { imgPreLink: vi.fn().mockReturnValue('file://') } },
         provideRouter([]),
         { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: '42' })) } },
         { provide: MatDialog, useValue: { open: vi.fn() } },
@@ -100,25 +100,33 @@ describe('AuthorComponent', () => {
     expect(page.authorForm.controls.name.value).toBe('Jane');
   });
 
+  it('uses the normalized image in both the signal state and editor form', async () => {
+    author.img = 'http://localhost/_capacitor_file_/storage/emulated/0/ebook-library/author.jpg';
+    await initialize();
+    expect(page.author().img).toBe('/ebook-library/author.jpg');
+    expect(page.authorForm.controls.img.value).toBe('/ebook-library/author.jpg');
+    expect(page.suggestions().img).toContain('/ebook-library/author.jpg');
+  });
+
   it('loads picture suggestions when the database returns no books', async () => {
     await initialize();
     database.getBooksOfAuthor.mockResolvedValue(undefined);
     files.getNonBookFilesOfFolder.mockResolvedValue(['/ebook-library/unused.jpg', author.img]);
     await page.ionViewDidEnter();
-    expect(page.books).toEqual([]);
-    expect(page.series).toEqual([]);
-    expect(page.suggestions.img).toEqual([author.img, '/ebook-library/unused.jpg']);
+    expect(page.books()).toEqual([]);
+    expect(page.series()).toEqual([]);
+    expect(page.suggestions().img).toEqual([author.img, '/ebook-library/unused.jpg']);
   });
 
   it('restores saved fields and source IDs when editing is cancelled', async () => {
     await initialize();
     page.onEditable();
     page.authorForm.patchValue({ name: 'Changed', dtbkId: 'changed-id' });
-    expect(page.authorChanged).toBe(true);
+    expect(page.authorChanged()).toBe(true);
     page.onEditable();
     expect(page.authorForm.getRawValue()).toMatchObject({ name: 'Jane', dtbkId: 'original-id' });
     expect(page.authorForm.disabled).toBe(true);
-    expect(page.authorChanged).toBe(false);
+    expect(page.authorChanged()).toBe(false);
     expect(author.name).toBe('Jane');
   });
 
@@ -150,7 +158,7 @@ describe('AuthorComponent', () => {
     );
     expect(page.isEditing()).toBe(false);
     expect(page.authorForm.disabled).toBe(true);
-    expect(page.author.name).toBe('Changed');
+    expect(page.author().name).toBe('Changed');
   });
 
   it('preserves expanded series and merges related books without duplication on reentry', async () => {
@@ -167,12 +175,12 @@ describe('AuthorComponent', () => {
     database.getBooksOfAuthor.mockResolvedValue([book('1', 'Zeta'), book('2', null), book('3', 'Alpha')]);
     database.getSeriesBooks.mockResolvedValue({ Alpha: [book('4', 'Alpha')] });
     await page.ionViewDidEnter();
-    page.series[0].open = true;
+    page.series.update((series) => series.map((item, index) => (index === 0 ? { ...item, open: true } : item)));
     await page.ionViewDidEnter();
-    expect(page.series.map((series) => series.name)).toEqual(['Alpha', 'Zeta']);
-    expect(page.series[0].open).toBe(true);
-    expect(page.series[0].books.map((book) => book.id)).toEqual(['3', '4']);
-    expect(page.books.map((book) => book.id)).toEqual(['2']);
+    expect(page.series().map((series) => series.name)).toEqual(['Alpha', 'Zeta']);
+    expect(page.series()[0].open).toBe(true);
+    expect(page.series()[0].books.map((book) => book.id)).toEqual(['3', '4']);
+    expect(page.books().map((book) => book.id)).toEqual(['2']);
   });
 
   it('collects downloaded source ID suggestions without duplicates', async () => {
@@ -185,7 +193,7 @@ describe('AuthorComponent', () => {
     await (fixture.componentInstance as any).onDownloadAuthorInfoCBDB('new-id');
     await (fixture.componentInstance as any).onDownloadAuthorInfoCBDB('new-id');
     expect(page.authorForm.controls.cbdbId.value).toBe('new-id');
-    expect(page.suggestions.cbdbId).toEqual(['new-id']);
+    expect(page.suggestions().cbdbId).toEqual(['new-id']);
   });
 
   it('expands and collapses a series using its button without legacy animation providers', () => {
@@ -203,13 +211,13 @@ describe('AuthorComponent', () => {
 
     button.click();
     fixture.detectChanges();
-    expect(series[0].open).toBe(true);
+    expect(fixture.componentInstance.series()[0].open).toBe(true);
     expect(button.getAttribute('aria-expanded')).toBe('true');
     expect(content.inert).toBe(false);
 
     button.click();
     fixture.detectChanges();
-    expect(series[0].open).toBe(false);
+    expect(fixture.componentInstance.series()[0].open).toBe(false);
     expect(content.inert).toBe(true);
   });
 
@@ -228,7 +236,7 @@ describe('AuthorComponent', () => {
     expect(details.form()).toBe(component.authorForm);
     details.onInput('name', 'Edited');
     expect(component.authorForm.controls.name.value).toBe('Edited');
-    expect(component.authorChanged).toBe(true);
+    expect(component.authorChanged()).toBe(true);
 
     const search = fixture.debugElement.query(By.directive(AuthorOnlineSearchComponent)).componentInstance;
     search.dataSelected.emit({ data: { cbdbId: 'downloaded-id' }, fields: ['cbdbId'] });
@@ -256,7 +264,7 @@ describe('AuthorComponent', () => {
     };
     fixture.debugElement.query(By.directive(AuthorBooksComponent)).componentInstance.bookAdded.emit(book);
     fixture.detectChanges();
-    expect(component.books).toContain(book);
+    expect(component.books()).toContain(book);
     expect(fixture.nativeElement.textContent).toContain('Imported');
   });
 

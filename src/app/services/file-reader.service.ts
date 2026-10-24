@@ -11,7 +11,7 @@ import { AUTHOR, BOOK } from 'src/app/services/interfaces';
 
 export const FILE_READER_FILESYSTEM = new InjectionToken<Pick<typeof Filesystem, 'readdir'>>('File reader filesystem', {
   providedIn: 'root',
-  factory: () => Filesystem,
+  factory: () => ({ readdir: options => Filesystem.readdir(options) }),
 });
 
 @Injectable({

@@ -1,7 +1,9 @@
+import { controlValueSignal } from 'src/app/utils/control-value-signal';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  linkedSignal,
   DestroyRef,
   inject,
   InjectionToken,
@@ -28,7 +30,7 @@ export type PictureOwner =
 
 export const PICTURE_FILESYSTEM = new InjectionToken<Pick<typeof Filesystem, 'copy'>>('Picture filesystem', {
   providedIn: 'root',
-  factory: () => Filesystem,
+  factory: () => ({ copy: (options) => Filesystem.copy(options) }),
 });
 
 @Component({
@@ -40,8 +42,10 @@ export const PICTURE_FILESYSTEM = new InjectionToken<Pick<typeof Filesystem, 'co
 })
 export class LibraryPictureComponent {
   readonly imageControl = input.required<FormControl<string>>();
+  protected readonly imageValue = controlValueSignal(this.imageControl);
   readonly owner = input.required<PictureOwner>();
   readonly images = input.required<string[]>();
+  protected readonly displayImages = linkedSignal(() => this.images());
   readonly editing = input.required<boolean>();
   readonly operationFinished = output<void>();
 
@@ -127,7 +131,7 @@ export class LibraryPictureComponent {
 
   protected onGetImgSrc(img: string): string {
     return img?.startsWith('/')
-      ? `${Capacitor.convertFileSrc(this.dir.imgPreLink + img)}?ver=${this.imageVersion}`
+      ? `${Capacitor.convertFileSrc(this.dir.imgPreLink() + img)}?ver=${this.imageVersion}`
       : img;
   }
 

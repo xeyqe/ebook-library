@@ -1,5 +1,5 @@
 <div>
-    @for (item of onlineBookList; track $index) {
+    @for (item of onlineBookList(); track $index) {
         <div class="online-item" (click)="downloadBookInfo(item)">
             @if (item.img) {
                 <ion-avatar>
@@ -13,7 +13,7 @@
         </div>
     }
 
-    @for (item of onlineAllBooksList; track $index) {
+    @for (item of onlineAllBooksList(); track $index) {
         <div class="online-item" (click)="downloadBookInfo(item)">
             @if (item.img) {
                 <ion-avatar>
@@ -26,7 +26,7 @@
             </div>
         </div>
     }
-    @for (item of onlineBookListLegie; track $index) {
+    @for (item of onlineBookListLegie(); track $index) {
         <div class="legies">
             @if (item.serie?.title) {
                 <h1 class="legies__serie">{{ item.serie.title }}</h1>
@@ -45,10 +45,10 @@
             }
         </div>
     }
-    @if (onlineShortStoriesListLegie?.length) {
+    @if (onlineShortStoriesListLegie()?.length) {
         <h1 class="legies__serie">Short stories</h1>
     }
-    @for (item of onlineShortStoriesListLegie; track $index) {
+    @for (item of onlineShortStoriesListLegie(); track $index) {
         <div class="legies">
             <div class="legies__book" (click)="downloadShortStoryInfo(item)">
                 @if (item.title) {
@@ -61,11 +61,11 @@
         </div>
     }
 
-    @if (onlineBookListCBDB) {
+    @if (onlineBookListCBDB()) {
         <div class="cbdb">
             @for (dt of cbdbGroups; track dt) {
                 <div>
-                    @for (book of onlineBookListCBDB[dt]; track $index) {
+                    @for (book of onlineBookListCBDB()[dt]; track $index) {
                         <div (click)="downloadBookInfoCBDB(book.link)">
                             @if (book.img) {
                                 <ion-avatar>
@@ -90,9 +90,9 @@
         </div>
     }
 
-    @if (onlineBookListOfAuthorCBDB?.length) {
+    @if (onlineBookListOfAuthorCBDB()?.length) {
         <div class="legies">
-            @for (book of onlineBookListOfAuthorCBDB; track $index) {
+            @for (book of onlineBookListOfAuthorCBDB(); track $index) {
                 <div (click)="downloadBookInfoCBDB(book.link)">
                     @if (book.img) {
                         <ion-avatar>

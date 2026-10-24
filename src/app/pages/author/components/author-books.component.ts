@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, input, model, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { IonicModule } from '@ionic/angular/lazy';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -29,7 +29,7 @@ export interface AuthorSeries {
 export class AuthorBooksComponent {
   readonly author = input.required<AUTHOR>();
   readonly books = input.required<AUTHORSBOOKS[]>();
-  readonly series = input.required<AuthorSeries[]>();
+  readonly series = model.required<AuthorSeries[]>();
   readonly imagePrefix = input.required<string>();
   readonly bookAdded = output<AUTHORSBOOKS>();
   private readonly db = inject(DatabaseService);
@@ -37,6 +37,9 @@ export class AuthorBooksComponent {
   private readonly fs = inject(FileReaderService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly imgSuffix = Math.floor(Math.random() * 1000000);
+  protected toggleSeries(name: string): void {
+    this.series.update((series) => series.map((item) => (item.name === name ? { ...item, open: !item.open } : item)));
+  }
   async addBooks(): Promise<void> {
     if (!this.author()) return;
     try {

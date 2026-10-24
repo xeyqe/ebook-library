@@ -1,4 +1,5 @@
 import {
+  signal,
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
@@ -37,12 +38,17 @@ export class BookOnlineSearchComponent implements OnInit, OnDestroy {
   readonly form = input.required<BookForm>();
   readonly book = input.required<BOOK>();
   readonly dataSelected = output<BookDataSelection>();
-  protected onlineBookList: ONLINEBOOKLINK[] = [];
-  protected onlineAllBooksList: ONLINEBOOKLINK[] = [];
-  protected onlineBookListLegie: ONLINEAUTHORLEGIE[] = [];
-  protected onlineShortStoriesListLegie: Awaited<ReturnType<WebScraperService['getShortStoriesOfAuthorLegie']>> = [];
-  protected onlineBookListCBDB: Awaited<ReturnType<WebScraperService['getCBDBBooks']>>['list'];
-  protected onlineBookListOfAuthorCBDB: Awaited<ReturnType<WebScraperService['getCBDBBooksOfAuthor']>> = [];
+  protected readonly onlineBookList = signal<ONLINEBOOKLINK[]>([]);
+  protected readonly onlineAllBooksList = signal<ONLINEBOOKLINK[]>([]);
+  protected readonly onlineBookListLegie = signal<ONLINEAUTHORLEGIE[]>([]);
+  protected readonly onlineShortStoriesListLegie = signal<
+    Awaited<ReturnType<WebScraperService['getShortStoriesOfAuthorLegie']>>
+  >([]);
+  protected readonly onlineBookListCBDB =
+    signal<Awaited<ReturnType<WebScraperService['getCBDBBooks']>>['list']>(undefined);
+  protected readonly onlineBookListOfAuthorCBDB = signal<
+    Awaited<ReturnType<WebScraperService['getCBDBBooksOfAuthor']>>
+  >([]);
   protected readonly cbdbGroups = ['main', 'foreign', 'partly'] as const;
   private readonly db = inject(DatabaseService);
   private readonly dialog = inject(MatDialog);
@@ -55,7 +61,11 @@ export class BookOnlineSearchComponent implements OnInit, OnDestroy {
   private readonly injector = inject(Injector);
   ngOnInit(): void {
     const cached = this.cache.onlineData?.[this.book().creatorIds[0]];
-    if (cached) Object.assign(this, cached);
+    if (cached) {
+      this.onlineAllBooksList.set(cached.onlineAllBooksList ?? []);
+      this.onlineBookListLegie.set(cached.onlineBookListLegie ?? []);
+      this.onlineShortStoriesListLegie.set(cached.onlineShortStoriesListLegie ?? []);
+    }
   }
   async search(): Promise<void> {
     if (!navigator.onLine) {
@@ -100,13 +110,15 @@ export class BookOnlineSearchComponent implements OnInit, OnDestroy {
     if (!name) return;
     const data: ONLINEBOOKLINK[] = await this.webScrapper.getBooksListOfAnyAuthor(this.form().controls.title.value);
     if (author.dtbkId) {
-      this.onlineAllBooksList = await this.webScrapper.getBooksListOfAuthorById(author.dtbkId);
-      this.onlineBookList = data.filter((book) => this.onlineAllBooksList.some((other) => other.link === book.link));
+      this.onlineAllBooksList.set(await this.webScrapper.getBooksListOfAuthorById(author.dtbkId));
+      this.onlineBookList.set(
+        data.filter((book) => this.onlineAllBooksList().some((other) => other.link === book.link)),
+      );
     } else {
-      this.onlineBookList = data.filter((book) => book.comment?.includes(author.surname));
-      if (!this.onlineBookList.length && !author.pseudonym)
-        this.onlineBookList = await this.webScrapper.getBooksListOfAuthor(name);
-      this.onlineBookList.push(...data);
+      this.onlineBookList.set(data.filter((book) => book.comment?.includes(author.surname)));
+      if (!this.onlineBookList().length && !author.pseudonym)
+        this.onlineBookList.set(await this.webScrapper.getBooksListOfAuthor(name));
+      this.onlineBookList.update((current) => [...current, ...data]);
     }
   }
   private async getBooksListLegie(author: AUTHOR): Promise<void> {
@@ -115,16 +127,16 @@ export class BookOnlineSearchComponent implements OnInit, OnDestroy {
     if (!data) return;
     if (Array.isArray(data)) {
       if (!data.length && author.lgId) {
-        this.onlineBookListLegie = await this.webScrapper.getBooksOfAuthorLegie(author.lgId);
-        this.onlineShortStoriesListLegie = await this.webScrapper.getShortStoriesOfAuthorLegie(author.lgId);
-      } else this.onlineBookList = data;
+        this.onlineBookListLegie.set(await this.webScrapper.getBooksOfAuthorLegie(author.lgId));
+        this.onlineShortStoriesListLegie.set(await this.webScrapper.getShortStoriesOfAuthorLegie(author.lgId));
+      } else this.onlineBookList.set(data);
     } else this.select({ data, fields: BOOK_METADATA_FIELDS });
   }
   private async getBooksListCBDB(author: AUTHOR): Promise<void> {
     const data = await this.webScrapper.getCBDBBooks(this.book().title);
-    if (data.list) this.onlineBookListCBDB = data.list;
+    if (data.list) this.onlineBookListCBDB.set(data.list);
     else if (data.book) this.select({ data: data.book, fields: CBDB_FIELDS, clearMissing: true });
-    if (author.cbdbId) this.onlineBookListOfAuthorCBDB = await this.webScrapper.getCBDBBooksOfAuthor(author.cbdbId);
+    if (author.cbdbId) this.onlineBookListOfAuthorCBDB.set(await this.webScrapper.getCBDBBooksOfAuthor(author.cbdbId));
   }
   protected async downloadBookInfo(item: BookLink): Promise<void> {
     if (!navigator.onLine) {
@@ -174,9 +186,9 @@ export class BookOnlineSearchComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.cache.onlineData = {
       [this.book().creatorIds[0]]: {
-        onlineAllBooksList: this.onlineAllBooksList,
-        onlineBookListLegie: this.onlineBookListLegie,
-        onlineShortStoriesListLegie: this.onlineShortStoriesListLegie,
+        onlineAllBooksList: this.onlineAllBooksList(),
+        onlineBookListLegie: this.onlineBookListLegie(),
+        onlineShortStoriesListLegie: this.onlineShortStoriesListLegie(),
       },
     };
   }

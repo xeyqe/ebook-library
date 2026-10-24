@@ -1,8 +1,8 @@
-@if (editing() || imageControl().value) {
+@if (editing() || imageValue()) {
     <div class="pic-container">
         @if (editing()) {
             <div class="bu-change-pic">
-                @if (imageControl().value && !imageControl().value.startsWith('/')) {
+                @if (imageValue() && !imageValue().startsWith('/')) {
                     <button type="button" mat-mini-fab (click)="downloadPicture()">
                         <mat-icon>download_for_offline</mat-icon>
                     </button>
@@ -17,12 +17,12 @@
                 </button>
             </div>
             <app-picture
-                [imgPreLink]="dir.imgPreLink"
-                [images]="images()"
+                [imgPreLink]="dir.imgPreLink()"
+                [(images)]="displayImages"
                 [dirPath]="directory()"
                 (changeEvent)="onPicChanged($event)" />
         } @else {
-            <img height="auto" width="auto" [src]="onGetImgSrc(imageControl().value)" alt="img" />
+            <img height="auto" width="auto" [src]="onGetImgSrc(imageValue())" alt="img" />
         }
     </div>
 }

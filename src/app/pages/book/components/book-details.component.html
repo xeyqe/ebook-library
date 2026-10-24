@@ -1,6 +1,6 @@
 <div class="flexed">
     @for (field of fields; track field.key) {
-        @if (form().controls[field.key].value || editing()) {
+        @if (formValues()[field.key] || editing()) {
             <div class="clm">
                 <mat-form-field subscriptSizing="dynamic" (click)="editor.focus()">
                     <mat-label class="red">{{ field.label }}</mat-label>
@@ -11,10 +11,10 @@
                         (_onFocus)="onFocus(field.key)"
                         (_onBlur)="onBlur()" />
                 </mat-form-field>
-                @if (editing() && focusedOn === field.key && suggestions()[field.key].length) {
+                @if (editing() && focusedOn() === field.key && suggestions()[field.key].length) {
                     <div class="overflowed">
                         @for (value of suggestions()[field.key]; track $index) {
-                            @if (form().controls[field.key].value !== value) {
+                            @if (formValues()[field.key] !== value) {
                                 <mat-option
                                     class="autocomplete-option"
                                     [value]="value"
@@ -28,7 +28,7 @@
             </div>
         }
     }
-    @if (form().controls.language.value || editing()) {
+    @if (formValues().language || editing()) {
         <mat-form-field subscriptSizing="dynamic">
             <mat-label class="red">Language</mat-label>
             <mat-select
@@ -43,7 +43,7 @@
         </mat-form-field>
     }
 
-    @if (form().controls.translator.value || editing()) {
+    @if (formValues().translator || editing()) {
         <div class="clm">
             <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
                 <mat-label class="red">Translator</mat-label>
@@ -55,10 +55,10 @@
                     (_onBlur)="onBlur()">
                 </app-contenteditable>
             </mat-form-field>
-            @if (editing() && focusedOn === 'translator' && suggestions().translator.length) {
+            @if (editing() && focusedOn() === 'translator' && suggestions().translator.length) {
                 <div class="overflowed">
                     @for (translator of suggestions().translator; track $index) {
-                        @if (form().controls.translator.value !== translator) {
+                        @if (formValues().translator !== translator) {
                             <mat-option
                                 class="autocomplete-option"
                                 [value]="translator"
@@ -72,7 +72,7 @@
         </div>
     }
 
-    @if (form().controls.length.value || editing()) {
+    @if (formValues().length || editing()) {
         <div class="clm">
             <mat-form-field subscriptSizing="dynamic" (click)="appContenteditable.focus()">
                 <mat-label class="red">Pages</mat-label>
@@ -84,10 +84,10 @@
                     (_onBlur)="onBlur()">
                 </app-contenteditable>
             </mat-form-field>
-            @if (editing() && focusedOn === 'length' && suggestions().length?.length) {
+            @if (editing() && focusedOn() === 'length' && suggestions().length?.length) {
                 <div class="overflowed">
                     @for (length of suggestions().length; track $index) {
-                        @if (form().controls.length.value !== length) {
+                        @if (formValues().length !== length) {
                             <mat-option
                                 class="autocomplete-option"
                                 [value]="length"
@@ -101,24 +101,21 @@
         </div>
     }
 
-    @if (form().controls.progress.value) {
+    @if (formValues().progress) {
         <mat-form-field subscriptSizing="dynamic">
             <mat-label class="red">Progress</mat-label>
             <app-contenteditable class="gray" [formControl]="form().controls.progress" />
         </mat-form-field>
     }
     @for (date of dates; track date.key) {
-        @if (form().controls[date.key].value) {
+        @if (formValues()[date.key]) {
             <mat-form-field subscriptSizing="dynamic">
                 <mat-label class="red">{{ date.label }}</mat-label>
-                <app-contenteditable
-                    disabled
-                    class="gray"
-                    [value]="form().controls[date.key].value | date: 'd.M.yy, H:mm:ss'" />
+                <app-contenteditable disabled class="gray" [value]="formValues()[date.key] | date: 'd.M.yy, H:mm:ss'" />
             </mat-form-field>
         }
     }
-    @if (form().controls.rating.value || editing()) {
+    @if (formValues().rating || editing()) {
         <mat-form-field subscriptSizing="dynamic">
             <mat-label class="red">Rating</mat-label>
             <mat-select
@@ -135,7 +132,7 @@
         </mat-form-field>
     }
 </div>
-@if (form().controls.annotation.value || editing()) {
+@if (formValues().annotation || editing()) {
     <div class="marged biogr">
         <mat-label class="red">Annotation</mat-label>
         <div (click)="onReduceHeight()">
@@ -145,7 +142,7 @@
                 [formControl]="form().controls.annotation"
                 matInput
                 [class]="editing() ? 'white' : 'gray'"
-                [class.reduced]="form().controls.annotation.disabled && annotationReduced"></p>
+                [class.reduced]="!editing() && annotationReduced()"></p>
         </div>
     </div>
 }

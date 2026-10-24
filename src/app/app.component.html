@@ -1,9 +1,9 @@
 <ion-app #elRef>
-    @if (initialized) {
+    @if (initialized()) {
         <ion-router-outlet></ion-router-outlet>
     }
 </ion-app>
-@if (workingServ.working) {
+@if (workingServ.working()) {
     <div class="cont"></div>
     <ion-spinner name="bubbles"></ion-spinner>
 }

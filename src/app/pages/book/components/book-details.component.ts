@@ -1,4 +1,6 @@
+import { controlValueSignal } from 'src/app/utils/control-value-signal';
 import {
+  signal,
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
@@ -37,6 +39,7 @@ import { BookField, BookForm, BookSuggestions, BookValues } from '../book-form';
 })
 export class BookDetailsComponent implements OnChanges, OnDestroy {
   readonly form = input.required<BookForm>();
+  protected readonly formValues = controlValueSignal(this.form);
   readonly suggestions = input.required<BookSuggestions>();
   readonly editing = input.required<boolean>();
   protected readonly textColor = computed(() => (this.editing() ? 'white' : 'gray'));
@@ -55,8 +58,8 @@ export class BookDetailsComponent implements OnChanges, OnDestroy {
     { key: 'lastRead', label: 'Last Read' },
     { key: 'finished', label: 'Finished' },
   ] as const;
-  protected focusedOn: BookField = null;
-  protected annotationReduced = true;
+  protected readonly focusedOn = signal<BookField>(null);
+  protected readonly annotationReduced = signal(true);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly renderer = inject(Renderer2);
   private readonly injector = inject(Injector);
@@ -84,13 +87,13 @@ export class BookDetailsComponent implements OnChanges, OnDestroy {
     this.timers.add(timer);
   }
   protected onFocus(field: BookField): void {
-    this.defer(() => (this.focusedOn = field), 1);
+    this.defer(() => this.focusedOn.set(field), 1);
   }
   protected onBlur(): void {
-    this.defer(() => (this.focusedOn = null));
+    this.defer(() => this.focusedOn.set(null));
   }
   protected onReduceHeight(): void {
-    if (this.form().controls.annotation.disabled) this.annotationReduced = !this.annotationReduced;
+    if (this.form().controls.annotation.disabled) this.annotationReduced.set(!this.annotationReduced());
   }
   ngOnDestroy(): void {
     for (const timer of this.timers) clearTimeout(timer);

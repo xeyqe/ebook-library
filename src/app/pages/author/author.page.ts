@@ -1,3 +1,4 @@
+import { controlValueSignal } from 'src/app/utils/control-value-signal';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -65,15 +66,16 @@ export class AuthorComponent implements OnInit, OnDestroy {
   private readonly content = viewChild<ElementRef<HTMLElement>>('content');
   protected readonly onlineSearch = viewChild(AuthorOnlineSearchComponent);
   protected readonly bookList = viewChild(AuthorBooksComponent);
-  protected author: AUTHOR = null;
-  protected books: AUTHORSBOOKS[] = [];
-  protected series: AuthorSeries[] = [];
-  protected authorChanged = false;
+  protected readonly author = signal<AUTHOR>(null);
+  protected readonly books = signal<AUTHORSBOOKS[]>([]);
+  protected readonly series = signal<AuthorSeries[]>([]);
+  protected readonly authorChanged = signal(false);
   protected readonly isEditing = signal(false);
   protected readonly showOnlineSearch = inject(WebScraperService).showAble;
   protected readonly imgPreLink = this.directoryServ.imgPreLink;
   protected readonly authorForm = createAuthorForm();
-  protected readonly suggestions = createAuthorSuggestions();
+  protected readonly formValues = controlValueSignal(this.authorForm);
+  protected readonly suggestions = signal(createAuthorSuggestions());
   private initialization: Promise<void> = Promise.resolve();
   ngOnInit(): void {
     this.initialization = this.initialize().catch((error) => {
@@ -84,14 +86,14 @@ export class AuthorComponent implements OnInit, OnDestroy {
 
   async ionViewDidEnter(): Promise<void> {
     await this.initialization;
-    if (!this.author || this.destroyRef.destroyed) return;
+    if (!this.author() || this.destroyRef.destroyed) return;
     try {
-      const books = (await this.db.getBooksOfAuthor(this.author.booksIds)) ?? [];
+      const books = (await this.db.getBooksOfAuthor(this.author().booksIds)) ?? [];
       if (this.destroyRef.destroyed) return;
       for (const book of books) book.img = this.normalizeImagePath(book.img);
       await this.groupBooksBySeries(books);
       if (this.destroyRef.destroyed) return;
-      await this.loadUnusedPics([...books.map((book) => book.img), this.author.img]);
+      await this.loadUnusedPics([...books.map((book) => book.img), this.author().img]);
     } catch (error) {
       console.error('Unable to load author books', error);
     }
@@ -103,18 +105,18 @@ export class AuthorComponent implements OnInit, OnDestroy {
     const author = await this.db.getAuthor(Number(params.get('id')));
     if (this.destroyRef.destroyed) return;
     if (!author) throw new Error('Author was not found.');
-    this.author = author;
+    this.author.set(author);
     await this.updateOldImgs(author.img);
     if (this.destroyRef.destroyed) return;
-    this.initializeForm(author);
+    this.initializeForm(this.author());
     this.fs.addBooksOfAuthor(author.id, author.path);
   }
 
   private async updateOldImgs(img: string): Promise<void> {
     const normalized = this.normalizeImagePath(img);
     if (normalized === img) return;
-    this.author.img = normalized;
-    await this.db.updateAuthor(this.author);
+    this.author.update((current) => ({ ...current, img: normalized }));
+    await this.db.updateAuthor(this.author());
   }
 
   private normalizeImagePath(img: string): string {
@@ -130,7 +132,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
   private initializeForm(author: AUTHOR): void {
     this.applyAuthorData(author);
     this.authorForm.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-      this.authorChanged = true;
+      this.authorChanged.set(true);
     });
   }
 
@@ -141,16 +143,17 @@ export class AuthorComponent implements OnInit, OnDestroy {
   }
 
   private addSuggestion<Key extends AuthorField>(key: Key, value: AuthorValues[Key]): void {
-    if (value && !this.suggestions[key].includes(value)) this.suggestions[key].push(value);
+    if (value && !this.suggestions()[key].includes(value))
+      this.suggestions.update((current) => ({ ...current, [key]: [...current[key], value] }));
   }
 
   private async groupBooksBySeries(books: AUTHORSBOOKS[]): Promise<void> {
-    const previousState = new Map(this.series.map((series) => [series.name, series.open]));
+    const previousState = new Map(this.series().map((series) => [series.name, series.open]));
     const grouped = new Map<string, AuthorSeries>();
-    this.books = [];
+    this.books.set([]);
     for (const book of books) {
       if (!book.serie) {
-        this.books.push(book);
+        this.books.update((current) => [...current, book]);
         continue;
       }
       if (!grouped.has(book.serie)) {
@@ -158,32 +161,35 @@ export class AuthorComponent implements OnInit, OnDestroy {
       }
       grouped.get(book.serie).books.push(book);
     }
-    this.series = [...grouped.values()].sort((a, b) => a.name.localeCompare(b.name));
-    if (!grouped.size) return;
-    const otherBooks = await this.db.getSeriesBooks([...grouped.keys()], this.author.id);
+    if (!grouped.size) {
+      this.series.set([]);
+      return;
+    }
+    const otherBooks = await this.db.getSeriesBooks([...grouped.keys()], this.author().id);
     if (this.destroyRef.destroyed) return;
     for (const [name, books] of Object.entries(otherBooks)) grouped.get(name)?.books.push(...books);
+    this.series.set([...grouped.values()].sort((a, b) => a.name.localeCompare(b.name)));
   }
 
   private async loadUnusedPics(usedPics: string[]): Promise<void> {
-    const allFiles = await this.fs.getNonBookFilesOfFolder(this.author.path);
+    const allFiles = await this.fs.getNonBookFilesOfFolder(this.author().path);
     if (this.destroyRef.destroyed) return;
     const unused = allFiles.filter((file) => !usedPics.includes(file));
-    this.suggestions.img = [...new Set([...this.suggestions.img, ...unused])];
+    this.suggestions.update((current) => ({ ...current, img: [...new Set([...this.suggestions().img, ...unused])] }));
     this.picsServ.pics = unused.length ? unused : null;
   }
 
   protected async onUpdateAuthor(): Promise<void> {
-    if (!this.author || !this.isEditing()) return;
+    if (!this.author() || !this.isEditing()) return;
     try {
       const img = this.picture() ? await this.picture().prepareImageForSave() : this.authorForm.controls.img.value;
       this.authorForm.controls.img.setValue(img);
-      const updated = { ...this.author, ...this.authorForm.getRawValue() };
+      const updated = { ...this.author(), ...this.authorForm.getRawValue() };
       await this.db.updateAuthor(updated);
       if (this.destroyRef.destroyed) return;
-      this.author = updated;
-      this.authorForm.disable({ emitEvent: false });
-      this.authorChanged = false;
+      this.author.set(updated);
+      this.authorForm.disable();
+      this.authorChanged.set(false);
       this.isEditing.set(false);
     } catch (error) {
       console.error('Unable to save author', error);
@@ -191,15 +197,15 @@ export class AuthorComponent implements OnInit, OnDestroy {
   }
 
   protected onEditable(): void {
-    if (!this.author) return;
+    if (!this.author()) return;
     this.isEditing.update((editing) => !editing);
     if (this.isEditing()) {
-      this.authorForm.enable({ emitEvent: false });
+      this.authorForm.enable();
     } else {
-      this.authorForm.reset(this.author, { emitEvent: false });
-      this.authorForm.disable({ emitEvent: false });
+      this.authorForm.reset(this.author());
+      this.authorForm.disable();
     }
-    this.authorChanged = false;
+    this.authorChanged.set(false);
   }
 
   protected async deleteAuthor(): Promise<void> {
@@ -207,8 +213,8 @@ export class AuthorComponent implements OnInit, OnDestroy {
       message: "Do you really want to delete this author?\n(Files won't be deleted.)",
       selects: ['Ok', 'Cancel'],
     });
-    if (selected !== 0 || !this.author) return;
-    await this.db.deleteAuthor(this.author.id);
+    if (selected !== 0 || !this.author()) return;
+    await this.db.deleteAuthor(this.author().id);
     await this.router.navigate(['/authors']);
   }
 
@@ -225,7 +231,7 @@ export class AuthorComponent implements OnInit, OnDestroy {
   }
 
   protected onBookAdded(book: AUTHORSBOOKS): void {
-    this.books = [...this.books, book];
+    this.books.set([...this.books(), book]);
   }
 
   protected scrollToContent(): void {

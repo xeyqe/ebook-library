@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
+import { signal, ChangeDetectionStrategy, Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { NavController, Platform, ToastController } from '@ionic/angular';
@@ -25,7 +25,7 @@ export class AppComponent implements OnInit {
   @ViewChild('elRef', { static: true }) elRef: ElementRef;
   private lastTimeBackPress = 0;
   private subs: Subscription[] = [];
-  protected initialized: boolean;
+  protected readonly initialized = signal<boolean>(undefined);
 
   private db = inject(DatabaseService);
   private fr = inject(FileReaderService);
@@ -36,29 +36,36 @@ export class AppComponent implements OnInit {
   protected workingServ = inject(BusyService);
 
   ngOnInit(): void {
-    this.platform.ready().then(() => {
-      // Request notification permission only; TTS manages its own playback service.
-      ForegroundService.requestPermissions().then(a => {
-        console.log(a);
-      }).catch(e => {
-        console.error(e);
-      });
+    this.platform
+      .ready()
+      .then(() => {
+        // Request notification permission only; TTS manages its own playback service.
+        ForegroundService.requestPermissions()
+          .then((a) => {
+            console.log(a);
+          })
+          .catch((e) => {
+            console.error(e);
+          });
 
-      ForegroundService.checkPermissions().then(a => {
-        console.log(a);
-      }).catch(e => {
+        ForegroundService.checkPermissions()
+          .then((a) => {
+            console.log(a);
+          })
+          .catch((e) => {
+            console.error(e);
+          });
+        this.saveArea();
+        AllFilesAccess.access().then(() => {
+          this.initializeApp();
+          this.setSubs();
+          StatusBar.hide();
+        });
+      })
+      .catch((e) => {
+        console.error('getting platform ready failed');
         console.error(e);
       });
-      this.saveArea();
-      AllFilesAccess.access().then(() => {
-        this.initializeApp();
-        this.setSubs();
-        StatusBar.hide();
-      })
-    }).catch(e => {
-      console.error('getting platform ready failed');
-      console.error(e);
-    })
   }
 
   private saveArea(): void {
@@ -75,10 +82,7 @@ export class AppComponent implements OnInit {
     const { insets } = data;
     for (const [key, value] of Object.entries(insets)) {
       const el = this.elRef.nativeElement || document.querySelector('ion-app');
-      el.style.setProperty(
-        `margin-${key}`,
-        `${value}px`,
-      );
+      el.style.setProperty(`margin-${key}`, `${value}px`);
     }
   }
 
@@ -87,15 +91,15 @@ export class AppComponent implements OnInit {
       await this.db.initializeDB();
       console.log('dt initialized');
     } catch (e) {
-      console.log('this.db.initializeDB() failed')
-      console.error(e)
+      console.log('this.db.initializeDB() failed');
+      console.error(e);
     }
     try {
       await this.fr.createApplicationFolder();
-      console.log('this.fr.createApplicationFolder() finished')
+      console.log('this.fr.createApplicationFolder() finished');
     } catch (e) {
-      console.error('download of dorian failed')
-      console.error(e)
+      console.error('download of dorian failed');
+      console.error(e);
     }
     try {
       await this.fr.downloadDorian();
@@ -105,8 +109,8 @@ export class AppComponent implements OnInit {
 
     try {
       await this.fr.listOfAuthors();
-      this.initialized = true;
-      console.log('this.fr.listOfAuthors() finished')
+      this.initialized.set(true);
+      console.log('this.fr.listOfAuthors() finished');
     } catch (e) {
       console.error('this.fr.listOfAuthors() failed');
       console.error(e);
@@ -114,14 +118,18 @@ export class AppComponent implements OnInit {
   }
 
   private setSubs() {
-    this.subs.push(this.platform.backButton.subscribeWithPriority(9999, () => {
-      this.hwBackButtonFunction();
-    }));
-    this.subs.push(this.platform.resume.subscribe(() => {
-      if (this.workingServ.isSpeaking) {
-        this.workingServ.inBg = true;
-      }
-    }));
+    this.subs.push(
+      this.platform.backButton.subscribeWithPriority(9999, () => {
+        this.hwBackButtonFunction();
+      }),
+    );
+    this.subs.push(
+      this.platform.resume.subscribe(() => {
+        if (this.workingServ.isSpeaking()) {
+          this.workingServ.inBg.set(true);
+        }
+      }),
+    );
   }
 
   private hwBackButtonFunction(): void {

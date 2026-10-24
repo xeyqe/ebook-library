@@ -1,37 +1,15 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class BusyService {
-  private _working: boolean;
-  private _inBg: boolean;
-  private _isSpeaking: boolean;
+  readonly working = signal(false);
+  readonly inBg = signal(false);
+  readonly isSpeaking = signal(false);
 
-  public get working(): boolean {
-    return this._working;
+  busy(): void {
+    this.working.set(true);
   }
-
-  public busy() {
-    this._working = true;
+  done(): void {
+    this.working.set(false);
   }
-
-  public done() {
-    this._working = false;
-  }
-
-  public get inBg(): boolean {
-    return this._inBg;
-  }
-  public set inBg(value: boolean) {
-    this._inBg = value;
-  }
-
-  public get isSpeaking(): boolean {
-    return this._isSpeaking;
-  }
-  public set isSpeaking(value: boolean) {
-    this._isSpeaking = value;
-  }
-
 }

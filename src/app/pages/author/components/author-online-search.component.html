@@ -1,5 +1,5 @@
 <div>
-    @for (item of onlineAuthors; track item) {
+    @for (item of onlineAuthors(); track item) {
         <div class="online-item" (click)="onDownloadAuthorInfo(item)">
             @if (item.img) {
                 <ion-avatar>
@@ -16,7 +16,7 @@
             </div>
         </div>
     }
-    @for (item of legieAuthors; track item) {
+    @for (item of legieAuthors(); track item) {
         <div class="online-item" (click)="onDownloadAuthorInfo(item)">
             <div class="ion-text-wrap">
                 @if (item.name || item.surname) {
@@ -28,7 +28,7 @@
             </div>
         </div>
     }
-    @for (item of cbdbAuthors; track item) {
+    @for (item of cbdbAuthors(); track item) {
         <div class="online-item" (click)="onDownloadAuthorInfoCBDB(item.cbdbId)">
             @if (item.img) {
                 <ion-avatar>

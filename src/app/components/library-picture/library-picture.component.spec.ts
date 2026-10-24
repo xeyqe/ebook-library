@@ -47,7 +47,10 @@ describe('LibraryPictureComponent', () => {
         { provide: FileReaderService, useValue: files },
         { provide: PICTURE_FILESYSTEM, useValue: { copy } },
         { provide: DatabaseService, useValue: {} },
-        { provide: DirectoryService, useValue: { dir: Directory.Data, imgPreLink: 'file://' } },
+        {
+          provide: DirectoryService,
+          useValue: { dir: Directory.Data, imgPreLink: vi.fn().mockReturnValue('file://') },
+        },
         { provide: MatDialog, useValue: {} },
         BusyService,
       ],
@@ -77,7 +80,7 @@ describe('LibraryPictureComponent', () => {
       await component.downloadPicture();
       expect(files.downloadPicture).toHaveBeenCalledWith('https://example.test/cover.jpg', directory, filename);
       expect(control.value).toBe('/ebook-library/downloaded.jpg');
-      expect(TestBed.inject(BusyService).working).toBe(false);
+      expect(TestBed.inject(BusyService).working()).toBe(false);
     },
   );
 
@@ -99,6 +102,6 @@ describe('LibraryPictureComponent', () => {
     const { component, control } = create(owners[0].owner, 'https://example.test/cover.jpg');
     await component.downloadPicture();
     expect(control.value).toBe('https://example.test/cover.jpg');
-    expect(TestBed.inject(BusyService).working).toBe(false);
+    expect(TestBed.inject(BusyService).working()).toBe(false);
   });
 });

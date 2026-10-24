@@ -9,7 +9,7 @@ export const ttsEntryGuard: CanActivateFn = (route) => {
   const playback = inject(SpeechPlaybackService);
   const dialog = inject(MatDialog);
   const bookId = Number(route.paramMap.get('id'));
-  if (!playback.isSpeaking() || playback.bookId === bookId) return true;
+  if (!playback.isSpeaking() || playback.bookId() === bookId) return true;
 
   const confirmation = dialog.open(DialogComponent, {
     data: {

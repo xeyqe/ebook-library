@@ -478,7 +478,7 @@ export class DatabaseService {
       let data: any;
       if (character === '#') {
         data = await this.database.executeSql(
-          `SELECT id, name, surname, img FROM authors ORDER BY surname COLLATE NOCASE ASC`,
+          `SELECT id, name, surname, img, booksIds FROM authors ORDER BY surname COLLATE NOCASE ASC`,
           []
         ).catch(e => {
           console.error('loadAuthors for # failed');
@@ -494,6 +494,7 @@ export class DatabaseService {
         });
       }
       let authors = [];
+      const pendingProgress: Promise<void>[] = [];
 
       if (data.rows.length > 0) {
         for (let i = 0; i < data.rows.length; i++) {
@@ -504,16 +505,19 @@ export class DatabaseService {
             img: data.rows.item(i).img,
             progress: 0,
           };
-          this.getAuthorsProgress(data.rows.item(i).booksIds?.split(',')?.map(it => +it)).then(progress => {
-            author.progress = progress;
-          });
+          pendingProgress.push(
+            this.getAuthorsProgress(data.rows.item(i).booksIds?.split(',')?.map(it => +it)).then(progress => {
+              author.progress = progress;
+            }),
+          );
           authors.push(author);
         }
       }
       if (character === '#') {
         authors = authors.filter(auth => !/^[a-zA-Z]$/.test(auth.surname[0]));
       }
-      return authors;
+      await Promise.all(pendingProgress);
+    return authors;
     } catch (e) {
       console.error('loadAuthors failed: ');
       console.error(e);
@@ -599,6 +603,7 @@ export class DatabaseService {
       else throw e;
     }
     const authors: AUTHORSIMPLIFIED[] = [];
+    const pendingProgress: Promise<void>[] = [];
     if (data.rows.length > 0) {
       for (let i = 0; i < data.rows.length; i++) {
         const author = {
@@ -609,18 +614,21 @@ export class DatabaseService {
           img: data.rows.item(i).img,
           progress: 0
         };
-        this.getAuthorsProgress(data.rows.item(i)?.booksIds?.split(',')?.map(it => +it)).then(progress => {
-          author.progress = progress;
-        });
+        pendingProgress.push(
+          this.getAuthorsProgress(data.rows.item(i)?.booksIds?.split(',')?.map(it => +it)).then(progress => {
+            author.progress = progress;
+          }),
+        );
         authors.push(author);
       }
     }
+    await Promise.all(pendingProgress);
     return authors;
   }
 
   public async findBooks(searchValue: string): Promise<BOOKSIMPLIFIED[]> {
     const data = await this.database.executeSql(
-      `SELECT id, title, progress, img, rating creatorIds FROM books WHERE title LIKE "%${searchValue}%" OR originalTitle LIKE "%${searchValue}%" ORDER BY title COLLATE NOCASE ASC`,
+      `SELECT id, title, progress, img, rating, creatorIds FROM books WHERE title LIKE "%${searchValue}%" OR originalTitle LIKE "%${searchValue}%" ORDER BY title COLLATE NOCASE ASC`,
       []
     ).catch(e => {
       console.error('findAuthors failed!');
@@ -635,14 +643,14 @@ export class DatabaseService {
           progress: data.rows.item(i).progress,
           img: data.rows.item(i).img,
           rating: data.rows.item(i).rating,
-          creatorIds: data.rows.item(i).creatorIds,
+          creatorIds: data.rows.item(i).creatorIds?.split(',')?.map(it => +it),
           authors: null
         });
       }
     }
-    for (const book of books) {
-      this.getAutorsStr(book.creatorIds).then(str => book.authors = str);
-    }
+    await Promise.all(books.map(async book => {
+      book.authors = await this.getAutorsStr(book.creatorIds);
+    }));
     return books;
   }
 
@@ -977,6 +985,7 @@ export class DatabaseService {
     progress: string,
     img: string,
     creatorIds: number[],
+    authors: string,
   }[]> {
     const data = await this.database.executeSql(
       'SELECT id, title, progress, img, creatorIds FROM books WHERE lastRead IS NOT NULL AND finished IS NULL ORDER BY lastRead DESC, title COLLATE NOCASE ASC',
@@ -987,9 +996,9 @@ export class DatabaseService {
     });
 
     const books = this.getReducedBooksFromSqlRows(data.rows);
-    for (const book of books) {
-      this.getAutorsStr(book.creatorIds).then(str => book.authors = str);
-    }
+    await Promise.all(books.map(async book => {
+      book.authors = await this.getAutorsStr(book.creatorIds);
+    }));
     return books;
   }
 
@@ -1009,9 +1018,9 @@ export class DatabaseService {
       throw e;
     });
     const books = this.getReducedBooksFromSqlRows(data.rows);
-    for (const book of books) {
-      this.getAutorsStr(book.creatorIds).then(str => book.authors = str);
-    }
+    await Promise.all(books.map(async book => {
+      book.authors = await this.getAutorsStr(book.creatorIds);
+    }));
     return books;
   }
 
@@ -1031,9 +1040,9 @@ export class DatabaseService {
       throw e;
     });
     const books = this.getReducedBooksFromSqlRows(data.rows);
-    for (const book of books) {
-      this.getAutorsStr(book.creatorIds).then(str => book.authors = str);
-    }
+    await Promise.all(books.map(async book => {
+      book.authors = await this.getAutorsStr(book.creatorIds);
+    }));
     return books;
   }
 

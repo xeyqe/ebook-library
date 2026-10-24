@@ -62,7 +62,7 @@ describe('AuthorsComponent', () => {
         BusyService,
         { provide: DatabaseService, useValue: database },
         { provide: FileReaderService, useValue: files },
-        { provide: DirectoryService, useValue: { imgPreLink: 'file://library' } },
+        { provide: DirectoryService, useValue: { imgPreLink: vi.fn().mockReturnValue('file://library') } },
         { provide: MatDialog, useValue: dialog },
       ],
     });
@@ -84,10 +84,27 @@ describe('AuthorsComponent', () => {
     ready.next(true);
     await entering;
     expect(database.loadAuthors).toHaveBeenCalledWith('A');
-    expect(page.selectedCharacter).toBe('A');
-    expect(page.visibleAuthors).toEqual([author]);
-    expect(page.loading).toBe(false);
+    expect(page.selectedCharacter()).toBe('A');
+    expect(page.visibleAuthors()).toEqual([author]);
+    expect(page.loading()).toBe(false);
     expect(files.downloadUnknownImg).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders delayed search results without manually triggering change detection', async () => {
+    await enter();
+    await fixture.whenStable();
+    const result = deferred<unknown[]>();
+    database.findAuthors.mockReturnValueOnce(result.promise);
+    page.searchQuery.set('Other');
+    const loading = page.load();
+    await Promise.resolve();
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('ion-progress-bar')).toBeTruthy();
+    result.resolve([{ ...author, surname: 'Other author' }]);
+    await loading;
+    await fixture.whenStable();
+    expect(fixture.nativeElement.textContent).toContain('Other author');
+    expect(fixture.nativeElement.querySelector('ion-progress-bar')).toBeNull();
   });
 
   it('refreshes saved filters and last playback when returning to the cached page', async () => {
@@ -97,8 +114,8 @@ describe('AuthorsComponent', () => {
     preferences.set('as', JSON.stringify({ id: 7, type: 'speech' }));
     await page.ionViewWillEnter();
     expect(database.loadBooks).toHaveBeenCalledWith('finished');
-    expect(page.visibleBooks).toEqual([book]);
-    expect(page.lastListened).toEqual({ id: 7, type: 'speech' });
+    expect(page.visibleBooks()).toEqual([book]);
+    expect(page.lastListened()).toEqual({ id: 7, type: 'speech' });
     expect(files.downloadUnknownImg).toHaveBeenCalledTimes(1);
   });
 
@@ -108,30 +125,30 @@ describe('AuthorsComponent', () => {
     preferences.set('bookSearchBy', 'invalid');
     preferences.set('where2Search', 'invalid');
     await enter();
-    expect(page.lastListened).toBeUndefined();
-    expect(page.selectedCharacter).toBe('A');
-    expect(page.bookSearchBy).toBe('started');
-    expect(page.loadError).toBe('');
+    expect(page.lastListened()).toBeUndefined();
+    expect(page.selectedCharacter()).toBe('A');
+    expect(page.bookSearchBy()).toBe('started');
+    expect(page.loadError()).toBe('');
   });
 
   it('reads legacy last-listened IDs as numbers', async () => {
     preferences.set('as', '421');
     await enter();
-    expect(page.lastListened).toEqual({ id: 42, type: 'spritz' });
+    expect(page.lastListened()).toEqual({ id: 42, type: 'spritz' });
   });
 
   it('ignores a slow search response after a newer search completes', async () => {
     await enter();
     const slow = deferred<unknown[]>();
     database.findAuthors.mockReturnValueOnce(slow.promise).mockResolvedValueOnce([{ ...author, id: 3 }]);
-    page.searchQuery = 'first';
+    page.searchQuery.set('first');
     const first = page.load();
     await Promise.resolve();
-    page.searchQuery = 'second';
+    page.searchQuery.set('second');
     await page.load();
     slow.resolve([{ ...author, id: 99 }]);
     await first;
-    expect(page.visibleAuthors[0].id).toBe(3);
+    expect(page.visibleAuthors()[0].id).toBe(3);
   });
 
   it('debounces search and resets to the active filter for short queries', async () => {
@@ -149,10 +166,10 @@ describe('AuthorsComponent', () => {
 
   it('searches the newly selected mode without discarding the query', async () => {
     await enter();
-    page.searchQuery = 'Example';
+    page.searchQuery.set('Example');
     await page.where2SearchFn();
     expect(database.findBooks).toHaveBeenCalledWith('Example');
-    expect(page.visibleBooks).toEqual([book]);
+    expect(page.visibleBooks()).toEqual([book]);
   });
 
   it('ignores a pending author response after switching to books', async () => {
@@ -164,9 +181,9 @@ describe('AuthorsComponent', () => {
     await page.where2SearchFn();
     slow.resolve([{ ...author, id: 99 }]);
     await loadingAuthors;
-    expect(page.visibleAuthors).toEqual([author]);
-    expect(page.visibleBooks).toEqual([book]);
-    expect(page.loading).toBe(false);
+    expect(page.visibleAuthors()).toEqual([author]);
+    expect(page.visibleBooks()).toEqual([book]);
+    expect(page.loading()).toBe(false);
   });
 
   it('cancels pending search timers on leaving the page', async () => {
@@ -187,38 +204,38 @@ describe('AuthorsComponent', () => {
     fixture.destroy();
     slow.resolve([{ ...author, id: 99 }]);
     await loading;
-    expect(page.visibleAuthors).toEqual([author]);
+    expect(page.visibleAuthors()).toEqual([author]);
   });
 
   it('paginates in batches and disables further scrolling at the end', async () => {
     database.loadAuthors.mockResolvedValue(Array.from({ length: 21 }, (_, id) => ({ ...author, id })));
     await enter();
     const event = { target: { complete: vi.fn().mockResolvedValue(undefined) } };
-    expect(page.visibleAuthors).toHaveLength(10);
+    expect(page.visibleAuthors()).toHaveLength(10);
     page.onAuthorsIonInfinite(event);
-    expect(page.visibleAuthors).toHaveLength(20);
+    expect(page.visibleAuthors()).toHaveLength(20);
     page.onAuthorsIonInfinite(event);
-    expect(page.visibleAuthors).toHaveLength(21);
-    expect(page.hasMoreAuthors).toBe(false);
+    expect(page.visibleAuthors()).toHaveLength(21);
+    expect(page.hasMoreAuthors()).toBe(false);
     expect(event.target.complete).toHaveBeenCalledTimes(2);
   });
 
   it('uses Ionic scroll positions without depending on list DOM structure', () => {
     page.onScroll({ detail: { scrollTop: 50 } });
-    expect(page.state).toBe('animated');
+    expect(page.state()).toBe('animated');
     page.onScroll({ detail: { scrollTop: 30 } });
-    expect(page.state).toBe('default');
+    expect(page.state()).toBe('default');
   });
 
   it('allows retrying after a failed library query', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     database.loadAuthors.mockRejectedValueOnce(new Error('Query failed'));
     await enter();
-    expect(page.loadError).toContain('Unable');
-    expect(page.loading).toBe(false);
+    expect(page.loadError()).toContain('Unable');
+    expect(page.loading()).toBe(false);
     await page.ionViewWillEnter();
-    expect(page.loadError).toBe('');
-    expect(page.visibleAuthors).toEqual([author]);
+    expect(page.loadError()).toBe('');
+    expect(page.visibleAuthors()).toEqual([author]);
   });
 
   it('clears the busy overlay and reports export failures', async () => {
@@ -226,8 +243,8 @@ describe('AuthorsComponent', () => {
     dialog.open.mockReturnValue({ afterClosed: () => of(0) });
     files.write2File.mockRejectedValueOnce(new Error('Disk full'));
     await page.onShowDialog();
-    expect(page.actionError).toContain('failed');
-    expect(working.working).toBe(false);
+    expect(page.actionError()).toContain('failed');
+    expect(working.working()).toBe(false);
   });
 
   it('clears the busy overlay and reports backup lookup failures', async () => {
@@ -235,8 +252,8 @@ describe('AuthorsComponent', () => {
     dialog.open.mockReturnValue({ afterClosed: () => of(1) });
     files.getDBJsons.mockRejectedValueOnce(new Error('Storage unavailable'));
     await page.onShowDialog();
-    expect(page.actionError).toContain('failed');
-    expect(working.working).toBe(false);
+    expect(page.actionError()).toContain('failed');
+    expect(working.working()).toBe(false);
   });
 
   it('renders empty results and keeps database actions available without a last-read book', async () => {

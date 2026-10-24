@@ -9,7 +9,7 @@ export class SpeechPlaybackService {
   readonly progress = signal(0);
   readonly isSpeaking = signal(false);
   readonly error = signal('');
-  bookId?: number;
+  readonly bookId = signal<number>(undefined);
   private completed = false;
   private texts: string[] = [];
   private session = 0;
@@ -29,19 +29,19 @@ export class SpeechPlaybackService {
 
   toggle(options: ReadOptions, audioFocus: boolean): Promise<void> {
     return this.queue(async () => {
-      if (this.isSpeaking() && this.bookId === options.bookId) {
+      if (this.isSpeaking() && this.bookId() === options.bookId) {
         await this.stopSession();
         return;
       }
       await this.stopSession();
-      this.bookId = options.bookId;
+      this.bookId.set(options.bookId);
       this.texts = options.texts;
       this.progress.set(options.progress);
       this.completed = false;
       this.error.set('');
       const session = ++this.session;
       this.isSpeaking.set(true);
-      this.working.isSpeaking = true;
+      this.working.isSpeaking.set(true);
       try {
         this.progressListener = await this.tts.addListener('progressArrayEvent', (event) => {
           if (session !== this.session || !Number.isInteger(event.progress)) return;
@@ -74,7 +74,7 @@ export class SpeechPlaybackService {
 
   pauseForBook(bookId: number): Promise<void> {
     return this.queue(async () => {
-      if (this.isSpeaking() && this.bookId !== bookId) await this.stopSession();
+      if (this.isSpeaking() && this.bookId() !== bookId) await this.stopSession();
     });
   }
 
@@ -104,7 +104,7 @@ export class SpeechPlaybackService {
     const wasSpeaking = this.isSpeaking();
     ++this.session;
     this.isSpeaking.set(false);
-    this.working.isSpeaking = false;
+    this.working.isSpeaking.set(false);
     try {
       if (stopNative && wasSpeaking) await this.tts.stop();
       if (restoreProgress && wasSpeaking && !this.completed) await this.restoreProgress();
@@ -130,19 +130,19 @@ export class SpeechPlaybackService {
   }
 
   async restoreProgress(): Promise<void> {
-    if (this.bookId === undefined || !this.texts.length) return;
-    const bookId = this.bookId;
+    if (this.bookId() === undefined || !this.texts.length) return;
+    const bookId = this.bookId();
     const session = this.session;
     const book = await this.db.getBook(bookId);
     const saved = Number(book?.progress?.split('/')[0]);
-    if (session === this.session && bookId === this.bookId && Number.isInteger(saved) && saved >= 0) {
+    if (session === this.session && bookId === this.bookId() && Number.isInteger(saved) && saved >= 0) {
       this.progress.set(Math.max(this.progress(), Math.min(saved, this.texts.length - 1)));
     }
   }
 
   private async saveProgress(): Promise<void> {
-    await this.db.updateBookProgress(this.bookId, `${this.progress()}/${this.texts.length - 1}`);
-    if (this.completed) await this.db.updateBookFinished(this.bookId, new Date());
+    await this.db.updateBookProgress(this.bookId(), `${this.progress()}/${this.texts.length - 1}`);
+    if (this.completed) await this.db.updateBookFinished(this.bookId(), new Date());
   }
 
   setAudioFocus(enabled: boolean): Promise<void> {

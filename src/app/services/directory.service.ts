@@ -1,19 +1,15 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { WebView } from '@awesome-cordova-plugins/ionic-webview/ngx';
 
-
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class DirectoryService {
   private _dir: Directory;
-  private _imgPreLink: string;
+  readonly imgPreLink = signal('');
 
-
-  constructor(
-    private webView: WebView
-  ) {
+  constructor(private webView: WebView) {
     this._dir = Directory.ExternalStorage;
     this.setImgPreLink();
   }
@@ -25,13 +21,8 @@ export class DirectoryService {
   private async setImgPreLink() {
     const uri = await Filesystem.getUri({
       directory: this._dir,
-      path: ''
+      path: '',
     });
-    this._imgPreLink = this.webView.convertFileSrc(uri.uri);
+    this.imgPreLink.set(this.webView.convertFileSrc(uri.uri));
   }
-
-  public get imgPreLink(): string {
-    return this._imgPreLink;
-  }
-
 }

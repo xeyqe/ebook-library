@@ -8,7 +8,7 @@
         <ion-title>book</ion-title>
     }
 
-    @if (book) {
+    @if (book()) {
         <div class="buttons">
             @if (!isEditing()) {
                 <button type="button" mat-mini-fab (click)="onGo2('speech')">
@@ -18,7 +18,7 @@
                     <mat-icon>auto_stories</mat-icon>
                 </button>
             }
-            @if (bookChanged && isEditing()) {
+            @if (bookChanged() && isEditing()) {
                 <button type="button" mat-mini-fab (click)="updateBook()">
                     <mat-icon>save</mat-icon>
                 </button>
@@ -34,7 +34,7 @@
                         <mat-icon>add_circle</mat-icon>
                     </button>
                 }
-                @if (book.path.substring(book.path.length - 4) === 'epub') {
+                @if (book().path.substring(book().path.length - 4) === 'epub') {
                     <button type="button" class="upper" mat-mini-fab (click)="getMetadataFromEpub()">EPUB</button>
                 }
             }
@@ -43,24 +43,24 @@
 </div>
 
 <div class="spaced" #content>
-    @if (book) {
+    @if (book()) {
         <div>
             <app-library-picture
                 [imageControl]="bookForm.controls.img"
                 [owner]="{
                     type: 'book',
-                    id: book.id,
-                    path: book.path,
-                    title: book.title,
-                    editedTitle: bookForm.controls.title.value,
+                    id: book().id,
+                    path: book().path,
+                    title: book().title,
+                    editedTitle: formValues().title,
                 }"
-                [images]="suggestions.img"
+                [images]="suggestions().img"
                 [editing]="isEditing()" />
-            <app-book-details [form]="bookForm" [suggestions]="suggestions" [editing]="isEditing()" />
+            <app-book-details [form]="bookForm" [suggestions]="suggestions()" [editing]="isEditing()" />
             <app-book-online-search
                 [hidden]="!isEditing()"
                 [form]="bookForm"
-                [book]="book"
+                [book]="book()"
                 (dataSelected)="onOnlineData($event)" />
         </div>
     }

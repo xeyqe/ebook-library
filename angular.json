@@ -19,7 +19,7 @@
               "browser": ""
             },
             "index": "src/index.html",
-            "polyfills": ["src/polyfills.ts"],
+            "polyfills": [],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -70,7 +70,7 @@
               "progress": false
             },
             "testing": {
-              "polyfills": ["zone.js", "zone.js/testing"]
+              "polyfills": []
             }
           },
           "defaultConfiguration": "production"

@@ -79,7 +79,7 @@ describe('BookComponent', () => {
         { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: '7' })) } },
         { provide: DatabaseService, useValue: database },
         { provide: FileReaderService, useValue: files },
-        { provide: DirectoryService, useValue: { imgPreLink: 'file://' } },
+        { provide: DirectoryService, useValue: { imgPreLink: vi.fn().mockReturnValue('file://') } },
         { provide: EpubService, useValue: epub },
         { provide: WebScraperService, useValue: scraper },
         { provide: MatDialog, useValue: { open: vi.fn().mockReturnValue({ afterClosed: () => of(0) }) } },
@@ -109,7 +109,7 @@ describe('BookComponent', () => {
     await entering;
     expect(database.getBook).toHaveBeenCalledWith(7);
     expect(page.bookForm.controls.progress.value).toBe('50%');
-    expect(page.book.progress).toBe('5/10');
+    expect(page.book().progress).toBe('5/10');
     expect(page.bookForm.controls.rating.value).toBe(0);
   });
 
@@ -120,7 +120,7 @@ describe('BookComponent', () => {
     page.editable();
     expect(page.bookForm.getRawValue()).toMatchObject({ title: 'Original', dtbkId: 'old-id', progress: '50%' });
     expect(page.bookForm.disabled).toBe(true);
-    expect(page.bookChanged).toBe(false);
+    expect(page.bookChanged()).toBe(false);
     expect(book.title).toBe('Original');
   });
 
@@ -171,8 +171,8 @@ describe('BookComponent', () => {
       progress: '50%',
       img: '/ebook-library/epub/cover.jpg',
     });
-    expect(page.suggestions.img).toEqual(['/ebook-library/epub/cover.jpg']);
-    expect(page.bookChanged).toBe(true);
+    expect(page.suggestions().img).toEqual(['/ebook-library/epub/cover.jpg']);
+    expect(page.bookChanged()).toBe(true);
   });
 
   it('leaves a shared book file in place when its database record is deleted', async () => {
