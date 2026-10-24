@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRouteSnapshot, RouterStateSnapshot, convertToParamMap } from '@angular/router';
 import { Observable, Subject, firstValueFrom } from 'rxjs';
-import { vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SpeechPlaybackService } from 'src/app/services/speech-playback.service';
 import { ttsEntryGuard } from './tts-entry.guard';
 
