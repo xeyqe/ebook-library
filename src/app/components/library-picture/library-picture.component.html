@@ -2,7 +2,7 @@
     <div class="pic-container">
         @if (editing()) {
             <div class="bu-change-pic">
-                @if (imageValue() && !imageValue().startsWith('/')) {
+                @if (imageValue() && !imageValue().startsWith('/') && !imageValue().startsWith('file://')) {
                     <button type="button" mat-mini-fab (click)="downloadPicture()">
                         <mat-icon>download_for_offline</mat-icon>
                     </button>

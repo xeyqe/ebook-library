@@ -59,6 +59,7 @@ export class PictureComponent implements OnChanges {
   }
 
   protected onGetImgSrc(img: string): string {
+    if (img?.startsWith('file://')) return Capacitor.convertFileSrc(img);
     return img?.startsWith('/') ? Capacitor.convertFileSrc(this.imgPreLink() + img) : img;
   }
 

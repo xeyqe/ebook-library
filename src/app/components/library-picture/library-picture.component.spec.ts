@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { Directory } from '@capacitor/filesystem';
+import { Capacitor } from '@capacitor/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BusyService } from 'src/app/services/busy.service';
 import { DatabaseService } from 'src/app/services/database.service';
@@ -93,6 +94,23 @@ describe('LibraryPictureComponent', () => {
       directory: Directory.Data,
       toDirectory: Directory.Data,
     });
+  });
+
+  it.each(owners)('persists a cached EPUB cover in the $label library folder', async ({ owner, savedPath }) => {
+    const { component } = create(owner, 'file:///cache/epub/images/cover.jpg');
+    await expect(component.prepareImageForSave()).resolves.toBe(savedPath);
+    expect(copy).toHaveBeenCalledWith({
+      from: 'file:///cache/epub/images/cover.jpg',
+      to: savedPath,
+      toDirectory: Directory.Data,
+    });
+  });
+
+  it('displays cached cover URIs without adding the library root', () => {
+    const convert = vi.spyOn(Capacitor, 'convertFileSrc').mockReturnValue('converted-cover');
+    const { component } = create(owners[1].owner, 'file:///cache/epub/cover.jpg');
+    expect(component.onGetImgSrc('file:///cache/epub/cover.jpg')).toMatch(/^converted-cover\?ver=/);
+    expect(convert).toHaveBeenCalledWith('file:///cache/epub/cover.jpg');
   });
 
   it('releases the busy state and retains the selected image after download failure', async () => {

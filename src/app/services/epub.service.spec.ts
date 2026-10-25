@@ -20,9 +20,11 @@ describe('EpubService', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     fs.readdir.mockImplementation(async ({ path }) => ({
-      files: path.endsWith('/epub') ? [{ name: 'book.opf', type: 'file' }] : [],
+      files: path === 'epub' ? [{ name: 'book.opf', type: 'file' }] : [],
     }));
-    fs.getUri.mockResolvedValue({ uri: 'file:///storage/' });
+    fs.getUri.mockImplementation(async ({ directory, path }) => ({
+      uri: directory === Directory.Cache ? `file:///cache/${path}` : 'file:///storage/',
+    }));
     fs.readFile.mockImplementation(async ({ path }) => ({
       data: path.endsWith('.opf')
         ? opf
@@ -44,19 +46,41 @@ describe('EpubService', () => {
       author: 'Author',
       ISBN: '123',
       published: null,
-      imgPaths: ['/ebook-library/epub/images/cover.jpg'],
+      imgPaths: ['file:///cache/epub/images/cover.jpg'],
     });
     expect(zip.extractAll).toHaveBeenCalledWith({
       zipFilePath: 'file:///storage/ebook-library/book.epub',
-      destDirectory: 'file:///storage/ebook-library/epub',
+      destDirectory: 'file:///cache/epub',
     });
   });
 
   it('follows spine order, decodes paths and reads entities without script content', async () => {
     await expect(service.getText('book.epub')).resolves.toEqual(['First & text.', 'Second & text.']);
     expect(fs.readFile).toHaveBeenCalledWith(
-      expect.objectContaining({ path: 'ebook-library/epub/chapters/first chapter.xhtml' }),
+      expect.objectContaining({ directory: Directory.Cache, path: 'epub/chapters/first chapter.xhtml' }),
     );
+  });
+
+  it('replaces previous extraction only in the app cache and reads all resources there', async () => {
+    fs.readdir.mockImplementation(async ({ path }) => ({
+      files:
+        path === ''
+          ? [{ name: 'epub', type: 'directory' }]
+          : path === 'epub'
+            ? [{ name: 'book.opf', type: 'file' }]
+            : [],
+    }));
+    await service.getText('/ebook-library/book.epub');
+    expect(fs.rmdir).toHaveBeenCalledExactlyOnceWith({ directory: Directory.Cache, path: 'epub', recursive: true });
+    expect(fs.mkdir).toHaveBeenCalledExactlyOnceWith({ directory: Directory.Cache, path: 'epub', recursive: true });
+    for (const mock of [fs.readdir, fs.readFile]) {
+      expect(mock.mock.calls.every(([options]) => options.directory === Directory.Cache)).toBe(true);
+    }
+  });
+
+  it('rejects resource paths escaping the cache extraction folder', async () => {
+    fs.readFile.mockResolvedValue({ data: opf.replace('images/cover.jpg', '../outside.jpg') });
+    await expect(service.getMetadataFromEpub('book.epub')).rejects.toThrow('outside the extraction folder');
   });
 
   it('rejects missing package documents instead of leaving the promise pending', async () => {
@@ -96,11 +120,12 @@ describe('EpubService', () => {
 
   it('uses the package declared by container.xml', async () => {
     fs.readdir.mockImplementation(async ({ path }) => ({
-      files: path.endsWith('/epub')
-        ? [{ name: 'META-INF', type: 'directory' }]
-        : path.endsWith('META-INF')
-          ? [{ name: 'container.xml', type: 'file' }]
-          : [],
+      files:
+        path === 'epub'
+          ? [{ name: 'META-INF', type: 'directory' }]
+          : path.endsWith('META-INF')
+            ? [{ name: 'container.xml', type: 'file' }]
+            : [],
     }));
     fs.readFile.mockImplementation(async ({ path }) => ({
       data: path.endsWith('container.xml')
@@ -109,7 +134,7 @@ describe('EpubService', () => {
     }));
     await expect(service.getMetadataFromEpub('book.epub')).resolves.toMatchObject({
       title: 'Example',
-      imgPaths: ['/ebook-library/epub/OPS/images/cover.jpg'],
+      imgPaths: ['file:///cache/epub/OPS/images/cover.jpg'],
     });
   });
 });

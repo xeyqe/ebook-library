@@ -1,5 +1,5 @@
 import { inject, Injectable, InjectionToken } from '@angular/core';
-import { Encoding, Filesystem } from '@capacitor/filesystem';
+import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
 import { Zip4J } from 'capacitor-zip4j';
 import { DirectoryService } from './directory.service';
 import { METADATA } from './interfaces';
@@ -26,7 +26,7 @@ export class EpubService {
   private readonly dir = inject(DirectoryService);
   private readonly filesystem = inject(EPUB_FILESYSTEM);
   private readonly zip = inject(EPUB_ZIP);
-  private readonly folder = 'ebook-library/epub';
+  private readonly folder = 'epub';
   private operation: Promise<unknown> = Promise.resolve();
 
   // Extraction uses one shared folder; keep complete reads together, including failures.
@@ -37,7 +37,7 @@ export class EpubService {
   }
 
   private async read(path: string): Promise<string> {
-    const result = await this.filesystem.readFile({ directory: this.dir.dir, path, encoding: Encoding.UTF8 });
+    const result = await this.filesystem.readFile({ directory: Directory.Cache, path, encoding: Encoding.UTF8 });
     if (typeof result.data !== 'string') throw new Error(`Unable to read EPUB file: ${path}`);
     return result.data;
   }
@@ -60,7 +60,8 @@ export class EpubService {
     for (const part of relative.split('/')) {
       if (!part || part === '.') continue;
       if (part === '..') {
-        if (parts.length <= 2) throw new Error('EPUB resource is outside the extraction folder.');
+        if (parts.length <= this.folder.split('/').length)
+          throw new Error('EPUB resource is outside the extraction folder.');
         parts.pop();
       } else parts.push(part);
     }
@@ -68,7 +69,7 @@ export class EpubService {
   }
 
   private async findOpf(path: string): Promise<string | undefined> {
-    const { files } = await this.filesystem.readdir({ directory: this.dir.dir, path });
+    const { files } = await this.filesystem.readdir({ directory: Directory.Cache, path });
     const opf = files.find((file) => file.type === 'file' && /\.opf$/i.test(file.name));
     if (opf) return `${path}/${opf.name}`;
     for (const file of files) {
@@ -80,23 +81,26 @@ export class EpubService {
   }
 
   private async extract(path: string): Promise<{ xml: Document; base: string }> {
-    const { files } = await this.filesystem.readdir({ directory: this.dir.dir, path: 'ebook-library' });
+    const { files } = await this.filesystem.readdir({ directory: Directory.Cache, path: '' });
     if (files.some((file) => file.type === 'directory' && file.name === 'epub')) {
-      await this.filesystem.rmdir({ directory: this.dir.dir, path: this.folder, recursive: true });
+      await this.filesystem.rmdir({ directory: Directory.Cache, path: this.folder, recursive: true });
     }
-    await this.filesystem.mkdir({ directory: this.dir.dir, path: this.folder, recursive: true });
-    const { uri } = await this.filesystem.getUri({ directory: this.dir.dir, path: '' });
+    await this.filesystem.mkdir({ directory: Directory.Cache, path: this.folder, recursive: true });
+    const [{ uri }, { uri: destination }] = await Promise.all([
+      this.filesystem.getUri({ directory: this.dir.dir, path: '' }),
+      this.filesystem.getUri({ directory: Directory.Cache, path: this.folder }),
+    ]);
     const root = uri.replace(/\/+$/, '');
     await this.zip.extractAll({
       zipFilePath: `${root}/${path.replace(/^\/+/, '')}`,
-      destDirectory: `${root}/${this.folder}`,
+      destDirectory: destination,
     });
 
-    const { files: rootFiles } = await this.filesystem.readdir({ directory: this.dir.dir, path: this.folder });
+    const { files: rootFiles } = await this.filesystem.readdir({ directory: Directory.Cache, path: this.folder });
     let opfPath: string | undefined;
     if (rootFiles.some((file) => file.name === 'META-INF' && file.type === 'directory')) {
       const { files: metadataFiles } = await this.filesystem.readdir({
-        directory: this.dir.dir,
+        directory: Directory.Cache,
         path: `${this.folder}/META-INF`,
       });
       if (metadataFiles.some((file) => file.name === 'container.xml')) {
@@ -133,9 +137,17 @@ export class EpubService {
           .map((element) => element.textContent.trim())
           .filter(Boolean)
           .join(', '),
-        imgPaths: this.elements(xml, 'item')
-          .filter((item) => item.getAttribute('media-type')?.startsWith('image/') && item.hasAttribute('href'))
-          .map((item) => `/${this.resolvePath(base, item.getAttribute('href'))}`),
+        imgPaths: await Promise.all(
+          this.elements(xml, 'item')
+            .filter((item) => item.getAttribute('media-type')?.startsWith('image/') && item.hasAttribute('href'))
+            .map(async (item) => {
+              const { uri } = await this.filesystem.getUri({
+                directory: Directory.Cache,
+                path: this.resolvePath(base, item.getAttribute('href')),
+              });
+              return uri;
+            }),
+        ),
       };
     });
   }

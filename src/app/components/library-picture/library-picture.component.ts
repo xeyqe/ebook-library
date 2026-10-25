@@ -69,12 +69,18 @@ export class LibraryPictureComponent {
 
   async prepareImageForSave(): Promise<string> {
     const img = this.picture()?.getCurrentImg() ?? this.imageControl().value;
-    if (!img?.startsWith('/ebook-library/epub/')) return img;
+    const cached = img?.startsWith('file://');
+    if (!cached && !img?.startsWith('/ebook-library/epub/')) return img;
     const owner = this.owner();
     const stem =
       owner.type === 'author' ? this.directory() + this.filename() : owner.path.slice(0, owner.path.lastIndexOf('.'));
     const path = await this.fs.getUniquePath(stem + img.slice(img.lastIndexOf('.')));
-    await this.filesystem.copy({ directory: this.dir.dir, toDirectory: this.dir.dir, from: img, to: path });
+    await this.filesystem.copy({
+      ...(cached ? {} : { directory: this.dir.dir }),
+      toDirectory: this.dir.dir,
+      from: img,
+      to: path,
+    });
     return path;
   }
 
@@ -130,6 +136,7 @@ export class LibraryPictureComponent {
   }
 
   protected onGetImgSrc(img: string): string {
+    if (img?.startsWith('file://')) return `${Capacitor.convertFileSrc(img)}?ver=${this.imageVersion}`;
     return img?.startsWith('/')
       ? `${Capacitor.convertFileSrc(this.dir.imgPreLink() + img)}?ver=${this.imageVersion}`
       : img;
