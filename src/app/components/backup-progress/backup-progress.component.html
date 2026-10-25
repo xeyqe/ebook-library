@@ -1,0 +1,19 @@
+<div class="backdrop">
+    <section
+        class="progress-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="backup-progress-title"
+        aria-busy="true">
+        <h2 id="backup-progress-title">Library backup</h2>
+        <p role="status" aria-live="polite">{{ backup.status() }}</p>
+        <mat-progress-bar
+            [mode]="backup.progress() === null ? 'indeterminate' : 'determinate'"
+            [value]="backup.progress() ?? 0"
+            [attr.aria-label]="backup.status()" />
+        @if (backup.progress() !== null) {
+            <p class="percentage">{{ backup.progress() }}%</p>
+        }
+        <p class="hint">Keep the app open until this finishes.</p>
+    </section>
+</div>

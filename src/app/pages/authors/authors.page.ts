@@ -8,7 +8,7 @@ import {
   DestroyRef,
   inject,
 } from '@angular/core';
-import { InfiniteScrollCustomEvent, IonicModule, ScrollCustomEvent } from '@ionic/angular/lazy';
+import { ToastController, InfiniteScrollCustomEvent, IonicModule, ScrollCustomEvent } from '@ionic/angular/lazy';
 import { Router, RouterModule } from '@angular/router';
 
 import { MatDialog } from '@angular/material/dialog';
@@ -25,6 +25,7 @@ import { DatabaseService } from 'src/app/services/database.service';
 import { DirectoryService } from 'src/app/services/directory.service';
 import { FileReaderService } from 'src/app/services/file-reader.service';
 
+import { BackupAction, BackupDialogComponent } from 'src/app/material/backup-dialog/backup-dialog.component';
 import { DialogComponent } from 'src/app/material/dialog/dialog.component';
 import { InputDialogComponent } from 'src/app/material/input-dialog/input-dialog.component';
 
@@ -34,6 +35,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { BackupPasswordDialogComponent } from 'src/app/material/backup-password-dialog/backup-password-dialog.component';
+import { LibraryBackupService } from 'src/app/services/library-backup.service';
 import { PercentPipe } from 'src/app/pipes/percent2.pipe';
 
 type BookFilter = 'liked' | 'started' | 'finished';
@@ -75,6 +78,8 @@ export class AuthorsComponent implements AfterViewInit, OnDestroy {
   protected readonly loading = signal(true);
   protected readonly loadError = signal('');
   protected readonly actionError = signal('');
+  protected readonly backupMessage = signal('');
+  protected readonly backup = inject(LibraryBackupService);
   protected readonly state = signal<'default' | 'animated'>('default');
   private scrollTop = 0;
   private requestId = 0;
@@ -85,6 +90,7 @@ export class AuthorsComponent implements AfterViewInit, OnDestroy {
 
   private readonly db = inject(DatabaseService);
   private readonly dialog = inject(MatDialog);
+  private readonly toast = inject(ToastController);
   private readonly dir = inject(DirectoryService);
   private readonly fr = inject(FileReaderService);
   private readonly router = inject(Router);
@@ -316,10 +322,85 @@ export class AuthorsComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  protected async onShowDialog(): Promise<void> {
-    const selected = await this.choose({ message: 'Choose export/import database.', selects: ['EXPORT', 'IMPORT'] });
-    if (selected === 0) await this.runOperation(() => this.exportDB());
-    else if (selected === 1) await this.runOperation(() => this.selectWhat2Import());
+  protected async onBackup(): Promise<void> {
+    if (this.workingServ.working()) return;
+    this.actionError.set('');
+    this.backupMessage.set('');
+    const selection = await firstValueFrom(
+      this.dialog
+        .open<BackupDialogComponent, { zipAvailable: boolean }, BackupAction>(BackupDialogComponent, {
+          data: { zipAvailable: this.backup.available },
+          width: '520px',
+          maxWidth: '95vw',
+        })
+        .afterClosed()
+        .pipe(takeUntilDestroyed(this.destroyRef)),
+      { defaultValue: undefined },
+    );
+    if (this.destroyRef.destroyed || this.workingServ.working()) return;
+    if (selection === 'export-json') await this.runOperation(() => this.exportDB());
+    else if (selection === 'import-json') await this.runOperation(() => this.selectWhat2Import());
+    else if (this.backup.available && (selection === 'save-zip' || selection === 'restore-zip')) {
+      await this.runLibraryBackup(selection === 'restore-zip');
+    }
+  }
+
+  private async runLibraryBackup(restoring: boolean): Promise<void> {
+    if (this.workingServ.isSpeaking()) {
+      this.actionError.set('Stop reading before backing up or restoring the library.');
+      return;
+    }
+    const password = await firstValueFrom(
+      this.dialog
+        .open<BackupPasswordDialogComponent, { restoring: boolean }, string>(BackupPasswordDialogComponent, {
+          data: { restoring },
+          width: '440px',
+          maxWidth: '95vw',
+        })
+        .afterClosed()
+        .pipe(takeUntilDestroyed(this.destroyRef)),
+      { defaultValue: undefined },
+    );
+    if (!password || this.destroyRef.destroyed) return;
+    this.workingServ.busy();
+    try {
+      const completed = await (restoring ? this.backup.load(password) : this.backup.save(password));
+      if (completed && !this.destroyRef.destroyed) {
+        if (restoring) {
+          // Saved navigation may reference IDs belonging to the replaced library.
+          this.lastListened.set(undefined);
+          await this.db
+            .saveValue('as', null)
+            .catch((error) => console.error('Unable to clear playback navigation', error));
+          await this.onSearchClear();
+        }
+        const message = restoring ? 'Library restored.' : 'Encrypted backup saved.';
+        this.backupMessage.set(message);
+        await this.notifyBackup(message, false);
+      }
+    } catch (error) {
+      const message = error?.message || 'Unable to complete the library backup operation.';
+      if (!this.destroyRef.destroyed) this.actionError.set(message);
+      await this.notifyBackup(message, true);
+    } finally {
+      this.workingServ.done();
+    }
+  }
+
+  private async notifyBackup(message: string, failed: boolean): Promise<void> {
+    try {
+      const toast = await this.toast.create({
+        header: failed ? 'Library backup failed' : 'Library backup',
+        message,
+        color: failed ? 'danger' : 'success',
+        position: 'top',
+        duration: failed ? 0 : 3500,
+        buttons: ['OK'],
+      });
+      await toast.present();
+    } catch (error) {
+      console.error('Unable to show backup notification', error);
+    }
   }
 
   private async exportDB(): Promise<void> {

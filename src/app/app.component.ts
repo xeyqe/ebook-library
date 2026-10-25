@@ -12,6 +12,7 @@ import { DatabaseService } from 'src/app/services/database.service';
 import { StatusBar } from '@capacitor/status-bar';
 import { SafeArea, SafeAreaInsets } from 'capacitor-plugin-safe-area';
 import { AllFilesAccess } from 'capacitor-all-files-access-permission';
+import { LibraryBackupService } from './services/library-backup.service';
 import { TTS_PLUGIN } from './services/tts-plugin';
 
 @Component({
@@ -27,6 +28,7 @@ export class AppComponent implements OnInit {
   private subs: Subscription[] = [];
   protected readonly initialized = signal<boolean>(undefined);
 
+  protected readonly backup = inject(LibraryBackupService);
   private tts = inject(TTS_PLUGIN);
   private db = inject(DatabaseService);
   private fr = inject(FileReaderService);
@@ -80,10 +82,17 @@ export class AppComponent implements OnInit {
   private async initializeApp(): Promise<void> {
     try {
       await this.db.initializeDB();
+      await this.backup.recoverInterruptedRestore();
       console.log('dt initialized');
     } catch (e) {
       console.log('this.db.initializeDB() failed');
       console.error(e);
+      const toast = await this.toastCtrl.create({
+        message: 'Unable to open the library. Restart the app to retry recovery.',
+        buttons: ['OK'],
+      });
+      await toast.present();
+      return;
     }
     try {
       await this.fr.createApplicationFolder();
@@ -124,6 +133,7 @@ export class AppComponent implements OnInit {
   }
 
   private hwBackButtonFunction(): void {
+    if (this.workingServ.working() || this.backup.active()) return;
     const url = this.router.url;
 
     if (url === '/authors') {

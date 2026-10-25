@@ -1,0 +1,33 @@
+<h2 mat-dialog-title>Backup & restore</h2>
+<mat-dialog-content>
+    <section aria-labelledby="zip-backup-heading">
+        <h3 id="zip-backup-heading"><mat-icon aria-hidden="true">folder_zip</mat-icon> ZIP backup</h3>
+        <p>All books and the database in a password-protected .elbackup archive.</p>
+        @if (!zipAvailable) {
+            <p class="availability">Available on Android.</p>
+        }
+        <div class="actions">
+            <button mat-stroked-button [mat-dialog-close]="'save-zip'" [disabled]="!zipAvailable">
+                <mat-icon>backup</mat-icon> Save backup
+            </button>
+            <button mat-stroked-button [mat-dialog-close]="'restore-zip'" [disabled]="!zipAvailable">
+                <mat-icon>restore</mat-icon> Restore backup
+            </button>
+        </div>
+    </section>
+    <section aria-labelledby="json-backup-heading">
+        <h3 id="json-backup-heading"><mat-icon aria-hidden="true">data_object</mat-icon> JSON backup</h3>
+        <p>Database only. Book files are not included.</p>
+        <div class="actions">
+            <button mat-stroked-button [mat-dialog-close]="'export-json'">
+                <mat-icon>file_upload</mat-icon> Export JSON
+            </button>
+            <button mat-stroked-button [mat-dialog-close]="'import-json'">
+                <mat-icon>file_download</mat-icon> Import JSON
+            </button>
+        </div>
+    </section>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Cancel</button>
+</mat-dialog-actions>

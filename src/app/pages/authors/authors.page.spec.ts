@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { ToastController } from '@ionic/angular/lazy';
 import { MatDialog } from '@angular/material/dialog';
 import { BehaviorSubject, of } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -7,6 +8,7 @@ import { BusyService } from 'src/app/services/busy.service';
 import { DatabaseService } from 'src/app/services/database.service';
 import { DirectoryService } from 'src/app/services/directory.service';
 import { FileReaderService } from 'src/app/services/file-reader.service';
+import { LibraryBackupService } from 'src/app/services/library-backup.service';
 import { AuthorsComponent } from './authors.page';
 
 function deferred<T>() {
@@ -26,6 +28,9 @@ describe('AuthorsComponent', () => {
   let files: any;
   let dialog: any;
   let working: BusyService;
+  let backup: any;
+  let notifications: any;
+  let present: ReturnType<typeof vi.fn>;
 
   const author = { id: 1, name: 'Jane', surname: 'Adams', img: '', progress: 0 };
   const book = { id: 2, title: 'Example book', authors: 'Jane Adams', img: '', progress: '1/3' };
@@ -55,11 +60,16 @@ describe('AuthorsComponent', () => {
       getDBJsons: vi.fn().mockResolvedValue([]),
       write2File: vi.fn().mockResolvedValue(undefined),
     };
+    backup = { available: true, save: vi.fn().mockResolvedValue(true), load: vi.fn().mockResolvedValue(true) };
+    present = vi.fn().mockResolvedValue(undefined);
+    notifications = { create: vi.fn().mockResolvedValue({ present }) };
     dialog = { open: vi.fn().mockReturnValue({ afterClosed: () => of(undefined) }) };
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
         BusyService,
+        { provide: ToastController, useValue: notifications },
+        { provide: LibraryBackupService, useValue: backup },
         { provide: DatabaseService, useValue: database },
         { provide: FileReaderService, useValue: files },
         { provide: DirectoryService, useValue: { imgPreLink: vi.fn().mockReturnValue('file://library') } },
@@ -240,18 +250,18 @@ describe('AuthorsComponent', () => {
 
   it('clears the busy overlay and reports export failures', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    dialog.open.mockReturnValue({ afterClosed: () => of(0) });
+    dialog.open.mockReturnValue({ afterClosed: () => of('export-json') });
     files.write2File.mockRejectedValueOnce(new Error('Disk full'));
-    await page.onShowDialog();
+    await page.onBackup();
     expect(page.actionError()).toContain('failed');
     expect(working.working()).toBe(false);
   });
 
   it('clears the busy overlay and reports backup lookup failures', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    dialog.open.mockReturnValue({ afterClosed: () => of(1) });
+    dialog.open.mockReturnValue({ afterClosed: () => of('import-json') });
     files.getDBJsons.mockRejectedValueOnce(new Error('Storage unavailable'));
-    await page.onShowDialog();
+    await page.onBackup();
     expect(page.actionError()).toContain('failed');
     expect(working.working()).toBe(false);
   });
@@ -261,7 +271,65 @@ describe('AuthorsComponent', () => {
     await enter();
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('No authors found.');
-    expect(fixture.nativeElement.querySelector('[aria-label="Export or import database"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[aria-label="Back up or restore library"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[aria-label="Open last read book"]')).toBeNull();
+  });
+  it('creates a password-protected backup from the library action', async () => {
+    dialog.open
+      .mockReturnValueOnce({ afterClosed: () => of('save-zip') })
+      .mockReturnValueOnce({ afterClosed: () => of('a long password') });
+    await page.onBackup();
+    expect(backup.save).toHaveBeenCalledWith('a long password');
+    expect(page.backupMessage()).toBe('Encrypted backup saved.');
+    expect(working.working()).toBe(false);
+  });
+
+  it('refreshes the library and clears stale playback navigation after restore', async () => {
+    await enter();
+    dialog.open
+      .mockReturnValueOnce({ afterClosed: () => of('restore-zip') })
+      .mockReturnValueOnce({ afterClosed: () => of('a long password') });
+    await page.onBackup();
+    expect(backup.load).toHaveBeenCalledWith('a long password');
+    expect(database.saveValue).toHaveBeenCalledWith('as', null);
+    expect(page.lastListened()).toBeUndefined();
+    expect(database.loadAuthors).toHaveBeenCalledTimes(2);
+    expect(page.backupMessage()).toBe('Library restored.');
+  });
+
+  it('cancels without creating a backup when password entry is dismissed', async () => {
+    dialog.open.mockReturnValueOnce({ afterClosed: () => of('save-zip') });
+    await page.onBackup();
+    expect(backup.save).not.toHaveBeenCalled();
+    expect(working.working()).toBe(false);
+  });
+
+  it('keeps cancellation quiet and displays incorrect-password errors', async () => {
+    dialog.open
+      .mockReturnValueOnce({ afterClosed: () => of('restore-zip') })
+      .mockReturnValueOnce({ afterClosed: () => of('password') });
+    backup.load.mockResolvedValueOnce(false);
+    await page.onBackup();
+    expect(page.backupMessage()).toBe('');
+    dialog.open
+      .mockReturnValueOnce({ afterClosed: () => of('restore-zip') })
+      .mockReturnValueOnce({ afterClosed: () => of('password') });
+    backup.load.mockRejectedValueOnce(new Error('Check the password.'));
+    await page.onBackup();
+    expect(page.actionError()).toBe('Check the password.');
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Check the password.', color: 'danger', buttons: ['OK'] }),
+    );
+    expect(present).toHaveBeenCalledOnce();
+    expect(working.working()).toBe(false);
+  });
+
+  it('prevents backup and restore while speech is updating reading progress', async () => {
+    working.isSpeaking.set(true);
+    dialog.open.mockReturnValueOnce({ afterClosed: () => of('save-zip') });
+    await page.onBackup();
+    expect(dialog.open).toHaveBeenCalledTimes(1);
+    expect(backup.load).not.toHaveBeenCalled();
+    expect(page.actionError()).toContain('Stop reading');
   });
 });

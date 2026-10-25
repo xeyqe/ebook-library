@@ -208,6 +208,33 @@ describe('Atomic database imports', () => {
     expect(sqlBatch.mock.calls[0][0][0]).toEqual(['DROP TABLE IF EXISTS authors', []]);
   });
 
+  it('runs takeCareOfUpdateDB after importing an older database', async () => {
+    const service = createDatabase();
+    const older = structuredClone(backup);
+    older.data.inserts.dbInfo[0].version = 9;
+    const sqlBatch = vi.fn().mockResolvedValue(undefined);
+    (service as any).database = {
+      sqlBatch,
+      executeSql: vi.fn().mockResolvedValue({ rows: { length: 1, item: () => ({ version: 9 }) } }),
+    };
+    const migrate = vi.spyOn(service as any, 'setVersion').mockResolvedValue(undefined);
+    const update = vi.spyOn(service as any, 'takeCareOfUpdateDB');
+    await service.importDB(JSON.stringify(older));
+    expect(sqlBatch.mock.calls[0][0]).toContainEqual(['INSERT INTO dbInfo (version) VALUES (?)', [9]]);
+    expect(update).toHaveBeenCalledOnce();
+    expect(migrate).toHaveBeenCalledWith(10);
+  });
+
+  it('asks for an app update before importing a newer database', async () => {
+    const service = createDatabase();
+    const newer = structuredClone(backup);
+    newer.data.inserts.dbInfo[0].version = service.getSupportedVersion() + 1;
+    const sqlBatch = vi.fn();
+    (service as any).database = { sqlBatch };
+    await expect(service.importDB(JSON.stringify(newer))).rejects.toThrow('Update ebook-library');
+    expect(sqlBatch).not.toHaveBeenCalled();
+  });
+
   it('propagates a failed transaction without running migrations', async () => {
     const service = createDatabase();
     const sqlBatch = vi.fn().mockRejectedValue(new Error('Disk full'));

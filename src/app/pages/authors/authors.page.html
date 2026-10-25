@@ -69,6 +69,9 @@
     @if (actionError()) {
         <p class="status" role="alert">{{ actionError() }}</p>
     }
+    @if (backupMessage()) {
+        <p class="status" role="status">{{ backupMessage() }}</p>
+    }
     <div class="boxes">
         @if (where2Search() === 'A') {
             @for (author of visibleAuthors(); track author.id) {
@@ -128,8 +131,8 @@
     </div>
 
     <div class="bb">
-        <button mat-mini-fab aria-label="Export or import database" (click)="onShowDialog()">
-            <mat-icon>upload</mat-icon>
+        <button mat-mini-fab aria-label="Back up or restore library" (click)="onBackup()">
+            <mat-icon>backup</mat-icon>
         </button>
         <button mat-mini-fab aria-label="Add author" (click)="onAddAuthor()">
             <mat-icon>add_circle</mat-icon>

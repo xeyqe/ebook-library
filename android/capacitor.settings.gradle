@@ -36,4 +36,4 @@ include ':capacitor-plugin-safe-area'
 project(':capacitor-plugin-safe-area').projectDir = new File('../node_modules/capacitor-plugin-safe-area/android')
 
 include ':capacitor-zip4j'
-project(':capacitor-zip4j').projectDir = new File('../../capacitor/capacitor-zip4j/android')
+project(':capacitor-zip4j').projectDir = new File('../node_modules/capacitor-zip4j/android')

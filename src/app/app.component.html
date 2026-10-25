@@ -1,9 +1,11 @@
-<ion-app #elRef>
+<ion-app #elRef [inert]="backup.active()">
     @if (initialized()) {
         <ion-router-outlet></ion-router-outlet>
     }
 </ion-app>
-@if (workingServ.working()) {
+@if (backup.active()) {
+    <app-backup-progress />
+} @else if (workingServ.working()) {
     <div class="cont"></div>
     <ion-spinner name="bubbles"></ion-spinner>
 }

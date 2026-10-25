@@ -19,6 +19,7 @@ import { WebScraperService } from './services/web-scraper.service';
 
 import { AppRoutingModule } from 'src/app/app-routing.module';
 
+import { BackupProgressComponent } from './components/backup-progress/backup-progress.component';
 import { AppComponent } from 'src/app/app.component';
 
 import { registerLocaleData } from '@angular/common';
@@ -28,7 +29,14 @@ registerLocaleData(localeCs);
 
 @NgModule({
   declarations: [AppComponent],
-  imports: [BrowserModule, IonicModule.forRoot(), AppRoutingModule, IonicStorageModule.forRoot(), HttpClientModule],
+  imports: [
+    BackupProgressComponent,
+    BrowserModule,
+    IonicModule.forRoot(),
+    AppRoutingModule,
+    IonicStorageModule.forRoot(),
+    HttpClientModule,
+  ],
   providers: [
     { provide: EVENT_MANAGER_PLUGINS, useClass: PinchEventPlugin, multi: true },
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },

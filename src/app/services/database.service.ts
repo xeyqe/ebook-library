@@ -372,10 +372,17 @@ export class DatabaseService {
     });
   }
 
+  public getSupportedVersion(): number {
+    return this.version;
+  }
+
   public async importDB(json: string): Promise<void> {
     const snapshot: DBJSON = JSON.parse(json);
     const tables = snapshot?.structure?.tables;
     const inserts = snapshot?.data?.inserts;
+    if (inserts?.dbInfo?.[0]?.version > this.version) {
+      throw new Error('This backup was created by a newer app. Update ebook-library before restoring it.');
+    }
     if (
       !tables ||
       !['authors', 'books', 'dbInfo'].every(

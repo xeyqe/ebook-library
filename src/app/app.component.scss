@@ -1,21 +1,21 @@
 .cont {
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    z-index: 100;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  z-index: 100;
 }
 
 ion-spinner {
-    position: fixed;
-    z-index: 101;
-    transform: translate(-50%, -50%) scale(9);
-    left: 50%;
-    top: 50%;
-    color: white;
+  position: fixed;
+  z-index: 101;
+  transform: translate(-50%, -50%) scale(9);
+  left: 50%;
+  top: 50%;
+  color: white;
 }
 
 ion-app {
-    position: absolute;
-    width: -webkit-fill-available;
-    height: -webkit-fill-available;
+  position: absolute;
+  width: -webkit-fill-available;
+  height: -webkit-fill-available;
 }
