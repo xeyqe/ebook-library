@@ -129,6 +129,28 @@ describe('AuthorsComponent', () => {
     expect(files.downloadUnknownImg).toHaveBeenCalledTimes(1);
   });
 
+  it('shows the last read filter between started and finished and loads it when clicked', async () => {
+    preferences.set('where2Search', 'B');
+    await enter();
+    await fixture.whenStable();
+    const buttons = Array.from(fixture.nativeElement.querySelectorAll('.chars button')) as HTMLButtonElement[];
+    expect(buttons.map((button) => button.textContent.trim())).toEqual(['liked', 'started', 'last read', 'finished']);
+    buttons[2].click();
+    await fixture.whenStable();
+    expect(database.loadBooks).toHaveBeenLastCalledWith('lastRead');
+    expect(database.saveValue).toHaveBeenCalledWith('bookSearchBy', 'lastRead');
+    expect(buttons[2].disabled).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain(book.title);
+  });
+
+  it('restores the saved last read filter on entry', async () => {
+    preferences.set('where2Search', 'B');
+    preferences.set('bookSearchBy', 'lastRead');
+    await enter();
+    expect(page.bookSearchBy()).toBe('lastRead');
+    expect(database.loadBooks).toHaveBeenCalledWith('lastRead');
+  });
+
   it('uses valid defaults when stored preferences are corrupted', async () => {
     preferences.set('as', '{invalid');
     preferences.set('character', 'invalid');

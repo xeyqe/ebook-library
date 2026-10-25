@@ -32,7 +32,7 @@ function deferred<T>() {
 }
 
 describe('Author progress loading', () => {
-  it.each(['started', 'liked', 'finished'] as const)(
+  it.each(['started', 'liked', 'lastRead', 'finished'] as const)(
     'loads %s books with a missing author through the native SQLite wrapper',
     async (filter) => {
       const service = createDatabase();
@@ -83,7 +83,7 @@ describe('Author progress loading', () => {
     },
   );
 
-  it.each(['getStartedBooks', 'getFinishedBooks', 'getLikedBooks', 'findBooks'] as const)(
+  it.each(['getStartedBooks', 'getLastReadBooks', 'getFinishedBooks', 'getLikedBooks', 'findBooks'] as const)(
     '%s includes author names before publishing books',
     async (method) => {
       const service = createDatabase();
@@ -116,6 +116,15 @@ describe('DatabaseService persistence', () => {
     (service as any).database = { executeSql };
     return { service, executeSql, storage };
   }
+
+  it('loads read books newest first, including finished books and excluding never-read books', async () => {
+    const { service, executeSql } = setup();
+    await service.loadBooks('lastRead');
+    expect(executeSql).toHaveBeenCalledWith(
+      'SELECT id, title, progress, img, creatorIds FROM books WHERE lastRead IS NOT NULL ORDER BY lastRead DESC, title COLLATE NOCASE ASC',
+      [],
+    );
+  });
 
   it.each(['findAuthors', 'findBooks'] as const)(
     'binds search text in %s instead of embedding it in SQL',

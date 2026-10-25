@@ -919,16 +919,32 @@ export class DatabaseService {
     return paths;
   }
 
-  public async loadBooks(type: 'liked' | 'started' | 'finished'): Promise<BOOKSIMPLIFIED[]> {
+  public async loadBooks(type: 'liked' | 'started' | 'lastRead' | 'finished'): Promise<BOOKSIMPLIFIED[]> {
     let books = [];
     if (type === 'liked') {
       books = await this.getLikedBooks();
     } else if (type === 'started') {
       books = await this.getStartedBooks();
+    } else if (type === 'lastRead') {
+      books = await this.getLastReadBooks();
     } else if (type === 'finished') {
       books = await this.getFinishedBooks();
     }
     console.log(books);
+    return books;
+  }
+
+  public async getLastReadBooks(): ReturnType<DatabaseService['getStartedBooks']> {
+    const data = await this.database.executeSql(
+      'SELECT id, title, progress, img, creatorIds FROM books WHERE lastRead IS NOT NULL ORDER BY lastRead DESC, title COLLATE NOCASE ASC',
+      [],
+    );
+    const books = this.getReducedBooksFromSqlRows(data.rows);
+    await Promise.all(
+      books.map(async (book) => {
+        book.authors = await this.getAutorsStr(book.creatorIds);
+      }),
+    );
     return books;
   }
 

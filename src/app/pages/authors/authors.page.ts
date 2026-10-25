@@ -39,7 +39,7 @@ import { BackupPasswordDialogComponent } from 'src/app/material/backup-password-
 import { LibraryBackupService } from 'src/app/services/library-backup.service';
 import { PercentPipe } from 'src/app/pipes/percent2.pipe';
 
-type BookFilter = 'liked' | 'started' | 'finished';
+type BookFilter = 'liked' | 'started' | 'lastRead' | 'finished';
 type LastListened = { id: number; type: 'speech' | 'spritz' };
 
 @Component({
@@ -72,7 +72,7 @@ export class AuthorsComponent implements AfterViewInit, OnDestroy {
   protected readonly selectedCharacter = signal('A');
   protected readonly imgPreLink = computed(() => this.dir.imgPreLink());
   protected readonly bookSearchBy = signal<BookFilter>('started');
-  protected readonly bookFilters: BookFilter[] = ['liked', 'started', 'finished'];
+  protected readonly bookFilters: BookFilter[] = ['liked', 'started', 'lastRead', 'finished'];
   protected readonly alphabet = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', '#'];
   protected readonly searchQuery = signal('');
   protected readonly loading = signal(true);

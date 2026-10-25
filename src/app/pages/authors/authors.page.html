@@ -45,7 +45,7 @@
                             extended
                             [disabled]="bookSearchBy() === char"
                             (click)="changeSelectedChar(char, 'books')">
-                            <span>{{ char }}</span>
+                            <span>{{ char === 'lastRead' ? 'last read' : char }}</span>
                         </button>
                     }
                 </div>
